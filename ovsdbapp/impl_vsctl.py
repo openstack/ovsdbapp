@@ -19,7 +19,6 @@ import uuid
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
-from oslo_utils import uuidutils
 import six
 
 from neutron._i18n import _LE
@@ -155,7 +154,7 @@ class DbCreateCommand(BaseCommand):
     def __init__(self, context, opts=None, args=None):
         super(DbCreateCommand, self).__init__(context, "create", opts, args)
         # NOTE(twilson) pre-commit result used for intra-transaction reference
-        self.record_id = "@%s" % uuidutils.generate_uuid()
+        self.record_id = "@%s" % uuid.uuid4()
         self.opts.append("--id=%s" % self.record_id)
 
     @property
