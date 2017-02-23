@@ -1,0 +1,5 @@
+Changes for Neutron migration
+
+* The context passed to an API should have an ovsdb_connection attribute
+* The helpers.enable_connection_uri function now takes a timeout and an
+  execute function as arguments, any kwargs will be passed to that function

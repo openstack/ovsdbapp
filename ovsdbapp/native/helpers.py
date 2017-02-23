@@ -12,12 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_config import cfg  # TODO(twilson) this file will live in neutron
-
-from ovsdbapp import api as ovsdb
-
-cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.common.ovs_lib')
-
+import subprocess
 
 def _connection_to_manager_uri(conn_uri):
     proto, addr = conn_uri.split(':', 1)
@@ -28,10 +23,18 @@ def _connection_to_manager_uri(conn_uri):
         return 'p%s:%s' % (proto, addr)
 
 
-def enable_connection_uri(conn_uri):
-    class OvsdbVsctlContext(object):
-        vsctl_timeout = cfg.CONF.ovs_vsctl_timeout
-
-    manager_uri = _connection_to_manager_uri(conn_uri)
-    api = ovsdb.API.get(OvsdbVsctlContext, 'vsctl')
-    api.add_manager(manager_uri).execute(check_error=False, log_errors=True)
+def enable_connection_uri(conn_uri, execute=None, **kwargs):
+    timeout = kwargs.get('timeout', 5)
+    man_uri = 'target="%s"' % _connection_to_manager_uri(conn_uri)
+    cmd = ['ovs-vsctl', '--timeout=%d' % timeout, '--id=@manager', 'create',
+           'Manager', man_uri, '--', 'add', 'Open_vSwitch', '.',
+           'manager_options', '@manager']
+    if execute:
+        return execute(cmd, **kwargs).rstrip()
+    else:
+        obj = subprocess.Popen(['sudo'] + cmd, shell=False,
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+        out, err = obj.communicate()
+        return out.rstrip()
