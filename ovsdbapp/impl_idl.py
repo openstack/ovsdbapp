@@ -14,7 +14,7 @@
 
 import time
 
-from neutron_lib import exceptions
+from ovsdbapp import exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils

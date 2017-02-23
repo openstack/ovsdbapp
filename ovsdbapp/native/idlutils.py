@@ -17,7 +17,7 @@ import os
 import time
 import uuid
 
-from neutron_lib import exceptions
+from ovsdbapp import exceptions
 from oslo_utils import excutils
 from ovs.db import idl
 from ovs import jsonrpc
