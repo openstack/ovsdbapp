@@ -16,7 +16,6 @@ import logging
 import time
 
 from ovsdbapp import exceptions
-from oslo_utils import excutils
 from ovs.db import idl
 from six.moves import queue as Queue
 
@@ -96,10 +95,9 @@ class Transaction(api.Transaction):
                 try:
                     command.run_idl(txn)
                 except Exception:
-                    with excutils.save_and_reraise_exception() as ctx:
-                        txn.abort()
-                        if not self.check_error:
-                            ctx.reraise = False
+                    txn.abort()
+                    if self.check_error:
+                        raise
             seqno = self.api.idl.change_seqno
             status = txn.commit_block()
             if status == txn.TRY_AGAIN:

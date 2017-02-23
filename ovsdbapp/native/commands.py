@@ -15,7 +15,6 @@
 import collections
 import logging
 
-from oslo_utils import excutils
 import six
 
 from ovsdbapp import api
@@ -35,11 +34,10 @@ class BaseCommand(api.Command):
                 txn.add(self)
             return self.result
         except Exception:
-            with excutils.save_and_reraise_exception() as ctx:
-                if log_errors:
-                    LOG.exception("Error executing command")
-                if not check_error:
-                    ctx.reraise = False
+            if log_errors:
+                LOG.exception("Error executing command")
+            if check_error:
+                raise
 
     def post_commit(self, txn):
         pass
