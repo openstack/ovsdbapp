@@ -12,10 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
 import time
 
 from ovsdbapp import exceptions
-from oslo_log import log as logging
 from oslo_utils import excutils
 from ovs.db import idl
 from six.moves import queue as Queue
