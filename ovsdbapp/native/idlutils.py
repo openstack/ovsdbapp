@@ -26,7 +26,6 @@ from ovs import stream
 import six
 import tenacity
 
-from neutron._i18n import _
 from ovsdbapp import api
 from ovsdbapp.native import helpers
 
@@ -52,7 +51,7 @@ _NO_DEFAULT = object()
 
 
 class RowNotFound(exceptions.NeutronException):
-    message = _("Cannot find %(table)s with %(col)s=%(match)s")
+    message = "Cannot find %(table)s with %(col)s=%(match)s"
 
 
 def row_by_value(idl_, table, column, match, default=_NO_DEFAULT):
@@ -82,14 +81,14 @@ def row_by_record(idl_, table, record):
     rl = _LOOKUP_TABLE.get(table, RowLookup(table, get_index_column(t), None))
     # no table means uuid only, no column means lookup table only has one row
     if rl.table is None:
-        raise ValueError(_("Table %s can only be queried by UUID") % table)
+        raise ValueError("Table %s can only be queried by UUID") % table
     if rl.column is None:
         return t.rows.values()[0]
     row = row_by_value(idl_, rl.table, rl.column, record)
     if rl.uuid_column:
         rows = getattr(row, rl.uuid_column)
         if len(rows) != 1:
-            raise RowNotFound(table=table, col=_('record'), match=record)
+            raise RowNotFound(table=table, col='record', match=record)
         row = rows[0]
     return row
 
@@ -104,15 +103,15 @@ def _get_schema_helper(connection, schema_name):
     err, strm = stream.Stream.open_block(
         stream.Stream.open(connection))
     if err:
-        raise Exception(_("Could not connect to %s") % connection)
+        raise Exception("Could not connect to %s" % connection)
     rpc = jsonrpc.Connection(strm)
     req = jsonrpc.Message.create_request('get_schema', [schema_name])
     err, resp = rpc.transact_block(req)
     rpc.close()
     if err:
-        raise Exception(_("Could not retrieve schema from %(conn)s: "
-                          "%(err)s") % {'conn': connection,
-                                        'err': os.strerror(err)})
+        raise Exception("Could not retrieve schema from %(conn)s: "
+                        "%(err)s" % {'conn': connection,
+                                     'err': os.strerror(err)})
     elif resp.error:
         raise Exception(resp.error)
     return idl.SchemaHelper(None, resp.result)
@@ -148,7 +147,7 @@ def wait_for_change(_idl, timeout, seqno=None):
         ovs_poller.timer_wait(timeout * 1000)
         ovs_poller.block()
         if time.time() > stop:
-            raise Exception(_("Timeout"))
+            raise Exception("Timeout")  # TODO(twilson) use TimeoutException?
 
 
 def get_column_value(row, col):
@@ -199,7 +198,7 @@ def condition_match(row, condition):
         else:
             # no need to process any further
             raise ValueError(
-                _("Column type and condition operand do not match"))
+                "Column type and condition operand do not match")
 
     matched = True
 

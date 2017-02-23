@@ -21,7 +21,6 @@ from oslo_utils import excutils
 from ovs.db import idl
 from six.moves import queue as Queue
 
-from neutron._i18n import _, _LE
 from ovsdbapp import api
 from ovsdbapp.native import commands as cmd
 from ovsdbapp.native import connection
@@ -35,7 +34,7 @@ LOG = logging.getLogger(__name__)
 
 
 class VswitchdInterfaceAddException(exceptions.NeutronException):
-    message = _("Failed to add interfaces: %(ifaces)s")
+    message = "Failed to add interfaces: %(ifaces)s"
 
 
 class Transaction(api.Transaction):
@@ -68,9 +67,9 @@ class Transaction(api.Transaction):
             result = self.results.get(timeout=self.timeout)
         except Queue.Empty:
             raise api.TimeoutException(
-                _("Commands %(commands)s exceeded timeout %(timeout)d "
-                  "seconds") % {'commands': self.commands,
-                                'timeout': self.timeout})
+                "Commands %(commands)s exceeded timeout %(timeout)d "
+                "seconds" % {'commands': self.commands,
+                             'timeout': self.timeout})
         if isinstance(result, idlutils.ExceptionResult):
             if self.log_errors:
                 LOG.error(result.tb)
@@ -90,7 +89,7 @@ class Transaction(api.Transaction):
         attempts = 0
         while True:
             if attempts > 0 and self.timeout_exceeded():
-                raise RuntimeError(_("OVS transaction timed out"))
+                raise RuntimeError("OVS transaction timed out")
             attempts += 1
             # TODO(twilson) Make sure we don't loop longer than vsctl_timeout
             txn = idl.Transaction(self.api.idl)
@@ -113,7 +112,7 @@ class Transaction(api.Transaction):
                                          seqno)
                 continue
             elif status == txn.ERROR:
-                msg = _("OVSDB Error: %s") % txn.get_error()
+                msg = "OVSDB Error: %s" % txn.get_error()
                 if self.log_errors:
                     LOG.error(msg)
                 if self.check_error:
@@ -151,7 +150,7 @@ class NeutronOVSDBTransaction(Transaction):
         try:
             self.do_post_commit(txn)
         except Exception:
-            LOG.exception(_LE("Post-commit checks failed"))
+            LOG.exception("Post-commit checks failed")
 
     def do_post_commit(self, txn):
         next_cfg = txn.get_increment_new_value()
@@ -169,9 +168,9 @@ class NeutronOVSDBTransaction(Transaction):
             self.ovsdb_connection.poller.block()
         else:
             raise api.TimeoutException(
-                _("Commands %(commands)s exceeded timeout %(timeout)d "
-                  "seconds post-commit") % {'commands': self.commands,
-                                            'timeout': self.timeout})
+                "Commands %(commands)s exceeded timeout %(timeout)d "
+                "seconds post-commit" % {'commands': self.commands,
+                                         'timeout': self.timeout})
 
     def post_commit_failed_interfaces(self, txn):
         failed = []

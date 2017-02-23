@@ -22,7 +22,6 @@ from ovs import poller
 import six
 from six.moves import queue as Queue
 
-from neutron._i18n import _
 from ovsdbapp.native import idlutils
 
 
@@ -55,7 +54,7 @@ class TransactionQueue(Queue.Queue, object):
 
 class Connection(object):
     __rm_args = {'version': 'Ocata', 'removal_version': 'Pike',
-                 'message': _('Use an idl_factory function instead')}
+                 'message': 'Use an idl_factory function instead'}
 
     @removals.removed_kwarg('connection', **__rm_args)
     @removals.removed_kwarg('schema_name', **__rm_args)
@@ -80,13 +79,13 @@ class Connection(object):
         self.lock = threading.Lock()
         if idl_factory:
             if connection or schema_name:
-                raise TypeError(_('Connection: Takes either idl_factory, or '
-                                  'connection and schema_name. Both given'))
+                raise TypeError('Connection: Takes either idl_factory, or '
+                                'connection and schema_name. Both given')
             self.idl_factory = idl_factory
         else:
             if not connection or not schema_name:
-                raise TypeError(_('Connection: Takes either idl_factory, or '
-                                  'connection and schema_name. Neither given'))
+                raise TypeError('Connection: Takes either idl_factory, or '
+                                'connection and schema_name. Neither given')
             self.idl_factory = self._idl_factory
             self.connection = connection
             self.schema_name = schema_name
@@ -122,7 +121,7 @@ class Connection(object):
 
     @removals.remove(
         version='Ocata', removal_version='Pike',
-        message=_("Use idlutils.get_schema_helper(conn, schema, retry=True)"))
+        message="Use idlutils.get_schema_helper(conn, schema, retry=True)")
     def get_schema_helper(self):
         """Retrieve the schema helper object from OVSDB"""
         return idlutils.get_schema_helper(self.connection, self.schema_name,
@@ -130,7 +129,7 @@ class Connection(object):
 
     @removals.remove(
         version='Ocata', removal_version='Pike',
-        message=_("Use an idl_factory and ovs.db.SchemaHelper for filtering"))
+        message="Use an idl_factory and ovs.db.SchemaHelper for filtering")
     def update_schema_helper(self, helper):
         if self._schema_filter:
             for table_name in self._schema_filter:

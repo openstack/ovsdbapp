@@ -18,7 +18,6 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 import six
 
-from neutron._i18n import _, _LE
 from ovsdbapp import api
 from ovsdbapp.native import idlutils
 
@@ -38,7 +37,7 @@ class BaseCommand(api.Command):
         except Exception:
             with excutils.save_and_reraise_exception() as ctx:
                 if log_errors:
-                    LOG.exception(_LE("Error executing command"))
+                    LOG.exception("Error executing command")
                 if not check_error:
                     ctx.reraise = False
 
@@ -90,7 +89,7 @@ class RemoveManagerCommand(BaseCommand):
             manager = idlutils.row_by_value(self.api.idl, 'Manager', 'target',
                                             self.target)
         except idlutils.RowNotFound:
-            msg = _("Manager with target %s does not exist") % self.target
+            msg = "Manager with target %s does not exist" % self.target
             LOG.error(msg)
             raise RuntimeError(msg)
         try:
@@ -151,7 +150,7 @@ class DelBridgeCommand(BaseCommand):
             if self.if_exists:
                 return
             else:
-                msg = _("Bridge %s does not exist") % self.name
+                msg = "Bridge %s does not exist" % self.name
                 LOG.error(msg)
                 raise RuntimeError(msg)
         # Clean up cached ports/interfaces
@@ -428,7 +427,7 @@ class DelPortCommand(BaseCommand):
         except idlutils.RowNotFound:
             if self.if_exists:
                 return
-            msg = _("Port %s does not exist") % self.port
+            msg = "Port %s does not exist" % self.port
             raise RuntimeError(msg)
         if self.bridge:
             br = idlutils.row_by_value(self.api.idl, 'Bridge', 'name',
@@ -439,7 +438,7 @@ class DelPortCommand(BaseCommand):
 
         if port not in br.ports and not self.if_exists:
             # TODO(twilson) Make real errors across both implementations
-            msg = _("Port %(port)s does not exist on %(bridge)s!") % {
+            msg = "Port %(port)s does not exist on %(bridge)s!" % {
                 'port': self.port, 'bridge': self.bridge
             }
             LOG.error(msg)
@@ -535,10 +534,10 @@ class DbListCommand(BaseCommand):
                     # NOTE(kevinbenton): this is converted to a RuntimeError
                     # for compat with the vsctl version. It might make more
                     # sense to change this to a RowNotFoundError in the future.
-                    raise RuntimeError(_(
+                    raise RuntimeError(
                           "Row doesn't exist in the DB. Request info: "
                           "Table=%(table)s. Columns=%(columns)s. "
-                          "Records=%(records)s.") % {
+                          "Records=%(records)s." % {
                               "table": self.table,
                               "columns": self.columns,
                               "records": self.records,

@@ -21,7 +21,7 @@ from oslo_config import cfg
 from oslo_utils import importutils
 import six
 
-from neutron._i18n import _
+from neutron._i18n import _  # TODO(twilson) removal via removing oslo_config
 
 interface_map = {
     'vsctl': 'ovsdbapp.impl_vsctl.OvsdbVsctl',
