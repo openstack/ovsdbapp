@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_config import cfg
+from oslo_config import cfg  # TODO(twilson) this file will live in neutron
 
 from ovsdbapp import api as ovsdb
 

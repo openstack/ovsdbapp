@@ -17,31 +17,7 @@ import collections
 import contextlib
 import uuid
 
-from oslo_config import cfg
-from oslo_utils import importutils
 import six
-
-from neutron._i18n import _  # TODO(twilson) removal via removing oslo_config
-
-interface_map = {
-    'vsctl': 'ovsdbapp.impl_vsctl.OvsdbVsctl',
-    'native': 'ovsdbapp.impl_idl.NeutronOvsdbIdl',
-}
-
-OPTS = [
-    cfg.StrOpt('ovsdb_interface',
-               choices=interface_map.keys(),
-               default='native',
-               help=_('The interface for interacting with the OVSDB')),
-    cfg.StrOpt('ovsdb_connection',
-               default='tcp:127.0.0.1:6640',
-               help=_('The connection string for the OVSDB backend. '
-                      'Will be used by ovsdb-client when monitoring and '
-                      'used for the all ovsdb commands when native '
-                      'ovsdb_interface is enabled'
-                      ))
-]
-cfg.CONF.register_opts(OPTS, 'OVS')
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -85,13 +61,6 @@ class API(object):
     def __init__(self, context):
         self.context = context
         self._nested_txn = None
-
-    @staticmethod
-    def get(context, iface_name=None):
-        """Return the configured OVSDB API implementation"""
-        iface = importutils.import_class(
-            interface_map[iface_name or cfg.CONF.OVS.ovsdb_interface])
-        return iface(context)
 
     @abc.abstractmethod
     def create_transaction(self, check_error=False, log_errors=True, **kwargs):

@@ -15,7 +15,6 @@
 import time
 
 from ovsdbapp import exceptions
-from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
 from ovs.db import idl
@@ -27,8 +26,6 @@ from ovsdbapp.native import connection
 from ovsdbapp.native import idlutils
 from ovsdbapp.native import vlog
 
-
-cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.common.ovs_lib')
 
 LOG = logging.getLogger(__name__)
 
@@ -189,12 +186,16 @@ class NeutronOVSDBTransaction(Transaction):
 
 class OvsdbIdl(api.API):
 
-    ovsdb_connection = connection.Connection(cfg.CONF.OVS.ovsdb_connection,
-                                             cfg.CONF.ovs_vsctl_timeout,
-                                             'Open_vSwitch')
+    ovsdb_connection = None
 
     def __init__(self, context):
         super(OvsdbIdl, self).__init__(context)
+        # TODO(twilson) Move to idl_factory, ensure neutron adds
+        #               ovsdb_connection attribute to BaseOVS
+        if not OvsdbIdl.ovsdb_connection:
+            OvsdbIdl.ovsdb_connection = connection.Connection(
+                connection=context.ovsdb_connection,
+                timeout=context.vsctl_timeout)
         OvsdbIdl.ovsdb_connection.start()
         self.idl = OvsdbIdl.ovsdb_connection.idl
 
