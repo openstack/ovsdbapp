@@ -24,8 +24,8 @@ import six
 from neutron._i18n import _
 
 interface_map = {
-    'vsctl': 'neutron.agent.ovsdb.impl_vsctl.OvsdbVsctl',
-    'native': 'neutron.agent.ovsdb.impl_idl.NeutronOvsdbIdl',
+    'vsctl': 'ovsdbapp.impl_vsctl.OvsdbVsctl',
+    'native': 'ovsdbapp.impl_idl.NeutronOvsdbIdl',
 }
 
 OPTS = [

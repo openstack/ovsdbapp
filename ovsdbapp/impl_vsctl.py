@@ -24,7 +24,7 @@ import six
 
 from neutron._i18n import _LE
 from neutron.agent.common import utils
-from neutron.agent.ovsdb import api as ovsdb
+from ovsdbapp import api as ovsdb
 
 LOG = logging.getLogger(__name__)
 

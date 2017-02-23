@@ -14,7 +14,7 @@
 
 from oslo_config import cfg
 
-from neutron.agent.ovsdb import api as ovsdb
+from ovsdbapp import api as ovsdb
 
 cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.common.ovs_lib')
 

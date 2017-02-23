@@ -22,11 +22,11 @@ from ovs.db import idl
 from six.moves import queue as Queue
 
 from neutron._i18n import _, _LE
-from neutron.agent.ovsdb import api
-from neutron.agent.ovsdb.native import commands as cmd
-from neutron.agent.ovsdb.native import connection
-from neutron.agent.ovsdb.native import idlutils
-from neutron.agent.ovsdb.native import vlog
+from ovsdbapp import api
+from ovsdbapp.native import commands as cmd
+from ovsdbapp.native import connection
+from ovsdbapp.native import idlutils
+from ovsdbapp.native import vlog
 
 
 cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.common.ovs_lib')

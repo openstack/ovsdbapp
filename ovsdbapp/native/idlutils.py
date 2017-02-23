@@ -27,8 +27,8 @@ import six
 import tenacity
 
 from neutron._i18n import _
-from neutron.agent.ovsdb import api
-from neutron.agent.ovsdb.native import helpers
+from ovsdbapp import api
+from ovsdbapp.native import helpers
 
 
 RowLookup = collections.namedtuple('RowLookup',

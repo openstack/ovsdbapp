@@ -23,7 +23,7 @@ import six
 from six.moves import queue as Queue
 
 from neutron._i18n import _
-from neutron.agent.ovsdb.native import idlutils
+from ovsdbapp.native import idlutils
 
 
 class TransactionQueue(Queue.Queue, object):
