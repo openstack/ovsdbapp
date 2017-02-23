@@ -12,13 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
+import logging
+
 from ovs import vlog
 
 LOG = logging.getLogger(__name__)
 
 
-def use_oslo_logger():
+def use_python_logger():
     """Replace the OVS IDL logger functions with our logger"""
 
     # NOTE(twilson) Replace functions directly instead of subclassing so that

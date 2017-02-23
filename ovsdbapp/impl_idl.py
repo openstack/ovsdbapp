@@ -24,7 +24,6 @@ from ovsdbapp import api
 from ovsdbapp.native import commands as cmd
 from ovsdbapp.native import connection
 from ovsdbapp.native import idlutils
-from ovsdbapp.native import vlog
 
 
 LOG = logging.getLogger(__name__)
@@ -292,9 +291,3 @@ class OvsdbIdl(api.API):
 
     def list_ifaces(self, bridge):
         return cmd.ListIfacesCommand(self, bridge)
-
-
-class NeutronOvsdbIdl(OvsdbIdl):
-    def __init__(self, context):
-        vlog.use_oslo_logger()
-        super(NeutronOvsdbIdl, self).__init__(context)
