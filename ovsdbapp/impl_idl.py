@@ -28,7 +28,7 @@ from ovsdbapp.native import idlutils
 LOG = logging.getLogger(__name__)
 
 
-class VswitchdInterfaceAddException(exceptions.NeutronException):
+class VswitchdInterfaceAddException(exceptions.OvsdbAppException):
     message = "Failed to add interfaces: %(ifaces)s"
 
 
@@ -192,7 +192,8 @@ class OvsdbIdl(api.API):
         if not OvsdbIdl.ovsdb_connection:
             OvsdbIdl.ovsdb_connection = connection.Connection(
                 connection=context.ovsdb_connection,
-                timeout=context.vsctl_timeout)
+                timeout=context.vsctl_timeout,
+                schema_name='Open_vSwitch')
         OvsdbIdl.ovsdb_connection.start()
         self.idl = OvsdbIdl.ovsdb_connection.idl
 

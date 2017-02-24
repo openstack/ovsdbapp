@@ -49,7 +49,7 @@ _LOOKUP_TABLE = {
 _NO_DEFAULT = object()
 
 
-class RowNotFound(exceptions.NeutronException):
+class RowNotFound(exceptions.OvsdbAppException):
     message = "Cannot find %(table)s with %(col)s=%(match)s"
 
 
