@@ -12,8 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import pbr.version
+"""
+test_ovsdbapp
+----------------------------------
+
+Tests for `ovsdbapp` module.
+"""
+
+from ovsdbapp.tests import base
 
 
-__version__ = pbr.version.VersionInfo(
-    'ovsdbapp').version_string()
+class TestOvsdbapp(base.TestCase):
+
+    def test_something(self):
+        pass
