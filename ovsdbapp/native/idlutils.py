@@ -17,7 +17,6 @@ import os
 import time
 import uuid
 
-from ovsdbapp import exceptions
 from ovs.db import idl
 from ovs import jsonrpc
 from ovs import poller
@@ -26,6 +25,7 @@ import six
 import tenacity
 
 from ovsdbapp import api
+from ovsdbapp import exceptions
 from ovsdbapp.native import helpers
 
 

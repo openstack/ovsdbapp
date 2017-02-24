@@ -100,7 +100,8 @@ class Connection(object):
 
     @removals.removed_kwarg('table_name_list', **__rm_args)
     def start(self, table_name_list=None):
-        """
+        """Start the connection.
+
         :param table_name_list: A list of table names for schema_helper to
                 register. When this parameter is given, schema_helper will only
                 register tables which name are in list. Otherwise,
@@ -141,8 +142,8 @@ class Connection(object):
         while True:
             self.idl.wait(self.poller)
             self.poller.fd_wait(self.txns.alert_fileno, poller.POLLIN)
-            #TODO(jlibosva): Remove next line once losing connection to ovsdb
-            #                is solved.
+            # TODO(jlibosva): Remove next line once losing connection to ovsdb
+            #                 is solved.
             self.poller.timer_wait(self.timeout * 1000)
             self.poller.block()
             self.idl.run()

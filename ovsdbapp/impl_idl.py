@@ -15,11 +15,11 @@
 import logging
 import time
 
-from ovsdbapp import exceptions
 from ovs.db import idl
 from six.moves import queue as Queue
 
 from ovsdbapp import api
+from ovsdbapp import exceptions
 from ovsdbapp.native import commands as cmd
 from ovsdbapp.native import connection
 from ovsdbapp.native import idlutils

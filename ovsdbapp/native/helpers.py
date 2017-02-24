@@ -14,6 +14,7 @@
 
 import subprocess
 
+
 def _connection_to_manager_uri(conn_uri):
     proto, addr = conn_uri.split(':', 1)
     if ':' in addr:

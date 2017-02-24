@@ -503,7 +503,7 @@ class InterfaceToBridgeCommand(BaseCommand):
                                           self.name)
         ports = self.api._tables['Port'].rows.values()
         pname = next(
-                port for port in ports if interface in port.interfaces)
+            port for port in ports if interface in port.interfaces)
 
         bridges = self.api._tables['Bridge'].rows.values()
         self.result = next(br.name for br in bridges if pname in br.ports)
@@ -533,13 +533,12 @@ class DbListCommand(BaseCommand):
                     # for compat with the vsctl version. It might make more
                     # sense to change this to a RowNotFoundError in the future.
                     raise RuntimeError(
-                          "Row doesn't exist in the DB. Request info: "
-                          "Table=%(table)s. Columns=%(columns)s. "
-                          "Records=%(records)s." % {
-                              "table": self.table,
-                              "columns": self.columns,
-                              "records": self.records,
-                          })
+                        "Row doesn't exist in the DB. Request info: "
+                        "Table=%(table)s. Columns=%(columns)s. "
+                        "Records=%(records)s." % {
+                            "table": self.table,
+                            "columns": self.columns,
+                            "records": self.records})
         else:
             row_uuids = table_schema.rows.keys()
         self.result = [
