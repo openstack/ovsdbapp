@@ -48,3 +48,7 @@ class OvsdbAppException(Exception):
         :returns: Always returns False.
         """
         return False
+
+
+class TimeoutException(OvsdbAppException):
+    message = "Commands %(commands)s exceeded timeout %(timeout)d seconds"
