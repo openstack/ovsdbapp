@@ -61,8 +61,8 @@ class Transaction(api.Transaction):
         try:
             result = self.results.get(timeout=self.timeout)
         except Queue.Empty:
-            raise api.TimeoutException(commands=self.commands,
-                                       timeout=self.timeout)
+            raise exceptions.TimeoutException(commands=self.commands,
+                                              timeout=self.timeout)
         if isinstance(result, idlutils.ExceptionResult):
             if self.log_errors:
                 LOG.error(result.tb)
@@ -159,8 +159,8 @@ class NeutronOVSDBTransaction(Transaction):
             self.api.idl.wait(self.ovsdb_connection.poller)
             self.ovsdb_connection.poller.block()
         else:
-            raise api.TimeoutException(commands=self.commands,
-                                       timeout=self.timeout)
+            raise exceptions.TimeoutException(commands=self.commands,
+                                              timeout=self.timeout)
 
     def post_commit_failed_interfaces(self, txn):
         failed = []
