@@ -12,7 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
 import subprocess
+
+LOG = logging.getLogger(__name__)
 
 
 def _connection_to_manager_uri(conn_uri):
@@ -26,10 +29,13 @@ def _connection_to_manager_uri(conn_uri):
 
 def enable_connection_uri(conn_uri, execute=None, **kwargs):
     timeout = kwargs.get('timeout', 5)
-    man_uri = 'target="%s"' % _connection_to_manager_uri(conn_uri)
-    cmd = ['ovs-vsctl', '--timeout=%d' % timeout, '--id=@manager', 'create',
-           'Manager', man_uri, '--', 'add', 'Open_vSwitch', '.',
-           'manager_options', '@manager']
+    probe = timeout if kwargs.get('set_timeout') else None
+    man_uri = _connection_to_manager_uri(conn_uri)
+    cmd = ['ovs-vsctl', '--timeout=%d' % timeout, '--id=@manager',
+           '--', 'create', 'Manager', 'target="%s"' % man_uri,
+           '--', 'add', 'Open_vSwitch', '.', 'manager_options', '@manager']
+    if probe:
+        cmd += ['--', 'set', 'Manager', man_uri, 'inactivity_probe=%s' % probe]
     if execute:
         return execute(cmd, **kwargs).rstrip()
     else:
@@ -38,4 +44,6 @@ def enable_connection_uri(conn_uri, execute=None, **kwargs):
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
         out, err = obj.communicate()
+        if err:
+            LOG.debug(err)  # will fail if target already exists
         return out.rstrip()
