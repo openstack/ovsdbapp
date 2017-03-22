@@ -1,0 +1,7 @@
+---
+other:
+  - |
+    ovsdbapp must get granted access to ovsdb by adding a new Manager via ovs-vsctl
+    command. The command must be executed with root privileges. An example of how to
+    create a new manager for localhost on port 6640 is as follows:
+        `sudo ovs-vsctl --id=@manager -- create Manager target=\"ptcp:6640:127.0.0.1\" -- add Open_vSwitch . manager_options @manager'

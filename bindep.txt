@@ -3,3 +3,4 @@
 
 openvswitch [platform:rpm test]
 openvswitch-switch [platform:dpkg test]
+curl [test]

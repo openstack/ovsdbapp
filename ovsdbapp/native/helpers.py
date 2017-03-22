@@ -27,6 +27,8 @@ def _connection_to_manager_uri(conn_uri):
         return 'p%s:%s' % (proto, addr)
 
 
+# TODO(jlibosva): Get rid of this runtime configuration and raise a message to
+#                 set Manager outside of ovsdbapp.
 def enable_connection_uri(conn_uri, execute=None, **kwargs):
     timeout = kwargs.get('timeout', 5)
     probe = timeout if kwargs.get('set_timeout') else None
