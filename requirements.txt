@@ -2,6 +2,6 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-ovs>=2.6.1 # Apache-2.0
+ovs>=2.7.0 # Apache-2.0
 pbr>=2.0.0 # Apache-2.0
 tenacity>=3.2.1 # Apache-2.0
