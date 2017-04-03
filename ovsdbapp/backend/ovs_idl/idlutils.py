@@ -25,8 +25,8 @@ import six
 import tenacity
 
 from ovsdbapp import api
+from ovsdbapp.backend.ovs_idl import helpers
 from ovsdbapp import exceptions
-from ovsdbapp.native import helpers
 
 
 RowLookup = collections.namedtuple('RowLookup',

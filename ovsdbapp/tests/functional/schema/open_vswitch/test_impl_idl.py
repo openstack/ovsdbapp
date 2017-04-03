@@ -14,7 +14,7 @@
 # under the License.
 
 from ovsdbapp import constants
-from ovsdbapp import impl_idl
+from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests import base
 from ovsdbapp.tests import utils
 

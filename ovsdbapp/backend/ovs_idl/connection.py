@@ -22,7 +22,7 @@ from ovs import poller
 import six
 from six.moves import queue as Queue
 
-from ovsdbapp.native import idlutils
+from ovsdbapp.backend.ovs_idl import idlutils
 
 
 class TransactionQueue(Queue.Queue, object):

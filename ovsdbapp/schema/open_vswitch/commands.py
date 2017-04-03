@@ -18,7 +18,7 @@ import logging
 import six
 
 from ovsdbapp import api
-from ovsdbapp.native import idlutils
+from ovsdbapp.backend.ovs_idl import idlutils
 
 LOG = logging.getLogger(__name__)
 
