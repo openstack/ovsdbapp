@@ -38,7 +38,7 @@ class TestingAPI(api.API):
 class TransactionTestCase(base.TestCase):
     def setUp(self):
         super(TransactionTestCase, self).setUp()
-        self.api = TestingAPI(None)
+        self.api = TestingAPI()
         mock.patch.object(FakeTransaction, 'commit').start()
 
     def test_transaction_nested(self):

@@ -56,8 +56,7 @@ class Transaction(object):
 
 @six.add_metaclass(abc.ABCMeta)
 class API(object):
-    def __init__(self, context):
-        self.context = context
+    def __init__(self):
         self._nested_txn = None
 
     @abc.abstractmethod

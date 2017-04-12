@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 
 
 class Transaction(api.Transaction):
-    def __init__(self, api, ovsdb_connection, timeout,
+    def __init__(self, api, ovsdb_connection, timeout=None,
                  check_error=False, log_errors=True):
         self.api = api
         self.check_error = check_error
@@ -34,7 +34,7 @@ class Transaction(api.Transaction):
         self.commands = []
         self.results = Queue.Queue(1)
         self.ovsdb_connection = ovsdb_connection
-        self.timeout = timeout
+        self.timeout = timeout or ovsdb_connection.timeout
 
     def __str__(self):
         return ", ".join(str(cmd) for cmd in self.commands)
