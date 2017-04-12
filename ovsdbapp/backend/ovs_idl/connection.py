@@ -125,8 +125,7 @@ class Connection(object):
         message="Use idlutils.get_schema_helper(conn, schema, retry=True)")
     def get_schema_helper(self):
         """Retrieve the schema helper object from OVSDB"""
-        return idlutils.get_schema_helper(self.connection, self.schema_name,
-                                          retry=True)
+        return idlutils.get_schema_helper(self.connection, self.schema_name)
 
     @removals.remove(
         version='Ocata', removal_version='Pike',

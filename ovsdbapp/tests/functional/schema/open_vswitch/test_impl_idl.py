@@ -25,7 +25,7 @@ from ovsdbapp.tests import utils
 
 def default_idl_factory():
     helper = idlutils.get_schema_helper(constants.DEFAULT_OVSDB_CONNECTION,
-                                        'Open_vSwitch', retry=False)
+                                        'Open_vSwitch')
     helper.register_all()
     return idl.Idl(constants.DEFAULT_OVSDB_CONNECTION, helper)
 

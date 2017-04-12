@@ -22,10 +22,8 @@ from ovs import jsonrpc
 from ovs import poller
 from ovs import stream
 import six
-import tenacity
 
 from ovsdbapp import api
-from ovsdbapp.backend.ovs_idl import helpers
 from ovsdbapp import exceptions
 
 
@@ -98,7 +96,14 @@ class ExceptionResult(object):
         self.tb = tb
 
 
-def _get_schema_helper(connection, schema_name):
+def get_schema_helper(connection, schema_name):
+    """Create a schema helper object by querying an ovsdb-server
+
+    :param connection: The ovsdb-server connection string
+    :type connection: string
+    :param schema_name: The schema on the server to pull
+    :type schema_name: string
+    """
     err, strm = stream.Stream.open_block(
         stream.Stream.open(connection))
     if err:
@@ -114,27 +119,6 @@ def _get_schema_helper(connection, schema_name):
     elif resp.error:
         raise Exception(resp.error)
     return idl.SchemaHelper(None, resp.result)
-
-
-def get_schema_helper(connection, schema_name,
-                      retry=True, try_add_manager=True):
-    try:
-        return _get_schema_helper(connection, schema_name)
-    except Exception:
-        if not retry:
-            raise
-        # We may have failed due to set-manager not being called
-        if try_add_manager:
-            helpers.enable_connection_uri(connection)
-
-        # There is a small window for a race, so retry up to a second
-        @tenacity.retry(wait=tenacity.wait_exponential(multiplier=0.01),
-                        stop=tenacity.stop_after_delay(1),
-                        reraise=True)
-        def do_get_schema_helper():
-            return _get_schema_helper(connection, schema_name)
-
-        return do_get_schema_helper()
 
 
 def wait_for_change(_idl, timeout, seqno=None):

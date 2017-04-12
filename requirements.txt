@@ -4,4 +4,3 @@
 
 ovs>=2.7.0 # Apache-2.0
 pbr!=2.1.0,>=2.0.0 # Apache-2.0
-tenacity>=3.2.1 # Apache-2.0

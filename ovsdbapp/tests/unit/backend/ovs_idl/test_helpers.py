@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ovsdbapp.backend.ovs_idl import helpers
+from ovsdbapp.schema.open_vswitch import helpers
 from ovsdbapp.tests import base
 
 
