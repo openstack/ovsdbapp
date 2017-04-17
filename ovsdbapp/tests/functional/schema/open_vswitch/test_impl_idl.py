@@ -13,22 +13,32 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from ovs.db import idl
+
+from ovsdbapp.backend.ovs_idl import connection
+from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants
 from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests import base
 from ovsdbapp.tests import utils
 
 
-class DefaultContext(object):
-    ovsdb_connection = constants.DEFAULT_OVSDB_CONNECTION
-    vsctl_timeout = constants.DEFAULT_TIMEOUT
+def default_idl_factory():
+    helper = idlutils.get_schema_helper(constants.DEFAULT_OVSDB_CONNECTION,
+                                        'Open_vSwitch', retry=False)
+    helper.register_all()
+    return idl.Idl(constants.DEFAULT_OVSDB_CONNECTION, helper)
+
+
+ovsdb_connection = connection.Connection(
+    idl_factory=default_idl_factory, timeout=constants.DEFAULT_TIMEOUT)
 
 
 class TestOvsdbIdl(base.TestCase):
 
     def setUp(self):
         super(TestOvsdbIdl, self).setUp()
-        self.api = impl_idl.OvsdbIdl(DefaultContext())
+        self.api = impl_idl.OvsdbIdl(ovsdb_connection)
         self.brname = utils.get_rand_device_name()
         # Destroying the bridge cleans up most things created by tests
         cleanup_cmd = self.api.del_br(self.brname)

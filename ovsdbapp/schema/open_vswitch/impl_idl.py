@@ -14,7 +14,6 @@
 
 import logging
 
-from ovsdbapp.backend.ovs_idl import connection
 from ovsdbapp.backend.ovs_idl import transaction
 from ovsdbapp import exceptions
 from ovsdbapp.schema.open_vswitch import api
@@ -75,19 +74,11 @@ class OvsVsctlTransaction(transaction.Transaction):
 
 class OvsdbIdl(api.API):
 
-    ovsdb_connection = None
-
-    def __init__(self, context):
-        super(OvsdbIdl, self).__init__(context)
-        # TODO(twilson) Move to idl_factory, ensure neutron adds
-        #               ovsdb_connection attribute to BaseOVS
-        if not OvsdbIdl.ovsdb_connection:
-            OvsdbIdl.ovsdb_connection = connection.Connection(
-                connection=context.ovsdb_connection,
-                timeout=context.vsctl_timeout,
-                schema_name='Open_vSwitch')
-        OvsdbIdl.ovsdb_connection.start()
-        self.idl = OvsdbIdl.ovsdb_connection.idl
+    def __init__(self, connection):
+        super(OvsdbIdl, self).__init__()
+        self.connection = connection
+        self.connection.start()
+        self.idl = self.connection.idl
 
     @property
     def _tables(self):
@@ -98,9 +89,9 @@ class OvsdbIdl(api.API):
         return list(self._tables['Open_vSwitch'].rows.values())[0]
 
     def create_transaction(self, check_error=False, log_errors=True, **kwargs):
-        return OvsVsctlTransaction(self, OvsdbIdl.ovsdb_connection,
-                                   self.context.vsctl_timeout,
-                                   check_error, log_errors)
+        return OvsVsctlTransaction(self, self.connection,
+                                   check_error=check_error,
+                                   log_errors=log_errors)
 
     def add_manager(self, connection_uri):
         return cmd.AddManagerCommand(self, connection_uri)
