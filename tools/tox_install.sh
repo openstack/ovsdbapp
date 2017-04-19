@@ -1,30 +1,52 @@
 #!/usr/bin/env bash
 
-# Client constraint file contains this client version pin that is in conflict
-# with installing the client from source. We should remove the version pin in
+# Library constraint file contains this library version pin that is in conflict
+# with installing the library from source. We should replace the version pin in
 # the constraints file before applying it for from-source installation.
 
-CONSTRAINTS_FILE=$1
-shift 1
+ZUUL_CLONER=/usr/zuul-env/bin/zuul-cloner
+BRANCH_NAME=master
+LIB_NAME=ovsdbapp
+requirements_installed=$(echo "import openstack_requirements" | python 2>/dev/null ; echo $?)
 
 set -e
 
-# NOTE(tonyb): Place this in the tox enviroment's log dir so it will get
-# published to logs.openstack.org for easy debugging.
-localfile="$VIRTUAL_ENV/log/upper-constraints.txt"
+CONSTRAINTS_FILE=$1
+shift
 
+install_cmd="pip install"
+mydir=$(mktemp -dt "$LIB_NAME-tox_install-XXXXXXX")
+trap "rm -rf $mydir" EXIT
+localfile=$mydir/upper-constraints.txt
 if [[ $CONSTRAINTS_FILE != http* ]]; then
     CONSTRAINTS_FILE=file://$CONSTRAINTS_FILE
 fi
+curl $CONSTRAINTS_FILE -k -o $localfile
+install_cmd="$install_cmd -c$localfile"
 
-curl $CONSTRAINTS_FILE --insecure --progress-bar --output $localfile
-
-pip install -c$localfile openstack-requirements
+if [ $requirements_installed -eq 0 ]; then
+    echo "Requirements already installed; using existing package"
+elif [ -x "$ZUUL_CLONER" ]; then
+    pushd $mydir
+    $ZUUL_CLONER --cache-dir \
+        /opt/git \
+        --branch $BRANCH_NAME \
+        git://git.openstack.org \
+        openstack/requirements
+    cd openstack/requirements
+    $install_cmd -e .
+    popd
+else
+    if [ -z "$REQUIREMENTS_PIP_LOCATION" ]; then
+        REQUIREMENTS_PIP_LOCATION="git+https://git.openstack.org/openstack/requirements@$BRANCH_NAME#egg=requirements"
+    fi
+    $install_cmd -U -e ${REQUIREMENTS_PIP_LOCATION}
+fi
 
 # This is the main purpose of the script: Allow local installation of
 # the current repo. It is listed in constraints file and thus any
 # install will be constrained and we need to unconstrain it.
-edit-constraints $localfile -- $CLIENT_NAME
+edit-constraints $localfile -- $LIB_NAME "-e file://$PWD#egg=$LIB_NAME"
 
-pip install -c$localfile -U $*
+$install_cmd -U $*
 exit $?
