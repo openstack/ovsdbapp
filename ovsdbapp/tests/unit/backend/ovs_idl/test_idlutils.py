@@ -144,7 +144,8 @@ class TestIdlUtils(base.TestCase):
         obj = MockCommand("test")
         self.assertEqual("test", idlutils.db_replace_record(obj))
 
-    def test_row_by_record(self):
+    @mock.patch('sys.platform', 'linux2')
+    def test_row_by_record_linux(self):
         FAKE_RECORD = 'fake_record'
         mock_idl_ = mock.MagicMock()
         mock_table = mock.MagicMock(
@@ -154,4 +155,17 @@ class TestIdlUtils(base.TestCase):
         res = idlutils.row_by_record(mock_idl_,
                                      mock.sentinel.table_name,
                                      FAKE_RECORD)
+        self.assertEqual(mock.sentinel.row_value, res)
+
+    @mock.patch('sys.platform', 'win32')
+    def test_row_by_record_win(self):
+        FAKE_RECORD_GUID = '7b0f349d-5524-4d36-afff-5222b9fdee8c'
+        mock_idl_ = mock.MagicMock()
+        mock_table = mock.MagicMock(
+            rows={mock.sentinel.row: mock.sentinel.row_value})
+        mock_idl_.tables = {mock.sentinel.table_name: mock_table}
+
+        res = idlutils.row_by_record(mock_idl_,
+                                     mock.sentinel.table_name,
+                                     FAKE_RECORD_GUID)
         self.assertEqual(mock.sentinel.row_value, res)
