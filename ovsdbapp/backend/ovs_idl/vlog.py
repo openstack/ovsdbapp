@@ -14,8 +14,17 @@
 
 import collections
 import logging
+import sys
 
 from ovs import vlog
+
+try:
+    from eventlet import patcher
+    # If eventlet is installed and the 'thread' module is patched, we will
+    # skip setting up the python logger on Windows.
+    EVENTLET_NONBLOCKING_MODE_ENABLED = patcher.is_monkey_patched('thread')
+except ImportError:
+    EVENTLET_NONBLOCKING_MODE_ENABLED = False
 
 _LOG = logging.getLogger(__name__)
 
@@ -54,6 +63,16 @@ def use_python_logger(levels=ALL_LEVELS, max_level=None):
     :param: max_level: the maximum level to log
     :type: max_level: vlog level, CRITICAL, ERROR, WARN, INFO, or DEBUG
     """
+    if sys.platform == 'win32' and EVENTLET_NONBLOCKING_MODE_ENABLED:
+        # NOTE(abalutoiu) When using oslo logging we need to keep in mind that
+        # it does not work well with native threads. We need to be careful when
+        # we call eventlet.tpool.execute, and make sure that it will not use
+        # the oslo logging, since it might cause unexpected hangs if
+        # greenthreads are used. On Windows we have to use
+        # eventlet.tpool.execute for a call to the ovs lib which will use
+        # vlog to log messages. We will skip replacing the OVS IDL logger
+        # functions on Windows to avoid unexpected hangs with oslo logging
+        return
 
     if max_level:
         levels = levels[:levels.index(max_level) + 1]

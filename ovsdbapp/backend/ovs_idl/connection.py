@@ -18,37 +18,37 @@ import traceback
 
 from ovs.db import idl
 from ovs import poller
-import six
 from six.moves import queue as Queue
 
 from ovsdbapp.backend.ovs_idl import idlutils
+
+if os.name == 'nt':
+    from ovsdbapp.backend.ovs_idl.windows import connection_utils
+else:
+    from ovsdbapp.backend.ovs_idl.linux import connection_utils
 
 
 class TransactionQueue(Queue.Queue, object):
     def __init__(self, *args, **kwargs):
         super(TransactionQueue, self).__init__(*args, **kwargs)
-        alertpipe = os.pipe()
-        # NOTE(ivasilevskaya) python 3 doesn't allow unbuffered I/O. Will get
-        # around this constraint by using binary mode.
-        self.alertin = os.fdopen(alertpipe[0], 'rb', 0)
-        self.alertout = os.fdopen(alertpipe[1], 'wb', 0)
+        self._wait_queue = connection_utils.WaitQueue(
+            max_queue_size=self.maxsize)
 
     def get_nowait(self, *args, **kwargs):
         try:
             result = super(TransactionQueue, self).get_nowait(*args, **kwargs)
         except Queue.Empty:
             return None
-        self.alertin.read(1)
+        self._wait_queue.alert_notification_consume()
         return result
 
     def put(self, *args, **kwargs):
         super(TransactionQueue, self).put(*args, **kwargs)
-        self.alertout.write(six.b('X'))
-        self.alertout.flush()
+        self._wait_queue.alert_notify()
 
     @property
     def alert_fileno(self):
-        return self.alertin.fileno()
+        return self._wait_queue.alert_fileno
 
 
 class Connection(object):
