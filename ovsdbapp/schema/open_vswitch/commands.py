@@ -17,39 +17,12 @@ import logging
 
 import six
 
-from ovsdbapp import api
+from ovsdbapp.backend.ovs_idl import command
 from ovsdbapp.backend.ovs_idl import idlutils
 
 LOG = logging.getLogger(__name__)
 
-
-class BaseCommand(api.Command):
-    def __init__(self, api):
-        self.api = api
-        self.result = None
-
-    def execute(self, check_error=False, log_errors=True):
-        try:
-            with self.api.transaction(check_error, log_errors) as txn:
-                txn.add(self)
-            return self.result
-        except Exception:
-            if log_errors:
-                LOG.exception("Error executing command")
-            if check_error:
-                raise
-
-    def post_commit(self, txn):
-        pass
-
-    def __str__(self):
-        command_info = self.__dict__
-        return "%s(%s)" % (
-            self.__class__.__name__,
-            ", ".join("%s=%s" % (k, v) for k, v in command_info.items()
-                      if k not in ['api', 'result']))
-
-    __repr__ = __str__
+BaseCommand = command.BaseCommand
 
 
 class AddManagerCommand(BaseCommand):
