@@ -37,6 +37,7 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
+.testrepository
 .coverage
 .coverage.*
 .cache
@@ -90,3 +91,8 @@ ENV/
 
 # PyCharm settings
 .idea
+
+# Editors
+*~
+.*.swp
+.*sw?
