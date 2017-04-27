@@ -13,9 +13,8 @@
 #    under the License.
 
 import mock
-import time
+import threading
 
-from ovs.db import idl
 from ovs import poller
 
 from ovsdbapp.backend.ovs_idl import connection
@@ -26,57 +25,36 @@ from ovsdbapp.tests import base
 class TestOVSNativeConnection(base.TestCase):
 
     @mock.patch.object(connection, 'TransactionQueue')
-    @mock.patch.object(idlutils, 'get_schema_helper')
-    @mock.patch.object(idl, 'Idl')
+    def setUp(self, mock_trans_queue):
+        super(TestOVSNativeConnection, self).setUp()
+        self.idl_factory = mock.Mock()
+        self.mock_trans_queue = mock_trans_queue
+        self.conn = connection.Connection(self.idl_factory,
+                                          timeout=1)
+        self.mock_trans_queue.assert_called_once_with(1)
+
+    @mock.patch.object(threading, 'Thread')
+    @mock.patch.object(poller, 'Poller')
     @mock.patch.object(idlutils, 'wait_for_change')
-    def _test_start(self, wfc, idl, gsh, tq, table_name_list=None):
-        gsh.return_value = helper = mock.Mock()
-        self.connection = connection.Connection(
-            mock.Mock(), mock.Mock(), mock.Mock())
-        with mock.patch.object(poller, 'Poller') as poller_mock,\
-                mock.patch('threading.Thread'):
-            poller_mock.return_value.block.side_effect = time.sleep
-            self.connection.start(table_name_list=table_name_list)
-        reg_all_called = table_name_list is None
-        reg_table_called = table_name_list is not None
-        self.assertEqual(reg_all_called, helper.register_all.called)
-        self.assertEqual(reg_table_called, helper.register_table.called)
+    def test_start(self, mock_wait_for_change, mock_poller, mock_thread):
+        self.conn.start()
 
-    def test_start_without_table_name_list(self):
-        self._test_start()
+        self.idl_factory.assert_called_once_with()
+        mock_wait_for_change.assert_called_once_with(self.conn.idl,
+                                                     self.conn.timeout)
+        mock_poller.assert_called_once_with()
+        mock_thread.assert_called_once_with(target=self.conn.run)
+        mock_thread.return_value.setDaemon.assert_called_once_with(True)
+        mock_thread.return_value.start.assert_called_once_with()
 
-    def test_start_with_table_name_list(self):
-        self._test_start(table_name_list=['fake-table1', 'fake-table2'])
+    def test_queue_txn(self):
+        self.conn.queue_txn('blah')
+        self.conn.txns.put.assert_called_once_with('blah')
 
-    @mock.patch.object(connection, 'TransactionQueue')
-    @mock.patch.object(idl, 'Idl')
-    @mock.patch.object(idlutils, 'wait_for_change')
-    def test_start_call_graph(self, wait_for_change, idl, transaction_queue):
-        self.connection = connection.Connection(
-            mock.sentinel, mock.sentinel, mock.sentinel)
-        self.connection.get_schema_helper = mock.Mock()
-        helper = self.connection.get_schema_helper.return_value
-        self.connection.update_schema_helper = mock.Mock()
-        with mock.patch.object(poller, 'Poller') as poller_mock,\
-                mock.patch('threading.Thread'):
-            poller_mock.return_value.block.side_effect = time.sleep
-            self.connection.start()
-        self.connection.get_schema_helper.assert_called_once_with()
-        self.connection.update_schema_helper.assert_called_once_with(helper)
 
-    def test_transaction_queue_init(self):
+class TestTransactionQueue(base.TestCase):
+
+    def test_init(self):
         # a test to cover py34 failure during initialization (LP Bug #1580270)
         # make sure no ValueError: can't have unbuffered text I/O is raised
         connection.TransactionQueue()
-
-    @mock.patch.object(connection, 'TransactionQueue')
-    @mock.patch.object(idlutils, 'get_schema_helper')
-    @mock.patch.object(idlutils, 'wait_for_change')
-    def test_start_with_idl_class(self, wait_for_change, get_schema_helper,
-                                  transaction_queue):
-        idl_class = mock.Mock()
-        self.connection = connection.Connection(
-            mock.sentinel, mock.sentinel, mock.sentinel, idl_class=idl_class)
-        idl_instance = idl_class.return_value
-        self.connection.start()
-        self.assertEqual(idl_instance, self.connection.idl)

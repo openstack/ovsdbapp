@@ -16,8 +16,6 @@ import os
 import threading
 import traceback
 
-from debtcollector import removals
-from ovs.db import idl
 from ovs import poller
 import six
 from six.moves import queue as Queue
@@ -53,62 +51,21 @@ class TransactionQueue(Queue.Queue, object):
 
 
 class Connection(object):
-    __rm_args = {'version': 'Ocata', 'removal_version': 'Pike',
-                 'message': 'Use an idl_factory function instead'}
 
-    @removals.removed_kwarg('connection', **__rm_args)
-    @removals.removed_kwarg('schema_name', **__rm_args)
-    @removals.removed_kwarg('idl_class', **__rm_args)
-    def __init__(self, connection=None, timeout=None, schema_name=None,
-                 idl_class=None, idl_factory=None):
+    def __init__(self, idl_factory, timeout):
         """Create a connection to an OVSDB server using the OVS IDL
 
-        :param connection: (deprecated) An OVSDB connection string
-        :param timeout: The timeout value for OVSDB operations (required)
-        :param schema_name: (deprecated) The name ovs the OVSDB schema to use
-        :param idl_class: (deprecated) An Idl subclass. Defaults to idl.Idl
+        :param timeout: The timeout value for OVSDB operations
         :param idl_factory: A factory function that produces an Idl instance
-
-        The signature of this class is changing. It is recommended to pass in
-        a timeout and idl_factory
         """
-        assert timeout is not None
         self.idl = None
         self.timeout = timeout
         self.txns = TransactionQueue(1)
         self.lock = threading.Lock()
-        if idl_factory:
-            if connection or schema_name:
-                raise TypeError('Connection: Takes either idl_factory, or '
-                                'connection and schema_name. Both given')
-            self.idl_factory = idl_factory
-        else:
-            if not connection or not schema_name:
-                raise TypeError('Connection: Takes either idl_factory, or '
-                                'connection and schema_name. Neither given')
-            self.idl_factory = self._idl_factory
-            self.connection = connection
-            self.schema_name = schema_name
-            self.idl_class = idl_class or idl.Idl
-            self._schema_filter = None
+        self.idl_factory = idl_factory
 
-    @removals.remove(**__rm_args)
-    def _idl_factory(self):
-        helper = self.get_schema_helper()
-        self.update_schema_helper(helper)
-        return self.idl_class(self.connection, helper)
-
-    @removals.removed_kwarg('table_name_list', **__rm_args)
-    def start(self, table_name_list=None):
-        """Start the connection.
-
-        :param table_name_list: A list of table names for schema_helper to
-                register. When this parameter is given, schema_helper will only
-                register tables which name are in list. Otherwise,
-                schema_helper will register all tables for given schema_name as
-                default.
-        """
-        self._schema_filter = table_name_list
+    def start(self):
+        """Start the connection."""
         with self.lock:
             if self.idl is not None:
                 return
@@ -119,23 +76,6 @@ class Connection(object):
             self.thread = threading.Thread(target=self.run)
             self.thread.setDaemon(True)
             self.thread.start()
-
-    @removals.remove(
-        version='Ocata', removal_version='Pike',
-        message="Use idlutils.get_schema_helper(conn, schema, retry=True)")
-    def get_schema_helper(self):
-        """Retrieve the schema helper object from OVSDB"""
-        return idlutils.get_schema_helper(self.connection, self.schema_name)
-
-    @removals.remove(
-        version='Ocata', removal_version='Pike',
-        message="Use an idl_factory and ovs.db.SchemaHelper for filtering")
-    def update_schema_helper(self, helper):
-        if self._schema_filter:
-            for table_name in self._schema_filter:
-                helper.register_table(table_name)
-        else:
-            helper.register_all()
 
     def run(self):
         while True:
