@@ -13,25 +13,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ovs.db import idl
-
 from ovsdbapp.backend.ovs_idl import connection
-from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants
 from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests import base
 from ovsdbapp.tests import utils
 
-
-def default_idl_factory():
-    helper = idlutils.get_schema_helper(constants.DEFAULT_OVSDB_CONNECTION,
-                                        'Open_vSwitch')
-    helper.register_all()
-    return idl.Idl(constants.DEFAULT_OVSDB_CONNECTION, helper)
-
-
 ovsdb_connection = connection.Connection(
-    idl_factory=default_idl_factory, timeout=constants.DEFAULT_TIMEOUT)
+    idl=connection.OvsdbIdl.from_server(
+        constants.DEFAULT_OVSDB_CONNECTION, 'Open_vSwitch'),
+    timeout=constants.DEFAULT_TIMEOUT)
 
 
 class TestOvsdbIdl(base.TestCase):

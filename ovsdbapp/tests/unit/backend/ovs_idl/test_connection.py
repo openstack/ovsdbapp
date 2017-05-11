@@ -27,19 +27,18 @@ class TestOVSNativeConnection(base.TestCase):
     @mock.patch.object(connection, 'TransactionQueue')
     def setUp(self, mock_trans_queue):
         super(TestOVSNativeConnection, self).setUp()
-        self.idl_factory = mock.Mock()
+        self.idl = mock.Mock()
         self.mock_trans_queue = mock_trans_queue
-        self.conn = connection.Connection(self.idl_factory,
-                                          timeout=1)
+        self.conn = connection.Connection(self.idl, timeout=1)
         self.mock_trans_queue.assert_called_once_with(1)
 
     @mock.patch.object(threading, 'Thread')
     @mock.patch.object(poller, 'Poller')
     @mock.patch.object(idlutils, 'wait_for_change')
     def test_start(self, mock_wait_for_change, mock_poller, mock_thread):
+        self.idl.has_ever_connected.return_value = False
         self.conn.start()
-
-        self.idl_factory.assert_called_once_with()
+        self.idl.has_ever_connected.assert_called_once()
         mock_wait_for_change.assert_called_once_with(self.conn.idl,
                                                      self.conn.timeout)
         mock_poller.assert_called_once_with()

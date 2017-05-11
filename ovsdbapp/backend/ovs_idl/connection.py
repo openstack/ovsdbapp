@@ -16,6 +16,7 @@ import os
 import threading
 import traceback
 
+from ovs.db import idl
 from ovs import poller
 import six
 from six.moves import queue as Queue
@@ -52,26 +53,30 @@ class TransactionQueue(Queue.Queue, object):
 
 class Connection(object):
 
-    def __init__(self, idl_factory, timeout):
+    def __init__(self, idl, timeout):
         """Create a connection to an OVSDB server using the OVS IDL
 
         :param timeout: The timeout value for OVSDB operations
-        :param idl_factory: A factory function that produces an Idl instance
+        :param idl: A newly created ovs.db.Idl instance (run never called)
         """
-        self.idl = None
         self.timeout = timeout
         self.txns = TransactionQueue(1)
         self.lock = threading.Lock()
-        self.idl_factory = idl_factory
+        self.idl = idl
+        self.thread = None
 
     def start(self):
         """Start the connection."""
         with self.lock:
-            if self.idl is not None:
-                return
-
-            self.idl = self.idl_factory()
-            idlutils.wait_for_change(self.idl, self.timeout)
+            if self.thread is not None:
+                return False
+            if not self.idl.has_ever_connected():
+                idlutils.wait_for_change(self.idl, self.timeout)
+                try:
+                    self.idl.post_connect()
+                except AttributeError:
+                    # An ovs.db.Idl class has no post_connect
+                    pass
             self.poller = poller.Poller()
             self.thread = threading.Thread(target=self.run)
             self.thread.setDaemon(True)
@@ -98,3 +103,19 @@ class Connection(object):
 
     def queue_txn(self, txn):
         self.txns.put(txn)
+
+
+class OvsdbIdl(idl.Idl):
+    @classmethod
+    def from_server(cls, connection_string, schema_name):
+        """Create the Idl instance by pulling the schema from OVSDB server"""
+        helper = idlutils.get_schema_helper(connection_string, schema_name)
+        helper.register_all()
+        return cls(connection_string, helper)
+
+    def post_connect(self):
+        """Operations to execute after the Idl has connected to the server
+
+        An example would be to set up Idl notification handling for watching
+        and unwatching certain OVSDB change events
+        """
