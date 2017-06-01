@@ -35,6 +35,9 @@ class TestingAPI(api.API):
         return FakeTransaction()
 
 
+TestingAPI.__abstractmethods__ = set()
+
+
 class TransactionTestCase(base.TestCase):
     def setUp(self):
         super(TransactionTestCase, self).setUp()

@@ -14,6 +14,7 @@
 
 import logging
 
+from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import transaction
 from ovsdbapp import exceptions
 from ovsdbapp.schema.open_vswitch import api
@@ -72,8 +73,7 @@ class OvsVsctlTransaction(transaction.Transaction):
         return self.api._ovs.cur_cfg >= next_cfg
 
 
-class OvsdbIdl(api.API):
-
+class OvsdbIdl(ovs_idl.Backend, api.API):
     def __init__(self, connection):
         super(OvsdbIdl, self).__init__()
         self.connection = connection
@@ -125,30 +125,6 @@ class OvsdbIdl(api.API):
 
     def br_set_external_id(self, name, field, value):
         return cmd.BrSetExternalIdCommand(self, name, field, value)
-
-    def db_create(self, table, **col_values):
-        return cmd.DbCreateCommand(self, table, **col_values)
-
-    def db_destroy(self, table, record):
-        return cmd.DbDestroyCommand(self, table, record)
-
-    def db_set(self, table, record, *col_values):
-        return cmd.DbSetCommand(self, table, record, *col_values)
-
-    def db_add(self, table, record, column, *values):
-        return cmd.DbAddCommand(self, table, record, column, *values)
-
-    def db_clear(self, table, record, column):
-        return cmd.DbClearCommand(self, table, record, column)
-
-    def db_get(self, table, record, column):
-        return cmd.DbGetCommand(self, table, record, column)
-
-    def db_list(self, table, records=None, columns=None, if_exists=False):
-        return cmd.DbListCommand(self, table, records, columns, if_exists)
-
-    def db_find(self, table, *conditions, **kwargs):
-        return cmd.DbFindCommand(self, table, *conditions, **kwargs)
 
     def set_controller(self, bridge, controllers):
         return cmd.SetControllerCommand(self, bridge, controllers)
