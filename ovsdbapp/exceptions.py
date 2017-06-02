@@ -15,7 +15,7 @@
 import six
 
 
-class OvsdbAppException(Exception):
+class OvsdbAppException(RuntimeError):
     """Base OvsdbApp Exception.
 
     To correctly use this class, inherit from it and define
@@ -52,3 +52,10 @@ class OvsdbAppException(Exception):
 
 class TimeoutException(OvsdbAppException):
     message = "Commands %(commands)s exceeded timeout %(timeout)d seconds"
+
+
+class OvsdbConnectionUnavailable(OvsdbAppException):
+    message = ("OVS database connection to %(db_schema)s failed with error: "
+               "'%(error)s'. Verify that the OVS and OVN services are "
+               "available and that the 'ovn_nb_connection' and "
+               "'ovn_sb_connection' configuration options are correct.")

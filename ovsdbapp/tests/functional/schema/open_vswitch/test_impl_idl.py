@@ -13,23 +13,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ovsdbapp.backend.ovs_idl import connection
-from ovsdbapp import constants
 from ovsdbapp.schema.open_vswitch import impl_idl
-from ovsdbapp.tests import base
+from ovsdbapp.tests.functional import base
 from ovsdbapp.tests import utils
 
-ovsdb_connection = connection.Connection(
-    idl=connection.OvsdbIdl.from_server(
-        constants.DEFAULT_OVSDB_CONNECTION, 'Open_vSwitch'),
-    timeout=constants.DEFAULT_TIMEOUT)
 
-
-class TestOvsdbIdl(base.TestCase):
+class TestOvsdbIdl(base.FunctionalTestCase):
+    schema = "Open_vSwitch"
 
     def setUp(self):
         super(TestOvsdbIdl, self).setUp()
-        self.api = impl_idl.OvsdbIdl(ovsdb_connection)
+        self.api = impl_idl.OvsdbIdl(self.connection)
         self.brname = utils.get_rand_device_name()
         # Destroying the bridge cleans up most things created by tests
         cleanup_cmd = self.api.del_br(self.brname)
