@@ -177,7 +177,11 @@ def condition_match(row, condition):
 
     # both match and val are primitive types, so type can be used for type
     # equality here.
-    if type(match) is not type(val):
+    # NOTE (twilson) the above is a lie--not all string types are the same
+    #                I haven't investigated the reason for the patch that
+    #                added this code, but for now I check string_types
+    if type(match) is not type(val) and not all(
+        isinstance(x, six.string_types) for x in (match, val)):
         # Types of 'val' and 'match' arguments MUST match in all cases with 2
         # exceptions:
         # - 'match' is an empty list and column's type is optional;
