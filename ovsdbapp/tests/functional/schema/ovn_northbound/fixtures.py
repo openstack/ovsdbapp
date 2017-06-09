@@ -53,3 +53,9 @@ class LogicalRouterFixture(ImplIdlFixture):
     api = impl_idl.OvnNbApiIdlImpl
     create = 'lr_add'
     delete = 'lr_del'
+
+
+class LoadBalancerFixture(ImplIdlFixture):
+    api = impl_idl.OvnNbApiIdlImpl
+    create = 'lb_add'
+    delete = 'lb_del'

@@ -70,6 +70,9 @@ class Backend(object):
             raise
 
     def _lookup(self, table, record):
+        if record == "":
+            raise TypeError("Cannot look up record by empty string")
+
         t = self.tables[table]
         try:
             if isinstance(record, uuid.UUID):

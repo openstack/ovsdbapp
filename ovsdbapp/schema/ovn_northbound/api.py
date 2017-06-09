@@ -15,6 +15,7 @@ import abc
 import six
 
 from ovsdbapp import api
+from ovsdbapp import constants as const
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -288,6 +289,304 @@ class API(api.API):
         :param dhcp_options_uuid: The uuid of the dhcp_options row
         :type dhcp_options_uuid:  uuid.UUID
         :returns:                 :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lr_add(self, router=None, may_exist=False, **columns):
+        """Create a logical router named `router`
+
+        :param router:    The optional name or uuid of the router
+        :type router:     string or uuid.UUID
+        :param may_exist: If True, don't fail if the router already exists
+        :type may_exist:  boolean
+        :param **columns: Additional columns to directly set on the router
+        :returns:         :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def lr_del(self, router, if_exists=False):
+        """Delete 'router' and all its ports
+
+        :param router: The name or uuid of the router
+        :type router:  string or uuid.UUID
+        :param if_exists: If True, don't fail if the router doesn't exist
+        :type if_exists: boolean
+        :returns:        :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lr_list(self):
+        """Get the UUIDs of all logical routers
+
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def lrp_add(self, router, port, mac, networks, peer=None, may_exist=False,
+                **columns):
+        """Add logical port 'port' on 'router'
+
+        :param router:    The name or uuid of the router to attach the port
+        :type router:     string or uuid.UUID
+        :param mac:       The MAC address of the port
+        :type mac:        string
+        :param networks:  One or more IP address/netmask to assign to the port
+        :type networks:   list of strings
+        :param peer:      Optional logical router port connected to this one
+        :param may_exist: If True, don't fail if the port already exists
+        :type may_exist:  boolean
+        :param **columns: Additional column values to directly set on the port
+        :returns:         :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def lrp_del(self, port, router=None, if_exists=None):
+        """Delete 'port' from its attached router
+
+        :param port:      The name or uuid of the port
+        :type port:       string or uuid.UUID
+        :param router:    Only delete router if attached to `router`
+        :type router:     string or uuiwhd.UUID
+        :param if_exists: If True, don't fail if the port doesn't exist
+        :type if_exists:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lrp_list(self, router):
+        """Get the UUIDs of all ports on 'router'
+
+        :param router: The name or uuid of the router
+        :type router:  string or uuid.UUID
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def lrp_set_enabled(self, port, is_enabled):
+        """Set administrative state of 'port'
+
+        :param port:       The name or uuid of the port
+        :type port:        string or uuid.UUID
+        :param is_enabled: True for enabled, False for disabled
+        :type is_enabled:  boolean
+        :returns:          :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lrp_get_enabled(self, port):
+        """Get administrative state of 'port'
+
+        :param port: The name or uuid of the port
+        :type port:  string or uuid.UUID
+        :returns:
+        """
+
+    @abc.abstractmethod
+    def lr_route_add(self, router, prefix, nexthop, port=None,
+                     policy='dst-ip', may_exist=False):
+        """Add a route to 'router'
+
+        :param router:    The name or uuid of the router
+        :type router:     string or uuid.UUID
+        :param prefix:    an IPv4/6 prefix for this route, e.g. 192.168.1.0/24
+        :type prefix:     type string
+        :parm nexthop:    The gateway to use for this route, which should be
+                          the IP address of one of `router`'s logical router
+                          ports or the IP address of a logical port
+        :type nexthop:    string
+        :param port:      If specified, packets that match this route will be
+                          sent out this port. Otherwise OVN infers the output
+                          port based on nexthop.
+        :type port:       string
+        :param policy:    the policy used to make routing decisions
+        :type policy:     string, 'dst-ip' or 'src-ip'
+        :param may_exist: If True, don't fail if the route already exists
+        :type may_exist:  boolean
+        returns:          :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def lr_route_del(self, router, prefix=None, if_exists=False):
+        """Remove routes from 'router'
+
+        :param router:    The name or uuid of the router
+        :type router:     string or uuid.UUID
+        :param prefix:    an IPv4/6 prefix to match, e.g. 192.168.1.0/24
+        :type prefix:     type string
+        :param if_exists: If True, don't fail if the port doesn't exist
+        :type if_exists:  boolean
+        :returns:        :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lr_route_list(self, router):
+        """Get the UUIDs of static logical routes from 'router'
+
+        :param router: The name or uuid of the router
+        :type router:  string or uuid.UUID
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def lr_nat_add(self, router, nat_type, external_ip, logical_ip,
+                   logical_port=None, external_mac=None, may_exist=False):
+        """Add a NAT to 'router'
+
+        :param router:       The name or uuid of the router
+        :type router:        string or uuid.UUID
+        :param nat_type:     The type of NAT to be done
+        :type nat_type:      NAT_SNAT, NAT_DNAT, or NAT_BOTH
+        :param external_ip:  Externally visible Ipv4 address
+        :type external_ip:   string
+        :param logical_ip:   The logical IPv4 network or address with which
+                             `external_ip` is NATted
+        :type logical_ip:    string
+        :param logical_port: The name of an existing logical switch port where
+                             the logical_ip resides
+        :type logical_port:  string
+        :param external_mac: ARP  replies for the external_ip return the value
+                             of `external_mac`. Packets transmitted with
+                             source IP address equal to `external_ip` will be
+                             sent using `external_mac`.
+        :type external_mac:  string
+        :param may_exist:    If True, don't fail if the route already exists
+                             and if `logical_port` and `external_mac` are
+                             specified, they will be updated
+        :type may_exist:  boolean
+        :returns:      :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def lr_nat_del(self, router, nat_type=None, match_ip=None, if_exists=None):
+        """Remove NATs from 'router'
+
+        :param router:     The name or uuid of the router
+        :type router:      string or uuid.UUID
+        :param nat_type:   The type of NAT to match
+        :type nat_type:    NAT_SNAT, NAT_DNAT, or NAT_BOTH
+        :param match_ip:   The IPv4 address to match on. If
+                            `nat_type` is specified and is NAT_SNAT, the IP
+                           should be the logical ip, otherwise the IP should
+                           be the external IP.
+        :type match_ip:    string
+        :param if_exists:  If True, don't fail if the port doesn't exist
+        :type if_exists:   boolean
+        :returns:          :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lr_nat_list(self, router):
+        """Get the NATs on 'router'
+
+        :param router: The name or uuid of the router
+        :type router:  string or uuid.UUID
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def lb_add(self, vip, ips, protocol=const.PROTO_TCP, may_exist=False):
+        """Create a load-balancer or add a VIP to an existing load balancer
+
+        :param lb:        The name or uuid of the load-balancer
+        :type lb:         string or uuid.UUID
+        :param vip:       A virtual IP in the format IP[:PORT]
+        :type vip:        string
+        :param ips:       A list of ips in the form IP[:PORT]
+        :type ips:        string
+        :param protocol:  The IP protocol for load balancing
+        :type protocol:   PROTO_TCP or PROTO_UDP
+        :param may_exist: If True, don't fail if a LB w/ `vip` exists, and
+                          instead, replace the vips on the LB
+        :type may_exist:  boolean
+        :returns:        :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def lb_del(self, lb, vip=None, if_exists=False):
+        """Remove a load balancer or just the VIP from a load balancer
+
+        :param lb:        The name or uuid of a load balancer
+        :type lb:         string or uuid.UUID
+        :param vip:       The VIP on the load balancer to match
+        :type:            string
+        :param if_exists: If True, don't fail if the port doesn't exist
+        :type if_exists:  boolean
+        """
+
+    @abc.abstractmethod
+    def lb_list(self):
+        """Get the UUIDs of all load balanacers"""
+
+    @abc.abstractmethod
+    def lr_lb_add(self, router, lb, may_exist=False):
+        """Add a load-balancer to 'router'
+
+        :param router:    The name or uuid of the router
+        :type router:     string or uuid.UUID
+        :param lb:        The name or uuid of the load balancer
+        :type lb:         string or uuid.UUID
+        :param may_exist: If True, don't fail if lb already assigned to lr
+        :type may_exist:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lr_lb_del(self, router, lb=None, if_exists=False):
+        """Remove load-balancers from 'router'
+
+        :param router:   The name or uuid of the router
+        :type router:    string or uuid.UUID
+        :param lb:       The name or uuid of the load balancer to remove. None
+                         to remove all load balancers from the router
+        :type lb:        string or uuid.UUID
+        :type if_exists: If True, don't fail if the switch doesn't exist
+        :type if_exists: boolean
+        :returns:        :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lr_lb_list(self, router):
+        """Get UUIDs of load-balancers on 'router'
+
+        :param router: The name or uuid of the router
+        :type router:  string or uuid.UUID
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def ls_lb_add(self, switch, lb, may_exist=False):
+        """Add a load-balancer to 'switch'
+
+        :param switch:    The name or uuid of the switch
+        :type switch:     string or uuid.UUID
+        :param lb:        The name or uuid of the load balancer
+        :type lb:         string or uuid.UUID
+        :param may_exist: If True, don't fail if lb already assigned to lr
+        :type may_exist:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def ls_lb_del(self, switch, lb=None, if_exists=False):
+        """Remove load-balancers from 'switch'
+
+        :param switch:   The name or uuid of the switch
+        :type switch:    string or uuid.UUID
+        :param lb:       The name or uuid of the load balancer to remove. None
+                         to remove all load balancers from the switch
+        :type lb:        string or uuid.UUID
+        :type if_exists: If True, don't fail if the switch doesn't exist
+        :type if_exists: boolean
+        :returns:        :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def ls_lb_list(self, switch):
+        """Get UUIDs of load-balancers on 'switch'
+
+        :param switch: The name or uuid of the switch
+        :type switch:  string or uuid.UUID
+        :returns:      :class:`Command` with RowView list result
         """
 
     @abc.abstractmethod
