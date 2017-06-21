@@ -38,13 +38,33 @@ class TestOvsdbVlog(base.TestCase):
             self.assertTrue(vlog.is_patched(lvl))
         self.assertFalse(vlog.is_patched(removed_level))
 
-    def test_vlog_max_level(self):
+    def _test_vlog_max_level_helper(self, max_level, patched_levels,
+                                    unpatched_levels):
         vlog.reset_logger()
-        max_level = vlog.WARN
         vlog.use_python_logger(max_level=max_level)
-        patched_levels = (vlog.CRITICAL, vlog.ERROR, vlog.WARN)
-        unpatched_levels = (vlog.INFO, vlog.DEBUG)
         for lvl in patched_levels:
             self.assertTrue(vlog.is_patched(lvl))
         for lvl in unpatched_levels:
             self.assertFalse(vlog.is_patched(lvl))
+
+    def test_vlog_max_level_WARN(self):
+        max_level = vlog.WARN
+        patched_levels = (vlog.CRITICAL, vlog.ERROR, vlog.WARN)
+        unpatched_levels = (vlog.INFO, vlog.DEBUG)
+        self._test_vlog_max_level_helper(
+            max_level, patched_levels, unpatched_levels)
+
+    def test_vlog_max_level_CRITICAL(self):
+        max_level = vlog.CRITICAL
+        patched_levels = (vlog.CRITICAL,)
+        unpatched_levels = (vlog.ERROR, vlog.WARN, vlog.INFO, vlog.DEBUG)
+        self._test_vlog_max_level_helper(
+            max_level, patched_levels, unpatched_levels)
+
+    def test_vlog_max_level_DEBUG(self):
+        max_level = vlog.DEBUG
+        patched_levels = (vlog.CRITICAL, vlog.ERROR, vlog.WARN, vlog.INFO,
+                          vlog.DEBUG)
+        unpatched_levels = ()
+        self._test_vlog_max_level_helper(
+            max_level, patched_levels, unpatched_levels)

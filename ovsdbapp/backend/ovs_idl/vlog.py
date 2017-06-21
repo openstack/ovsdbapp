@@ -56,7 +56,7 @@ def use_python_logger(levels=ALL_LEVELS, max_level=None):
     """
 
     if max_level:
-        levels = levels[:-levels.index(max_level)]
+        levels = levels[:levels.index(max_level) + 1]
 
     # NOTE(twilson) Replace functions directly instead of subclassing so that
     # debug messages contain the correct function/filename/line information
