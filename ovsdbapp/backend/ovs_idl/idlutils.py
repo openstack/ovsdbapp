@@ -156,7 +156,7 @@ def get_column_value(row, col):
         val = getattr(row, col)
 
     # Idl returns lists of Rows where ovs-vsctl returns lists of UUIDs
-    if isinstance(val, list) and len(val):
+    if isinstance(val, list) and val:
         if isinstance(val[0], idl.Row):
             val = [v.uuid for v in val]
         col_type = row._table.columns[col].type
@@ -205,7 +205,7 @@ def condition_match(row, condition):
     if isinstance(match, dict):
         for key in match:
             if op == '=':
-                if (key not in val or match[key] != val[key]):
+                if key not in val or match[key] != val[key]:
                     matched = False
                     break
             elif op == '!=':
