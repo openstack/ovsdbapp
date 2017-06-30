@@ -23,8 +23,7 @@ def _connection_to_manager_uri(conn_uri):
     if ':' in addr:
         ip, port = addr.split(':', 1)
         return 'p%s:%s:%s' % (proto, port, ip)
-    else:
-        return 'p%s:%s' % (proto, addr)
+    return 'p%s:%s' % (proto, addr)
 
 
 # TODO(jlibosva): Get rid of this runtime configuration and raise a message to
