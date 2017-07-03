@@ -26,6 +26,7 @@ disable=
  invalid-name,
  missing-docstring,
 # "R" Refactor recommendations
+ duplicate-code,
  no-self-use,
  too-few-public-methods,
  too-many-ancestors,
