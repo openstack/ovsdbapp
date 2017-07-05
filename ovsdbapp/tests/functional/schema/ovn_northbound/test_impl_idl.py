@@ -23,7 +23,7 @@ from ovsdbapp import utils as ovsdb_utils
 
 
 class OvnNorthboundTest(base.FunctionalTestCase):
-    schema = 'OVN_Northbound'
+    schemas = ['OVN_Northbound']
 
     def setUp(self):
         super(OvnNorthboundTest, self).setUp()

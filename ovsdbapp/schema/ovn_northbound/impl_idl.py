@@ -10,17 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import idlutils
-from ovsdbapp.backend.ovs_idl import transaction
 from ovsdbapp import constants as const
-from ovsdbapp import exceptions
 from ovsdbapp.schema.ovn_northbound import api
 from ovsdbapp.schema.ovn_northbound import commands as cmd
-
-LOG = logging.getLogger(__name__)
 
 
 class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
@@ -31,36 +25,6 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         'Logical_Router': idlutils.RowLookup('Logical_Router', 'name', None),
         'Load_Balancer': idlutils.RowLookup('Load_Balancer', 'name', None),
     }
-
-    def __init__(self, connection):
-        super(OvnNbApiIdlImpl, self).__init__()
-        try:
-            if OvnNbApiIdlImpl.ovsdb_connection is None:
-                OvnNbApiIdlImpl.ovsdb_connection = connection
-            OvnNbApiIdlImpl.ovsdb_connection.start()
-        except Exception as e:
-            connection_exception = exceptions.OvsdbConnectionUnavailable(
-                db_schema=self.schema, error=e)
-            LOG.exception(connection_exception)
-            raise connection_exception
-
-    @property
-    def idl(self):
-        return OvnNbApiIdlImpl.ovsdb_connection.idl
-
-    @property
-    def tables(self):
-        return self.idl.tables
-
-    # NOTE(twilson) _tables is for legacy code, but it has always been used
-    # outside the Idl API implementions
-    _tables = tables
-
-    def create_transaction(self, check_error=False, log_errors=True, **kwargs):
-        return transaction.Transaction(
-            self, OvnNbApiIdlImpl.ovsdb_connection,
-            OvnNbApiIdlImpl.ovsdb_connection.timeout,
-            check_error, log_errors)
 
     def ls_add(self, switch=None, may_exist=False, **columns):
         return cmd.LsAddCommand(self, switch, may_exist, **columns)

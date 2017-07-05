@@ -19,6 +19,7 @@ import six
 
 from ovsdbapp import api
 from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp.backend.ovs_idl import rowview
 
 LOG = logging.getLogger(__name__)
 
@@ -48,6 +49,17 @@ class BaseCommand(api.Command):
             self.__class__.__name__,
             ", ".join("%s=%s" % (k, v) for k, v in command_info.items()
                       if k not in ['api', 'result']))
+
+
+class AddCommand(BaseCommand):
+    table_name = []  # unhashable, won't be looked up
+
+    def post_commit(self, txn):
+        # If get_insert_uuid fails, self.result was not a result of a
+        # recent insert. Most likely we are post_commit after a lookup()
+        real_uuid = txn.get_insert_uuid(self.result) or self.result
+        row = self.api.tables[self.table_name].rows[real_uuid]
+        self.result = rowview.RowView(row)
 
 
 class DbCreateCommand(BaseCommand):

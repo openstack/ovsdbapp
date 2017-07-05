@@ -21,12 +21,15 @@ from ovsdbapp import venv
 
 
 class FunctionalTestCase(base.TestCase):
-    connection = None
+    _connections = None
     ovsvenv = venv.OvsOvnVenvFixture(tempfile.mkdtemp(),
                                      ovsdir=os.getenv('OVS_SRCDIR'),
                                      remove=not bool(os.getenv('KEEP_VENV')))
     atexit.register(ovsvenv.cleanUp)
     ovsvenv.setUp()
+    schema_map = {'Open_vSwitch': ovsvenv.ovs_connection,
+                  'OVN_Northbound': ovsvenv.ovnnb_connection,
+                  'OVN_Southbound': ovsvenv.ovnsb_connection}
     ovsvenvlog = None
     if os.getenv('KEEP_VENV') and os.getenv('VIRTUAL_ENV'):
         ovsvenvlog = open(os.path.join(os.getenv('VIRTUAL_ENV'),
@@ -39,20 +42,22 @@ class FunctionalTestCase(base.TestCase):
         if cls.ovsvenvlog:
             cls.ovsvenvlog.write("%s\n" % val)
 
+    @property
+    def connection(self):
+        if len(self.schemas) == 1:
+            return self.__class__._connections[self.schemas[0]]
+        return self.__class__._connections
+
     @classmethod
     def set_connection(cls):
-        if cls.connection is not None:
+        if cls._connections is not None:
             return
-        if cls.schema == "Open_vSwitch":
-            conn = cls.ovsvenv.ovs_connection
-        elif cls.schema == "OVN_Northbound":
-            conn = cls.ovsvenv.ovnnb_connection
-        elif cls.schema == "OVN_Southbound":
-            conn = cls.ovsvenv.ovnsb_connection
-        else:
-            raise TypeError("Unknown schema '%s'" % cls.schema)
-        idl = connection.OvsdbIdl.from_server(conn, cls.schema)
-        cls.connection = connection.Connection(idl, constants.DEFAULT_TIMEOUT)
+        cls._connections = {}
+        for schema in cls.schemas:
+            idl = connection.OvsdbIdl.from_server(cls.schema_map[schema],
+                                                  schema)
+            cls._connections[schema] = connection.Connection(
+                idl, constants.DEFAULT_TIMEOUT)
 
     def setUp(self):
         super(FunctionalTestCase, self).setUp()

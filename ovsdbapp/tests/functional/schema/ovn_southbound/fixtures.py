@@ -10,30 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ovsdbapp.schema.ovn_northbound import impl_idl
+from ovsdbapp.schema.ovn_southbound import impl_idl
 from ovsdbapp.tests.functional.schema import fixtures
 
 
-class LogicalSwitchFixture(fixtures.ImplIdlFixture):
-    api = impl_idl.OvnNbApiIdlImpl
-    create = 'ls_add'
-    delete = 'ls_del'
-
-
-class DhcpOptionsFixture(fixtures.ImplIdlFixture):
-    api = impl_idl.OvnNbApiIdlImpl
-    create = 'dhcp_options_add'
-    delete = 'dhcp_options_del'
-    delete_args = {}
-
-
-class LogicalRouterFixture(fixtures.ImplIdlFixture):
-    api = impl_idl.OvnNbApiIdlImpl
-    create = 'lr_add'
-    delete = 'lr_del'
-
-
-class LoadBalancerFixture(fixtures.ImplIdlFixture):
-    api = impl_idl.OvnNbApiIdlImpl
-    create = 'lb_add'
-    delete = 'lb_del'
+class ChassisFixture(fixtures.ImplIdlFixture):
+    api = impl_idl.OvnSbApiIdlImpl
+    create = 'chassis_add'
+    delete = 'chassis_del'

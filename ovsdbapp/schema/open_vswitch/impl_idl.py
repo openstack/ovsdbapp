@@ -74,22 +74,15 @@ class OvsVsctlTransaction(transaction.Transaction):
 
 
 class OvsdbIdl(ovs_idl.Backend, api.API):
-    def __init__(self, connection):
-        super(OvsdbIdl, self).__init__()
-        self.connection = connection
-        self.connection.start()
-        self.idl = self.connection.idl
-
-    @property
-    def _tables(self):
-        return self.idl.tables
+    schema = 'Open_vSwitch'
+    ovsdb_connection = None
 
     @property
     def _ovs(self):
         return list(self._tables['Open_vSwitch'].rows.values())[0]
 
     def create_transaction(self, check_error=False, log_errors=True, **kwargs):
-        return OvsVsctlTransaction(self, self.connection,
+        return OvsVsctlTransaction(self, self.ovsdb_connection,
                                    check_error=check_error,
                                    log_errors=log_errors)
 

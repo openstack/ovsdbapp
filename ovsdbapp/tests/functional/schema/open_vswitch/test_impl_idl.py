@@ -19,7 +19,7 @@ from ovsdbapp.tests import utils
 
 
 class TestOvsdbIdl(base.FunctionalTestCase):
-    schema = "Open_vSwitch"
+    schemas = ["Open_vSwitch"]
 
     def setUp(self):
         super(TestOvsdbIdl, self).setUp()

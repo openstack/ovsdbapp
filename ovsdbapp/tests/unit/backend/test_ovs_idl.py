@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
+
 from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.tests import base
@@ -25,13 +27,19 @@ class FakeTable(object):
     indexes = []
 
 
+class FakeBackend(ovs_idl.Backend):
+    schema = "FakeSchema"
+    tables = {'Faketable': FakeTable()}
+    lookup_table = {'Faketable': idlutils.RowLookup('Faketable', 'name', None)}
+
+    def start_connection(self, connection):
+        pass
+
+
 class TestBackendOvsIdl(base.TestCase):
     def setUp(self):
         super(TestBackendOvsIdl, self).setUp()
-        self.backend = ovs_idl.Backend()
-        self.backend.tables = {'Faketable': FakeTable()}
-        self.backend.lookup_table = {
-            'Faketable': idlutils.RowLookup('Faketable', 'name', None)}
+        self.backend = FakeBackend(mock.Mock())
 
     def test_lookup_found(self):
         row = self.backend.lookup('Faketable', 'Fake1')

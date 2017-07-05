@@ -13,25 +13,14 @@ import re
 
 import netaddr
 
-from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import command as cmd
 from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp.backend.ovs_idl import rowview
 from ovsdbapp import constants as const
 from ovsdbapp import utils
 
 
-class AddCommand(cmd.BaseCommand):
-    table_name = []  # unhashable, won't be looked up
-
-    def post_commit(self, txn):
-        # If get_insert_uuid fails, self.result was not a result of a
-        # recent insert. Most likely we are post_commit after a lookup()
-        real_uuid = txn.get_insert_uuid(self.result) or self.result
-        row = self.api.tables[self.table_name].rows[real_uuid]
-        self.result = ovs_idl.RowView(row)
-
-
-class LsAddCommand(AddCommand):
+class LsAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch'
 
     def __init__(self, api, switch=None, may_exist=False, **columns):
@@ -49,7 +38,7 @@ class LsAddCommand(AddCommand):
                                        self.switch, None)
             if sw:
                 if self.may_exist:
-                    self.result = ovs_idl.RowView(sw)
+                    self.result = rowview.RowView(sw)
                     return
                 raise RuntimeError("Switch %s exists" % self.switch)
         elif self.may_exist:
@@ -85,14 +74,14 @@ class LsDelCommand(cmd.BaseCommand):
 class LsListCommand(cmd.BaseCommand):
     def run_idl(self, txn):
         table = self.api.tables['Logical_Switch']
-        self.result = [ovs_idl.RowView(r) for r in table.rows.values()]
+        self.result = [rowview.RowView(r) for r in table.rows.values()]
 
 
 class LsGetCommand(cmd.BaseGetRowCommand):
     table = 'Logical_Switch'
 
 
-class AclAddCommand(AddCommand):
+class AclAddCommand(cmd.AddCommand):
     table_name = 'ACL'
 
     def __init__(self, api, switch, direction, priority, match, action,
@@ -124,7 +113,7 @@ class AclAddCommand(AddCommand):
         acls = [acl for acl in ls.acls if self.acl_match(acl)]
         if acls:
             if self.may_exist:
-                self.result = ovs_idl.RowView(acls[0])
+                self.result = rowview.RowView(acls[0])
                 return
             raise RuntimeError("ACL (%s, %s, %s) already exists" % (
                 self.direction, self.priority, self.match))
@@ -172,10 +161,10 @@ class AclListCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         ls = self.api.lookup('Logical_Switch', self.switch)
-        self.result = [ovs_idl.RowView(acl) for acl in ls.acls]
+        self.result = [rowview.RowView(acl) for acl in ls.acls]
 
 
-class LspAddCommand(AddCommand):
+class LspAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch_Port'
 
     def __init__(self, api, switch, port, parent=None, tag=None,
@@ -215,7 +204,7 @@ class LspAddCommand(AddCommand):
 
                 if msg:
                     raise RuntimeError(msg)
-                self.result = ovs_idl.RowView(lsp)
+                self.result = rowview.RowView(lsp)
                 return
         except idlutils.RowNotFound:
             # This is what we want
@@ -280,7 +269,7 @@ class LspListCommand(cmd.BaseCommand):
             ports = self.api.lookup('Logical_Switch', self.switch).ports
         else:
             ports = self.api.tables['Logical_Switch_Port'].rows.values()
-        self.result = [ovs_idl.RowView(r) for r in ports]
+        self.result = [rowview.RowView(r) for r in ports]
 
 
 class LspGetCommand(cmd.BaseGetRowCommand):
@@ -451,11 +440,11 @@ class LspGetDhcpV4OptionsCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         lsp = self.api.lookup('Logical_Switch_Port', self.port)
-        self.result = next((ovs_idl.RowView(d)
+        self.result = next((rowview.RowView(d)
                             for d in lsp.dhcpv4_options), [])
 
 
-class DhcpOptionsAddCommand(AddCommand):
+class DhcpOptionsAddCommand(cmd.AddCommand):
     table_name = 'DHCP_Options'
 
     def __init__(self, api, cidr, **external_ids):
@@ -483,7 +472,7 @@ class DhcpOptionsDelCommand(cmd.BaseCommand):
 
 class DhcpOptionsListCommand(cmd.BaseCommand):
     def run_idl(self, txn):
-        self.result = [ovs_idl.RowView(r) for
+        self.result = [rowview.RowView(r) for
                        r in self.api.tables['DHCP_Options'].rows.values()]
 
 
@@ -524,7 +513,7 @@ class LrAddCommand(cmd.BaseCommand):
             try:
                 lr = self.api.lookup('Logical_Router', self.router)
                 if self.may_exist:
-                    self.result = ovs_idl.RowView(lr)
+                    self.result = rowview.RowView(lr)
                     return
             except idlutils.RowNotFound:
                 pass
@@ -538,7 +527,7 @@ class LrAddCommand(cmd.BaseCommand):
         real_uuid = txn.get_insert_uuid(self.result)
         if real_uuid:
             row = self.api.tables['Logical_Router'].rows[real_uuid]
-            self.result = ovs_idl.RowView(row)
+            self.result = rowview.RowView(row)
 
 
 class LrDelCommand(cmd.BaseCommand):
@@ -560,7 +549,7 @@ class LrDelCommand(cmd.BaseCommand):
 
 class LrListCommand(cmd.BaseCommand):
     def run_idl(self, txn):
-        self.result = [ovs_idl.RowView(r) for
+        self.result = [rowview.RowView(r) for
                        r in self.api.tables['Logical_Router'].rows.values()]
 
 
@@ -595,7 +584,7 @@ class LrpAddCommand(cmd.BaseCommand):
                     msg = "Port %s exists with different peer" % (self.port)
                 if msg:
                     raise RuntimeError(msg)
-                self.result = ovs_idl.RowView(lrp)
+                self.result = rowview.RowView(lrp)
                 return
         except idlutils.RowNotFound:
             pass
@@ -615,7 +604,7 @@ class LrpAddCommand(cmd.BaseCommand):
         real_uuid = txn.get_insert_uuid(self.result)
         if real_uuid:
             row = self.api.tables['Logical_Router_Port'].rows[real_uuid]
-            self.result = ovs_idl.RowView(row)
+            self.result = rowview.RowView(row)
 
 
 class LrpDelCommand(PortDelCommand):
@@ -632,7 +621,7 @@ class LrpListCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         router = self.api.lookup('Logical_Router', self.router)
-        self.result = [ovs_idl.RowView(r) for r in router.ports]
+        self.result = [rowview.RowView(r) for r in router.ports]
 
 
 class LrpSetEnabledCommand(cmd.BaseCommand):
@@ -682,7 +671,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
                 route.policy = self.policy
                 if self.port:
                     route.port = self.port
-                self.result = ovs_idl.RowView(route)
+                self.result = rowview.RowView(route)
                 return
         route = txn.insert(self.api.tables['Logical_Router_Static_Route'])
         route.ip_prefix = self.prefix
@@ -698,7 +687,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
         if real_uuid:
             table = self.api.tables['Logical_Router_Static_Route']
             row = table.rows[real_uuid]
-            self.result = ovs_idl.RowView(row)
+            self.result = rowview.RowView(row)
 
 
 class LrRouteDelCommand(cmd.BaseCommand):
@@ -734,7 +723,7 @@ class LrRouteListCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
-        self.result = [ovs_idl.RowView(r) for r in lr.static_routes]
+        self.result = [rowview.RowView(r) for r in lr.static_routes]
 
 
 class LrNatAddCommand(cmd.BaseCommand):
@@ -777,7 +766,7 @@ class LrNatAddCommand(cmd.BaseCommand):
                 if self.may_exist:
                     nat.logical_port = self.logical_port
                     nat.external_mac = self.external_mac
-                    self.result = ovs_idl.RowView(nat)
+                    self.result = rowview.RowView(nat)
                     return
                 raise RuntimeError("NAT already exists")
         nat = txn.insert(self.api.tables['NAT'])
@@ -797,7 +786,7 @@ class LrNatAddCommand(cmd.BaseCommand):
         real_uuid = txn.get_insert_uuid(self.result)
         if real_uuid:
             row = self.api.tables['NAT'].rows[real_uuid]
-            self.result = ovs_idl.RowView(row)
+            self.result = rowview.RowView(row)
 
 
 class LrNatDelCommand(cmd.BaseCommand):
@@ -843,7 +832,7 @@ class LrNatListCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
-        self.result = [ovs_idl.RowView(r) for r in lr.nat]
+        self.result = [rowview.RowView(r) for r in lr.nat]
 
 
 class LbAddCommand(cmd.BaseCommand):
@@ -880,7 +869,7 @@ class LbAddCommand(cmd.BaseCommand):
     def post_commit(self, txn):
         real_uuid = txn.get_insert_uuid(self.result) or self.result
         row = self.api.tables['Load_Balancer'].rows[real_uuid]
-        self.result = ovs_idl.RowView(row)
+        self.result = rowview.RowView(row)
 
 
 class LbDelCommand(cmd.BaseCommand):
@@ -907,7 +896,7 @@ class LbDelCommand(cmd.BaseCommand):
 
 class LbListCommand(cmd.BaseCommand):
     def run_idl(self, txn):
-        self.result = [ovs_idl.RowView(r)
+        self.result = [rowview.RowView(r)
                        for r in self.api.tables['Load_Balancer'].rows.values()]
 
 
@@ -957,7 +946,7 @@ class LrLbListCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
-        self.result = [ovs_idl.RowView(r) for r in lr.load_balancer]
+        self.result = [rowview.RowView(r) for r in lr.load_balancer]
 
 
 class LsLbAddCommand(cmd.BaseCommand):
@@ -1006,4 +995,4 @@ class LsLbListCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         ls = self.api.lookup('Logical_Switch', self.switch)
-        self.result = [ovs_idl.RowView(r) for r in ls.load_balancer]
+        self.result = [rowview.RowView(r) for r in ls.load_balancer]
