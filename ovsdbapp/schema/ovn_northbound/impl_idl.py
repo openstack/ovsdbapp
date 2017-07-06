@@ -71,6 +71,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def ls_list(self):
         return cmd.LsListCommand(self)
 
+    def ls_get(self, switch):
+        return cmd.LsGetCommand(self, switch)
+
     def acl_add(self, switch, direction, priority, match, action, log=False,
                 may_exist=False, **external_ids):
         return cmd.AclAddCommand(self, switch, direction, priority,
@@ -92,6 +95,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def lsp_list(self, switch=None):
         return cmd.LspListCommand(self, switch)
+
+    def lsp_get(self, port):
+        return cmd.LspGetCommand(self, port)
 
     def lsp_get_parent(self, port):
         return cmd.LspGetParentCommand(self, port)
@@ -226,6 +232,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def dhcp_options_list(self):
         return cmd.DhcpOptionsListCommand(self)
+
+    def dhcp_options_get(self, dhcpopt_uuid):
+        return cmd.DhcpOptionsGetCommand(self, dhcpopt_uuid)
 
     def dhcp_options_set_options(self, dhcpopt_uuid, **options):
         return cmd.DhcpOptionsSetOptionsCommand(self, dhcpopt_uuid, **options)

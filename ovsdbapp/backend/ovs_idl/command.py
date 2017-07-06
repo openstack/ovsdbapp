@@ -229,3 +229,12 @@ class DbFindCommand(BaseCommand):
             for r in self.table.rows.values()
             if idlutils.row_match(r, self.conditions)
         ]
+
+
+class BaseGetRowCommand(BaseCommand):
+    def __init__(self, api, record):
+        super(BaseGetRowCommand, self).__init__(api)
+        self.record = record
+
+    def run_idl(self, txn):
+        self.result = self.api.lookup(self.table, self.record)

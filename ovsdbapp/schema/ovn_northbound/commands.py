@@ -88,6 +88,10 @@ class LsListCommand(cmd.BaseCommand):
         self.result = [ovs_idl.RowView(r) for r in table.rows.values()]
 
 
+class LsGetCommand(cmd.BaseGetRowCommand):
+    table = 'Logical_Switch'
+
+
 class AclAddCommand(AddCommand):
     table_name = 'ACL'
 
@@ -277,6 +281,10 @@ class LspListCommand(cmd.BaseCommand):
         else:
             ports = self.api.tables['Logical_Switch_Port'].rows.values()
         self.result = [ovs_idl.RowView(r) for r in ports]
+
+
+class LspGetCommand(cmd.BaseGetRowCommand):
+    table = 'Logical_Switch_Port'
 
 
 class LspGetParentCommand(cmd.BaseCommand):
@@ -477,6 +485,10 @@ class DhcpOptionsListCommand(cmd.BaseCommand):
     def run_idl(self, txn):
         self.result = [ovs_idl.RowView(r) for
                        r in self.api.tables['DHCP_Options'].rows.values()]
+
+
+class DhcpOptionsGetCommand(cmd.BaseGetRowCommand):
+    table = 'DHCP_Options'
 
 
 class DhcpOptionsSetOptionsCommand(cmd.BaseCommand):

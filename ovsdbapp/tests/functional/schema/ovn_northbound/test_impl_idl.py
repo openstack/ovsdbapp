@@ -40,6 +40,18 @@ class TestLogicalSwitchOps(OvnNorthboundTest):
         self.assertIn(fix.obj.uuid, self.table.rows)
         return fix.obj
 
+    def _test_ls_get(self, col):
+        ls = self._ls_add(switch=utils.get_rand_device_name())
+        val = getattr(ls, col)
+        found = self.api.ls_get(val).execute(check_error=True)
+        self.assertEqual(ls, found)
+
+    def test_ls_get_uuid(self):
+        self._test_ls_get('uuid')
+
+    def test_ls_get_name(self):
+        self._test_ls_get('name')
+
     def test_ls_add_no_name(self):
         self._ls_add()
 
@@ -179,6 +191,18 @@ class TestLspOps(OvnNorthboundTest):
             check_error=True)
         self.assertIn(lsp, switch.ports)
         return lsp
+
+    def _test_lsp_get(self, col):
+        lsp = self._lsp_add(self.switch, None)
+        val = getattr(lsp, col)
+        found = self.api.lsp_get(val).execute(check_error=True)
+        self.assertEqual(lsp, found)
+
+    def test_lsp_get_uuid(self):
+        self._test_lsp_get('uuid')
+
+    def test_ls_get_name(self):
+        self._test_lsp_get('name')
 
     def test_lsp_add(self):
         self._lsp_add(self.switch, None)
@@ -398,6 +422,12 @@ class TestDhcpOptionsOps(OvnNorthboundTest):
             cidr, *args, **kwargs)).obj
         self.assertEqual(cidr, dhcpopt.cidr)
         return dhcpopt
+
+    def test_dhcp_options_get(self):
+        dhcpopt = self._dhcpopt_add('192.0.2.1/24')
+        found = self.api.dhcp_options_get(dhcpopt.uuid).execute(
+            check_error=True)
+        self.assertEqual(dhcpopt, found)
 
     def test_dhcp_options_add(self):
         self._dhcpopt_add('192.0.2.1/24')
