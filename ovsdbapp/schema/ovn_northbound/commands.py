@@ -256,13 +256,16 @@ class LspDelCommand(cmd.BaseCommand):
 
 
 class LspListCommand(cmd.BaseCommand):
-    def __init__(self, api, switch):
+    def __init__(self, api, switch=None):
         super(LspListCommand, self).__init__(api)
         self.switch = switch
 
     def run_idl(self, txn):
-        sw = self.api.lookup('Logical_Switch', self.switch)
-        self.result = [ovs_idl.RowView(r) for r in sw.ports]
+        if self.switch:
+            ports = self.api.lookup('Logical_Switch', self.switch).ports
+        else:
+            ports = self.api.tables['Logical_Switch_Port'].rows.values()
+        self.result = [ovs_idl.RowView(r) for r in ports]
 
 
 class LspGetParentCommand(cmd.BaseCommand):
