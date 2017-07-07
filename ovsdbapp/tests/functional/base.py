@@ -23,9 +23,21 @@ from ovsdbapp import venv
 class FunctionalTestCase(base.TestCase):
     connection = None
     ovsvenv = venv.OvsVenvFixture(tempfile.mkdtemp(),
-                                  ovsdir=os.getenv('OVS_SRCDIR'), remove=True)
+                                  ovsdir=os.getenv('OVS_SRCDIR'),
+                                  remove=not bool(os.getenv('KEEP_VENV')))
     atexit.register(ovsvenv.cleanUp)
     ovsvenv.setUp()
+    ovsvenvlog = None
+    if os.getenv('KEEP_VENV') and os.getenv('VIRTUAL_ENV'):
+        ovsvenvlog = open(os.path.join(os.getenv('VIRTUAL_ENV'),
+                                       'ovsvenv.%s' % os.getpid()), 'a+')
+        atexit.register(ovsvenvlog.close)
+        ovsvenvlog.write("%s\n" % ovsvenv.venv)
+
+    @classmethod
+    def venv_log(cls, val):
+        if cls.ovsvenvlog:
+            cls.ovsvenvlog.write("%s\n" % val)
 
     @classmethod
     def set_connection(cls):
@@ -44,4 +56,5 @@ class FunctionalTestCase(base.TestCase):
 
     def setUp(self):
         super(FunctionalTestCase, self).setUp()
+        self.venv_log(self.id())
         self.set_connection()

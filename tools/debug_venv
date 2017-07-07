@@ -1,0 +1,63 @@
+#!/bin/sh
+# Use a shell script to launch tools/debub_venv.py so that we can enter a
+# virtual environment if we are not already in one
+
+for option;do
+    if test -n "$prev";then
+        eval $prev=\$option
+        prev=
+        continue
+    fi
+    case $option in
+        -v)
+            if [ -n "$VIRTUAL_ENV" ]; then
+                echo "Already in a virtual environment" 1>&2
+                exit 1
+            fi
+            prev=venv ;;
+        -o)
+            prev=ovsvenv ;;
+        -h|--help)
+            cat << EOF
+debug_venv: debug a test OVS virtual environment
+usage: debug_venv [-v virtualenv] [-o ovsvenv | test_regex]"
+
+Options:
+  -v  The Python virtualenv to enter (defaults to 'functional')
+  -o  The OVS virtual environment directory (precludes test_regex)
+  test_regex An optionsal regular expression matching the test name to debug
+EOF
+            exit ;;
+        *)
+            if test -z "$regex";then
+                regex=$option
+            else
+                echo "Only one regex" 1>&2
+                exit 1
+            fi
+    esac
+done
+
+if [ -z "$regex" -a -z "$ovsvenv" ]; then
+    echo "Need regex or ovsvenv" 1>&2
+    exit 1
+fi
+
+if [ -z "$VIRTUAL_ENV" ]; then
+    . .tox/${venv:-functional}/bin/activate
+    trap deactivate EXIT
+fi
+
+if [ -n "$regex" -a -z "$ovsvenv" ]; then
+    # Just do the first match for now
+    lookup=$(grep $regex $VIRTUAL_ENV/ovsvenv.*|head -1)
+    if [ -z "$lookup" ]; then
+        echo "Could not match $regex" 1>&2
+        exit 1
+    fi
+    test_file=$(echo $lookup|cut -d: -f1)
+    test_match=", matched $(echo $lookup|rev|cut -d: -f1|rev)"
+    ovsvenv=$(head -1 $test_file)
+fi
+echo "Debugging OVS virtual environment: $ovsvenv$test_match"
+tools/debug_venv.py $ovsvenv $VIRTUAL_ENV/src/ovs
