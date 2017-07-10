@@ -1022,3 +1022,63 @@ class TestObLbOps(testscenarios.TestWithScenarios, OvnNorthboundTest):
         rows = self.list_fn(self.lr.name).execute(check_error=True)
         self.assertIn(self.lb, rows)
         self.assertIn(self.lb2, rows)
+
+
+class TestCommonDbOps(OvnNorthboundTest):
+    def setUp(self):
+        super(TestCommonDbOps, self).setUp()
+        name = utils.get_rand_device_name()
+        self.switch = self.useFixture(fixtures.LogicalSwitchFixture(name)).obj
+        self.lsps = [
+            self.api.lsp_add(
+                self.switch.uuid,
+                utils.get_rand_device_name()).execute(check_error=True)
+            for _ in range(3)]
+        self.api.db_set('Logical_Switch', self.switch.uuid,
+                        ('external_ids', {'one': '1', 'two': '2'})).execute(
+                            check_error=True)
+
+    def _ls_get_extids(self):
+        return self.api.db_get('Logical_Switch', self.switch.uuid,
+                               'external_ids').execute(check_error=True)
+
+    def test_db_remove_map_key(self):
+        ext_ids = self._ls_get_extids()
+        removed = ext_ids.popitem()
+        self.api.db_remove('Logical_Switch', self.switch.uuid,
+                           'external_ids', removed[0]).execute(
+            check_error=True)
+        self.assertEqual(ext_ids, self.switch.external_ids)
+
+    def test_db_remove_map_value(self):
+        ext_ids = self._ls_get_extids()
+        removed = dict([ext_ids.popitem()])
+        self.api.db_remove('Logical_Switch', self.switch.uuid,
+                           'external_ids', **removed).execute(
+            check_error=True)
+        self.assertEqual(ext_ids, self.switch.external_ids)
+
+    def test_db_remove_map_bad_key(self):
+        # should be a NoOp, not fail
+        self.api.db_remove('Logical_Switch', self.switch.uuid,
+                           'external_ids', "badkey").execute(check_error=True)
+
+    def test_db_remove_map_bad_value(self):
+        ext_ids = self._ls_get_extids()
+        removed = {ext_ids.popitem()[0]: "badvalue"}
+        # should be a NoOp, not fail
+        self.api.db_remove('Logical_Switch', self.switch.uuid,
+                           'external_ids', **removed).execute(check_error=True)
+
+    def test_db_remove_value(self):
+        ports = self.api.db_get('Logical_Switch', self.switch.uuid,
+                                'ports').execute(check_error=True)
+        removed = ports.pop()
+        self.api.db_remove('Logical_Switch', self.switch.uuid, 'ports',
+                           removed).execute(check_error=True)
+        self.assertEqual(ports, [x.uuid for x in self.switch.ports])
+
+    def test_db_remove_bad_value(self):
+        # should be a NoOp, not fail
+        self.api.db_remove('Logical_Switch', self.switch.uuid, 'ports',
+                           "badvalue").execute(check_error=True)

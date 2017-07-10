@@ -61,6 +61,10 @@ class Backend(object):
     def db_find(self, table, *conditions, **kwargs):
         return cmd.DbFindCommand(self, table, *conditions, **kwargs)
 
+    def db_remove(self, table, record, column, *values, **keyvalues):
+        return cmd.DbRemoveCommand(self, table, record, column,
+                                   *values, **keyvalues)
+
     def lookup(self, table, record, default=_NO_DEFAULT):
         try:
             return self._lookup(table, record)

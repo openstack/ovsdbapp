@@ -217,3 +217,26 @@ class API(object):
         :type columns:    list of column names or None
         :returns:         :class:`Command` with [{'column', value}, ...] result
         """
+
+    @abc.abstractmethod
+    def db_remove(self, table, record, column, *values, **keyvalues):
+        """Create a command to delete fields or key-value pairs in a record
+
+        :param table:     The OVS table to query
+        :type table:      string
+        :param record:    The record id (name/uuid)
+        :type record:     string
+        :param column:    The column whose value should be deleted
+        :type column:     string
+        :param values:    In case of list columns, the values to be deleted
+                          from the list of values
+                          In case of dict columns, the keys to delete
+                          regardless of their value
+        :type value:      varies depending on column
+        :param keyvalues: For dict columns, the keys to delete when the key's
+                          value matches the argument value
+        :type keyvalues:  values vary depending on column
+        :param if_exists: Do not fail if the record does not exist
+        :type if_exists:  bool
+        :returns:         :class:`Command` with no result
+        """

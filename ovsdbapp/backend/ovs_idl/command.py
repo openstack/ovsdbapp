@@ -238,3 +238,34 @@ class BaseGetRowCommand(BaseCommand):
 
     def run_idl(self, txn):
         self.result = self.api.lookup(self.table, self.record)
+
+
+class DbRemoveCommand(BaseCommand):
+    def __init__(self, api, table, record, column, *values, **keyvalues):
+        super(DbRemoveCommand, self).__init__(api)
+        self.table = table
+        self.record = record
+        self.column = column
+        self.values = values
+        self.keyvalues = keyvalues
+        self.if_exists = keyvalues.pop('if_exists', False)
+
+    def run_idl(self, txn):
+        try:
+            record = self.api.lookup(self.table, self.record)
+            if isinstance(getattr(record, self.column), dict):
+                for value in self.values:
+                    record.delkey(self.column, value)
+                for key, value in self.keyvalues.items():
+                    record.delkey(self.column, key, value)
+            elif isinstance(getattr(record, self.column), list):
+                for value in self.values:
+                    record.delvalue(self.column, value)
+            else:
+                value = type(getattr(record, self.column))()
+                setattr(record, self.column, value)
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+            else:
+                raise
