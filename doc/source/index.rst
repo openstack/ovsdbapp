@@ -3,21 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ovsdbapp's documentation!
-========================================================
+.. the main title comes from README.rst
 
-Contents:
+.. include:: ../../README.rst
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
-   readme
-   installation
-   usage
-   contributing
+   install/index
+   user/index
+   contributor/index
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
