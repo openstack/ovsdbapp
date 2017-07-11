@@ -171,109 +171,109 @@ class TestLspOps(OvnNorthboundTest):
 
     def _lsp_add(self, switch, name, *args, **kwargs):
         name = utils.get_rand_device_name() if name is None else name
-        lsp = self.api.lsp_add(switch, name, *args, **kwargs).execute(
+        lsp = self.api.lsp_add(switch.uuid, name, *args, **kwargs).execute(
             check_error=True)
-        self.assertIn(lsp, self.switch.ports)
+        self.assertIn(lsp, switch.ports)
         return lsp
 
     def test_lsp_add(self):
-        self._lsp_add(self.switch.uuid, None)
+        self._lsp_add(self.switch, None)
 
     def test_lsp_add_exists(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
-        self.assertRaises(RuntimeError, self._lsp_add, self.switch.uuid,
+        lsp = self._lsp_add(self.switch, None)
+        self.assertRaises(RuntimeError, self._lsp_add, self.switch,
                           lsp.name)
 
     def test_lsp_add_may_exist(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        lsp2 = self._lsp_add(self.switch.uuid, lsp1.name, may_exist=True)
+        lsp1 = self._lsp_add(self.switch, None)
+        lsp2 = self._lsp_add(self.switch, lsp1.name, may_exist=True)
         self.assertEqual(lsp1, lsp2)
 
     def test_lsp_add_may_exist_wrong_switch(self):
         sw = self.useFixture(fixtures.LogicalSwitchFixture()).obj
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.assertRaises(RuntimeError, self._lsp_add, sw, lsp.name,
                           may_exist=True)
 
     def test_lsp_add_parent(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        lsp2 = self._lsp_add(self.switch.uuid, None, parent=lsp1.name, tag=0)
+        lsp1 = self._lsp_add(self.switch, None)
+        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
         # parent_name, being optional, is stored as a list
         self.assertIn(lsp1.name, lsp2.parent_name)
 
     def test_lsp_add_parent_no_tag(self):
-        self.assertRaises(TypeError, self._lsp_add, self.switch.uuid,
+        self.assertRaises(TypeError, self._lsp_add, self.switch,
                           None, parent="fake_parent")
 
     def test_lsp_add_parent_may_exist(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        lsp2 = self._lsp_add(self.switch.uuid, None, parent=lsp1.name, tag=0)
-        lsp3 = self._lsp_add(self.switch.uuid, lsp2.name, parent=lsp1.name,
+        lsp1 = self._lsp_add(self.switch, None)
+        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        lsp3 = self._lsp_add(self.switch, lsp2.name, parent=lsp1.name,
                              tag=0, may_exist=True)
         self.assertEqual(lsp2, lsp3)
 
     def test_lsp_add_parent_may_exist_no_parent(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        self.assertRaises(RuntimeError, self._lsp_add, self.switch.uuid,
+        lsp1 = self._lsp_add(self.switch, None)
+        self.assertRaises(RuntimeError, self._lsp_add, self.switch,
                           lsp1.name, parent="fake_parent", tag=0,
                           may_exist=True)
 
     def test_lsp_add_parent_may_exist_different_parent(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        lsp2 = self._lsp_add(self.switch.uuid, None, parent=lsp1.name, tag=0)
-        self.assertRaises(RuntimeError, self._lsp_add, self.switch.uuid,
+        lsp1 = self._lsp_add(self.switch, None)
+        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        self.assertRaises(RuntimeError, self._lsp_add, self.switch,
                           lsp2.name, parent="fake_parent", tag=0,
                           may_exist=True)
 
     def test_lsp_add_parent_may_exist_different_tag(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        lsp2 = self._lsp_add(self.switch.uuid, None, parent=lsp1.name, tag=0)
-        self.assertRaises(RuntimeError, self._lsp_add, self.switch.uuid,
+        lsp1 = self._lsp_add(self.switch, None)
+        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        self.assertRaises(RuntimeError, self._lsp_add, self.switch,
                           lsp2.name, parent=lsp1.name, tag=1, may_exist=True)
 
     def test_lsp_add_may_exist_existing_parent(self):
-        lsp1 = self._lsp_add(self.switch.uuid, None)
-        lsp2 = self._lsp_add(self.switch.uuid, None, parent=lsp1.name, tag=0)
-        self.assertRaises(RuntimeError, self._lsp_add, self.switch.uuid,
+        lsp1 = self._lsp_add(self.switch, None)
+        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        self.assertRaises(RuntimeError, self._lsp_add, self.switch,
                           lsp2.name, may_exist=True)
 
     def test_lsp_add_columns(self):
         options = {'myside': 'yourside'}
         external_ids = {'myside': 'yourside'}
-        lsp = self._lsp_add(self.switch.uuid, None, options=options,
+        lsp = self._lsp_add(self.switch, None, options=options,
                             external_ids=external_ids)
         self.assertEqual(options, lsp.options)
         self.assertEqual(external_ids, lsp.external_ids)
 
     def test_lsp_del_uuid(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_del(lsp.uuid).execute(check_error=True)
         self.assertNotIn(lsp, self.switch.ports)
 
     def test_lsp_del_name(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_del(lsp.name).execute(check_error=True)
         self.assertNotIn(lsp, self.switch.ports)
 
     def test_lsp_del_switch(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_del(lsp.uuid, self.switch.uuid).execute(check_error=True)
         self.assertNotIn(lsp, self.switch.ports)
 
     def test_lsp_del_switch_name(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_del(lsp.uuid,
                          self.switch.name).execute(check_error=True)
         self.assertNotIn(lsp, self.switch.ports)
 
     def test_lsp_del_wrong_switch(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         sw_id = self.useFixture(fixtures.LogicalSwitchFixture()).obj
         cmd = self.api.lsp_del(lsp.uuid, sw_id)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
     def test_lsp_del_switch_no_exist(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         cmd = self.api.lsp_del(lsp.uuid, utils.get_rand_device_name())
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
@@ -285,26 +285,26 @@ class TestLspOps(OvnNorthboundTest):
         self.api.lsp_del("fake_port", if_exists=True).execute(check_error=True)
 
     def test_lsp_list(self):
-        ports = {self._lsp_add(self.switch.uuid, None) for _ in range(3)}
+        ports = {self._lsp_add(self.switch, None) for _ in range(3)}
         port_set = set(self.api.lsp_list(self.switch.uuid).execute(
             check_error=True))
         self.assertTrue(ports.issubset(port_set))
 
     def test_lsp_get_parent(self):
-        ls1 = self._lsp_add(self.switch.uuid, None)
-        ls2 = self._lsp_add(self.switch.uuid, None, parent=ls1.name, tag=0)
+        ls1 = self._lsp_add(self.switch, None)
+        ls2 = self._lsp_add(self.switch, None, parent=ls1.name, tag=0)
         self.assertEqual(
             ls1.name, self.api.lsp_get_parent(ls2.name).execute(
                 check_error=True))
 
     def test_lsp_get_tag(self):
-        ls1 = self._lsp_add(self.switch.uuid, None)
-        ls2 = self._lsp_add(self.switch.uuid, None, parent=ls1.name, tag=0)
+        ls1 = self._lsp_add(self.switch, None)
+        ls2 = self._lsp_add(self.switch, None, parent=ls1.name, tag=0)
         self.assertIsInstance(self.api.lsp_get_tag(ls2.uuid).execute(
             check_error=True), int)
 
     def test_lsp_set_addresses(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         for addr in ('dynamic', 'unknown', 'router',
                      'de:ad:be:ef:4d:ad 192.0.2.1'):
             self.api.lsp_set_addresses(lsp.name, [addr]).execute(
@@ -320,7 +320,7 @@ class TestLspOps(OvnNorthboundTest):
         addresses = [
             '01:02:03:04:05:06 192.0.2.1',
             'de:ad:be:ef:4d:ad 192.0.2.2']
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_set_addresses(
             lsp.name, addresses).execute(check_error=True)
         self.assertEqual(set(addresses), set(self.api.lsp_get_addresses(
@@ -330,7 +330,7 @@ class TestLspOps(OvnNorthboundTest):
         port_security = [
             '01:02:03:04:05:06 192.0.2.1',
             'de:ad:be:ef:4d:ad 192.0.2.2']
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_set_port_security(lsp.name, port_security).execute(
             check_error=True)
         ps = self.api.lsp_get_port_security(lsp.name).execute(
@@ -338,12 +338,12 @@ class TestLspOps(OvnNorthboundTest):
         self.assertEqual(port_security, ps)
 
     def test_lsp_get_up(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.assertFalse(self.api.lsp_get_up(lsp.name).execute(
             check_error=True))
 
     def test_lsp_get_set_enabled(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         # default is True
         self.assertTrue(self.api.lsp_get_enabled(lsp.name).execute(
             check_error=True))
@@ -356,21 +356,21 @@ class TestLspOps(OvnNorthboundTest):
 
     def test_lsp_get_set_type(self):
         type_ = 'router'
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_set_type(lsp.uuid, type_).execute(check_error=True)
         self.assertEqual(type_, self.api.lsp_get_type(lsp.uuid).execute(
             check_error=True))
 
     def test_lsp_get_set_options(self):
         options = {'one': 'two', 'three': 'four'}
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         self.api.lsp_set_options(lsp.uuid, **options).execute(
             check_error=True)
         self.assertEqual(options, self.api.lsp_get_options(lsp.uuid).execute(
             check_error=True))
 
     def test_lsp_set_get_dhcpv4_options(self):
-        lsp = self._lsp_add(self.switch.uuid, None)
+        lsp = self._lsp_add(self.switch, None)
         dhcpopt = self.useFixture(
             fixtures.DhcpOptionsFixture('192.0.2.1/24')).obj
         self.api.lsp_set_dhcpv4_options(
