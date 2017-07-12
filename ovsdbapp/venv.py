@@ -19,11 +19,26 @@ import time
 
 import fixtures
 
+# These are the valid dummy values for ovs-vswitchd process. They are here just
+# to get user enumeration. See man ovs-vswitchd(8) for more information.
+DUMMY_OVERRIDE_ALL = 'override'
+DUMMY_OVERRIDE_SYSTEM = 'system'
+DUMMY_OVERRIDE_NONE = ''
+
 
 class OvsVenvFixture(fixtures.Fixture):
     PATH_VAR_TEMPLATE = "{0}/ovsdb:{0}/vswitchd:{0}/utilities"
 
-    def __init__(self, venv, ovsdir, dummy=None, remove=False):
+    def __init__(self, venv, ovsdir, dummy=DUMMY_OVERRIDE_ALL, remove=False):
+        """Initialize fixture
+
+        :param venv: Path to venv directory.
+        :param ovsdir: Path to directory containing ovs source codes.
+        :param dummy: One of following: an empty string, 'override' or
+                      'system'.
+        :param remove: Boolean value whether venv directory should be removed
+                       at the fixture cleanup.
+        """
         if not os.path.isdir(ovsdir):
             raise Exception("%s is not a directory" % ovsdir)
         self.venv = venv
@@ -42,12 +57,7 @@ class OvsVenvFixture(fixtures.Fixture):
 
     @property
     def dummy_arg(self):
-        if self._dummy == 'override':
-            return "--enable-dummy=override"
-        elif self._dummy == 'system':
-            return "--enable-dummy=system"
-        else:
-            return "--enable-dummy="
+        return "--enable-dummy=%s" % self._dummy
 
     @property
     def ovs_connection(self):
