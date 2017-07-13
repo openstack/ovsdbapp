@@ -139,8 +139,8 @@ class API(api.API):
         """
 
     @abc.abstractmethod
-    def lsp_list(self, switch):
-        """Get the logical ports on switch
+    def lsp_list(self, switch=None):
+        """Get the logical ports on switch or all ports if switch is None
 
         :param switch:  The name or uuid of the switch
         :type switch:   string or uuid.UUID

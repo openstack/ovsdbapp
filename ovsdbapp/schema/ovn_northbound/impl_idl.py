@@ -87,7 +87,7 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lsp_del(self, port, switch=None, if_exists=False):
         return cmd.LspDelCommand(self, port, switch, if_exists)
 
-    def lsp_list(self, switch):
+    def lsp_list(self, switch=None):
         return cmd.LspListCommand(self, switch)
 
     def lsp_get_parent(self, port):

@@ -290,6 +290,14 @@ class TestLspOps(OvnNorthboundTest):
             check_error=True))
         self.assertTrue(ports.issubset(port_set))
 
+    def test_lsp_list_no_switch(self):
+        ports = {self._lsp_add(self.switch, None) for _ in range(3)}
+        other_switch = self.useFixture(fixtures.LogicalSwitchFixture(
+            name=utils.get_rand_device_name())).obj
+        other_port = self._lsp_add(other_switch, None)
+        all_ports = set(self.api.lsp_list().execute(check_error=True))
+        self.assertTrue((ports.union(set([other_port]))).issubset(all_ports))
+
     def test_lsp_get_parent(self):
         ls1 = self._lsp_add(self.switch, None)
         ls2 = self._lsp_add(self.switch, None, parent=ls1.name, tag=0)
