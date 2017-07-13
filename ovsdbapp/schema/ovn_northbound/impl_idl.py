@@ -15,6 +15,7 @@ import logging
 from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.backend.ovs_idl import transaction
+from ovsdbapp import constants as const
 from ovsdbapp import exceptions
 from ovsdbapp.schema.ovn_northbound import api
 from ovsdbapp.schema.ovn_northbound import commands as cmd
@@ -27,6 +28,8 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     ovsdb_connection = None
     lookup_table = {
         'Logical_Switch': idlutils.RowLookup('Logical_Switch', 'name', None),
+        'Logical_Router': idlutils.RowLookup('Logical_Router', 'name', None),
+        'Load_Balancer': idlutils.RowLookup('Load_Balancer', 'name', None),
     }
 
     def __init__(self, connection):
@@ -135,6 +138,85 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def lsp_get_dhcpv4_options(self, port):
         return cmd.LspGetDhcpV4OptionsCommand(self, port)
+
+    def lr_add(self, router=None, may_exist=False, **columns):
+        return cmd.LrAddCommand(self, router, may_exist, **columns)
+
+    def lr_del(self, router, if_exists=False):
+        return cmd.LrDelCommand(self, router, if_exists)
+
+    def lr_list(self):
+        return cmd.LrListCommand(self)
+
+    def lrp_add(self, router, port, mac, networks, peer=None, may_exist=False,
+                **columns):
+        return cmd.LrpAddCommand(self, router, port, mac, networks,
+                                 peer, may_exist, **columns)
+
+    def lrp_del(self, port, router=None, if_exists=False):
+        return cmd.LrpDelCommand(self, port, router, if_exists)
+
+    def lrp_list(self, router):
+        return cmd.LrpListCommand(self, router)
+
+    def lrp_set_enabled(self, port, is_enabled):
+        return cmd.LrpSetEnabledCommand(self, port, is_enabled)
+
+    def lrp_get_enabled(self, port):
+        return cmd.LrpGetEnabledCommand(self, port)
+
+    def lr_route_add(self, router, prefix, nexthop, port=None,
+                     policy='dst-ip', may_exist=False):
+        return cmd.LrRouteAddCommand(self, router, prefix, nexthop, port,
+                                     policy, may_exist)
+
+    def lr_route_del(self, router, prefix=None, if_exists=False):
+        return cmd.LrRouteDelCommand(self, router, prefix, if_exists)
+
+    def lr_route_list(self, router):
+        return cmd.LrRouteListCommand(self, router)
+
+    def lr_nat_add(self, router, nat_type, external_ip, logical_ip,
+                   logical_port=None, external_mac=None, may_exist=False):
+        return cmd.LrNatAddCommand(
+            self, router, nat_type, external_ip, logical_ip, logical_port,
+            external_mac, may_exist)
+
+    def lr_nat_del(self, router, nat_type=None, match_ip=None,
+                   if_exists=False):
+        return cmd.LrNatDelCommand(self, router, nat_type, match_ip, if_exists)
+
+    def lr_nat_list(self, router):
+        return cmd.LrNatListCommand(self, router)
+
+    def lb_add(self, lb, vip, ips, protocol=const.PROTO_TCP, may_exist=False,
+               **columns):
+        return cmd.LbAddCommand(self, lb, vip, ips, protocol, may_exist,
+                                **columns)
+
+    def lb_del(self, lb, vip=None, if_exists=False):
+        return cmd.LbDelCommand(self, lb, vip, if_exists)
+
+    def lb_list(self):
+        return cmd.LbListCommand(self)
+
+    def lr_lb_add(self, router, lb, may_exist=False):
+        return cmd.LrLbAddCommand(self, router, lb, may_exist)
+
+    def lr_lb_del(self, router, lb=None, if_exists=False):
+        return cmd.LrLbDelCommand(self, router, lb, if_exists)
+
+    def lr_lb_list(self, router):
+        return cmd.LrLbListCommand(self, router)
+
+    def ls_lb_add(self, switch, lb, may_exist=False):
+        return cmd.LsLbAddCommand(self, switch, lb, may_exist)
+
+    def ls_lb_del(self, switch, lb=None, if_exists=False):
+        return cmd.LsLbDelCommand(self, switch, lb, if_exists)
+
+    def ls_lb_list(self, switch):
+        return cmd.LsLbListCommand(self, switch)
 
     def dhcp_options_add(self, cidr, **external_ids):
         return cmd.DhcpOptionsAddCommand(self, cidr, **external_ids)
