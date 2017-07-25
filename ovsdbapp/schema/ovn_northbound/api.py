@@ -58,6 +58,13 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def ls_get(self, switch):
+        """Get logical switch for 'switch'
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
     def acl_add(self, switch, direction, priority, match, action, log=False):
         """Add an ACL to 'switch'
 
@@ -146,6 +153,13 @@ class API(api.API):
         :param switch:  The name or uuid of the switch
         :type switch:   string or uuid.UUID
         :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def lsp_get(self, port):
+        """Get logical switch port for 'port'
+
+        :returns: :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
@@ -617,6 +631,13 @@ class API(api.API):
         """Get all DHCP_Options
 
         :returns: :class:`Command with RowView list result
+        """
+
+    @abc.abstractmethod
+    def dhcp_options_get(self, dhcpopt_uuid):
+        """Get dhcp options for 'dhcpopt_uuid'
+
+        :returns: :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
