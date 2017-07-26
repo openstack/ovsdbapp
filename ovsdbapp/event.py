@@ -44,7 +44,10 @@ class RowEvent(object):
         return hash(self.key)
 
     def __eq__(self, other):
-        return self.key == other.key
+        try:
+            return self.key == other.key
+        except AttributeError:
+            return False
 
     def __ne__(self, other):
         return not self == other
