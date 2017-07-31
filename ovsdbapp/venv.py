@@ -115,6 +115,10 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         ":{0}/ovn/controller:{0}/ovn/controller-vtep"
         ":{0}/ovn/northd:{0}/ovn/utilities")
 
+    def __init__(self, *args, **kwargs):
+        self.add_chassis = kwargs.pop('add_chassis', False)
+        super(OvsOvnVenvFixture, self).__init__(*args, **kwargs)
+
     @property
     def vtep_schema(self):
         return os.path.join(self.ovsdir, 'vtep', 'vtep.ovsschema')
@@ -169,12 +173,13 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         super(OvsOvnVenvFixture, self).init_processes()
         self.call(['ovn-nbctl', 'init'])
         self.call(['ovn-sbctl', 'init'])
-        self.call([
-            'ovs-vsctl', 'set', 'open', '.',
-            'external_ids:system-id=56b18105-5706-46ef-80c4-ff20979ab068',
-            'external_ids:hostname=sandbox',
-            'external_ids:ovn-encap-type=geneve',
-            'external_ids:ovn-encap-ip=127.0.0.1'])
+        if self.add_chassis:
+            self.call([
+                'ovs-vsctl', 'set', 'open', '.',
+                'external_ids:system-id=56b18105-5706-46ef-80c4-ff20979ab068',
+                'external_ids:hostname=sandbox',
+                'external_ids:ovn-encap-type=geneve',
+                'external_ids:ovn-encap-ip=127.0.0.1'])
         # TODO(twilson) SSL stuff
         if False:
             pass
