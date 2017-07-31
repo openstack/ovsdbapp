@@ -22,9 +22,9 @@ from ovsdbapp import venv
 
 class FunctionalTestCase(base.TestCase):
     connection = None
-    ovsvenv = venv.OvsVenvFixture(tempfile.mkdtemp(),
-                                  ovsdir=os.getenv('OVS_SRCDIR'),
-                                  remove=not bool(os.getenv('KEEP_VENV')))
+    ovsvenv = venv.OvsOvnVenvFixture(tempfile.mkdtemp(),
+                                     ovsdir=os.getenv('OVS_SRCDIR'),
+                                     remove=not bool(os.getenv('KEEP_VENV')))
     atexit.register(ovsvenv.cleanUp)
     ovsvenv.setUp()
     ovsvenvlog = None
