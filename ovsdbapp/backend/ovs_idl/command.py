@@ -184,43 +184,36 @@ class DbGetCommand(BaseCommand):
 
 
 class DbListCommand(BaseCommand):
-    def __init__(self, api, table, records, columns, if_exists):
+    def __init__(self, api, table, records, columns, if_exists, row=False):
         super(DbListCommand, self).__init__(api)
         self.table = table
         self.columns = columns
         self.if_exists = if_exists
         self.records = records
+        self.row = row
 
     def run_idl(self, txn):
         table_schema = self.api._tables[self.table]
         columns = self.columns or list(table_schema.columns.keys()) + ['_uuid']
         if self.records:
-            row_uuids = []
+            rows = []
             for record in self.records:
                 try:
-                    row_uuids.append(idlutils.row_by_record(
-                                     self.api.idl, self.table, record).uuid)
+                    rows.append(idlutils.row_by_record(
+                                self.api.idl, self.table, record))
+
                 except idlutils.RowNotFound:
                     if self.if_exists:
                         continue
-                    # NOTE(kevinbenton): this is converted to a RuntimeError
-                    # for compat with the vsctl version. It might make more
-                    # sense to change this to a RowNotFoundError in the future.
-                    raise RuntimeError(
-                        "Row doesn't exist in the DB. Request info: "
-                        "Table=%(table)s. Columns=%(columns)s. "
-                        "Records=%(records)s." % {
-                            "table": self.table,
-                            "columns": self.columns,
-                            "records": self.records})
+                    raise
         else:
-            row_uuids = table_schema.rows.keys()
+            rows = table_schema.rows.values()
         self.result = [
-            {
-                c: idlutils.get_column_value(table_schema.rows[uuid], c)
+            rowview.RowView(row) if self.row else {
+                c: idlutils.get_column_value(row, c)
                 for c in columns
             }
-            for uuid in row_uuids
+            for row in rows
         ]
 
 
@@ -229,12 +222,13 @@ class DbFindCommand(BaseCommand):
         super(DbFindCommand, self).__init__(api)
         self.table = self.api._tables[table]
         self.conditions = conditions
+        self.row = kwargs.get('row', False)
         self.columns = (kwargs.get('columns') or
                         list(self.table.columns.keys()) + ['_uuid'])
 
     def run_idl(self, txn):
         self.result = [
-            {
+            rowview.RowView(r) if self.row else {
                 c: idlutils.get_column_value(r, c)
                 for c in self.columns
             }

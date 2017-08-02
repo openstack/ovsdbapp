@@ -78,8 +78,15 @@ class Backend(object):
     def db_list(self, table, records=None, columns=None, if_exists=False):
         return cmd.DbListCommand(self, table, records, columns, if_exists)
 
+    def db_list_rows(self, table, records=None, if_exists=False):
+        return cmd.DbListCommand(self, table, records, columns=None, row=True,
+                                 if_exists=if_exists)
+
     def db_find(self, table, *conditions, **kwargs):
         return cmd.DbFindCommand(self, table, *conditions, **kwargs)
+
+    def db_find_rows(self, table, *conditions, **kwargs):
+        return cmd.DbFindCommand(self, table, *conditions, row=True, **kwargs)
 
     def db_remove(self, table, record, column, *values, **keyvalues):
         return cmd.DbRemoveCommand(self, table, record, column,

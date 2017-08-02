@@ -196,6 +196,14 @@ class API(object):
         """
 
     @abc.abstractmethod
+    def db_list_rows(self, table, record=None, if_exists=False):
+        """Create a command to return a list of OVSDB records
+
+        Identical to db_list, but returns a RowView list result
+        :returns: :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
     def db_find(self, table, *conditions, **kwargs):
         """Create a command to return find OVSDB records matching conditions
 
@@ -216,6 +224,15 @@ class API(object):
         :param columns:   Limit results to only columns, None means all columns
         :type columns:    list of column names or None
         :returns:         :class:`Command` with [{'column', value}, ...] result
+        """
+
+    @abc.abstractmethod
+    def db_find_rows(self, table, *conditions, **kwargs):
+        """Create a command to return OVSDB records matching conditions
+
+        Identical to db_find, but returns a list of RowView objects
+
+        :returns: :class:`Command` with RowView list result
         """
 
     @abc.abstractmethod

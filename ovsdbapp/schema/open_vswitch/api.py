@@ -29,7 +29,7 @@ class API(api.API):
 
         :param connection_uri: target to which manager needs to be set
         :type connection_uri: string, see ovs-vsctl manpage for format
-        :returns:           :class:`Command` with no result
+        :returns:           :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
@@ -61,7 +61,7 @@ class API(api.API):
         :type may_exist:        bool
         :param datapath_type:   The datapath_type of the bridge
         :type datapath_type:    string
-        :returns:               :class:`Command` with no result
+        :returns:               :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
@@ -170,7 +170,7 @@ class API(api.API):
         :type port:       string
         :param may_exist: Do not fail if the port already exists
         :type may_exist:  bool
-        :returns:         :class:`Command` with no result
+        :returns:         :class:`Command` with RowView result
         """
 
     @abc.abstractmethod

@@ -22,7 +22,9 @@ LOG = logging.getLogger(__name__)
 BaseCommand = command.BaseCommand
 
 
-class AddManagerCommand(BaseCommand):
+class AddManagerCommand(command.AddCommand):
+    table_name = 'Manager'
+
     def __init__(self, api, target):
         super(AddManagerCommand, self).__init__(api)
         self.target = target
@@ -36,6 +38,7 @@ class AddManagerCommand(BaseCommand):
             self.api._ovs.verify('manager_options')
             self.api._ovs.manager_options = (
                 self.api._ovs.manager_options + [row])
+        self.result = row.uuid
 
 
 class GetManagerCommand(BaseCommand):
@@ -70,7 +73,9 @@ class RemoveManagerCommand(BaseCommand):
         manager.delete()
 
 
-class AddBridgeCommand(BaseCommand):
+class AddBridgeCommand(command.AddCommand):
+    table_name = 'Bridge'
+
     def __init__(self, api, name, may_exist, datapath_type):
         super(AddBridgeCommand, self).__init__(api)
         self.name = name
@@ -84,6 +89,7 @@ class AddBridgeCommand(BaseCommand):
             if br:
                 if self.datapath_type:
                     br.datapath_type = self.datapath_type
+                self.result = br.uuid
                 return
         row = txn.insert(self.api._tables['Bridge'])
         row.name = self.name
@@ -102,6 +108,7 @@ class AddBridgeCommand(BaseCommand):
         cmd = command.DbSetCommand(self.api, 'Interface', self.name,
                                    ('type', 'internal'))
         cmd.run_idl(txn)
+        self.result = row.uuid
 
 
 class DelBridgeCommand(BaseCommand):
@@ -229,7 +236,9 @@ class SetFailModeCommand(BaseCommand):
         br.fail_mode = self.mode
 
 
-class AddPortCommand(BaseCommand):
+class AddPortCommand(command.AddCommand):
+    table_name = 'Port'
+
     def __init__(self, api, bridge, port, may_exist):
         super(AddPortCommand, self).__init__(api)
         self.bridge = bridge
@@ -242,6 +251,7 @@ class AddPortCommand(BaseCommand):
             port = idlutils.row_by_value(self.api.idl, 'Port', 'name',
                                          self.port, None)
             if port:
+                self.result = port.uuid
                 return
         port = txn.insert(self.api._tables['Port'])
         port.name = self.port
@@ -258,6 +268,7 @@ class AddPortCommand(BaseCommand):
         iface.name = self.port
         # This is a new port, so it won't have any existing interfaces
         port.interfaces = [iface]
+        self.result = port.uuid
 
 
 class DelPortCommand(BaseCommand):
