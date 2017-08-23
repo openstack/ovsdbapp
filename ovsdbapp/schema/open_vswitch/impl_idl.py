@@ -77,6 +77,10 @@ class OvsdbIdl(ovs_idl.Backend, api.API):
     schema = 'Open_vSwitch'
 
     @property
+    def connection(self):
+        return self.ovsdb_connection
+
+    @property
     def _ovs(self):
         return list(self._tables['Open_vSwitch'].rows.values())[0]
 
