@@ -13,9 +13,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
+
+from ovsdbapp import exceptions as exc
 from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests.functional import base
 from ovsdbapp.tests import utils
+
+
+# NOTE(twilson) functools.partial does not work for this
+def trpatch(*args, **kwargs):
+    def wrapped(fn):
+        return mock.patch.object(impl_idl.OvsVsctlTransaction,
+                                 *args, **kwargs)(fn)
+    return wrapped
 
 
 class TestOvsdbIdl(base.FunctionalTestCase):
@@ -89,3 +100,50 @@ class TestOvsdbIdl(base.FunctionalTestCase):
     def test_del_port_if_exists_false(self):
         cmd = self.api.del_port(utils.get_rand_device_name(), if_exists=False)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+
+class ImplIdlTestCase(base.FunctionalTestCase):
+    schemas = ['Open_vSwitch']
+
+    def setUp(self):
+        super(ImplIdlTestCase, self).setUp()
+        self.api = impl_idl.OvsdbIdl(self.connection)
+        self.brname = utils.get_rand_device_name()
+        # Make sure exceptions pass through by calling do_post_commit directly
+        mock.patch.object(
+            impl_idl.OvsVsctlTransaction, "post_commit",
+            side_effect=impl_idl.OvsVsctlTransaction.do_post_commit,
+            autospec=True).start()
+
+    def _add_br(self):
+        # NOTE(twilson) we will be raising exceptions with add_br, so schedule
+        # cleanup before that.
+        cmd = self.api.del_br(self.brname)
+        self.addCleanup(cmd.execute)
+        with self.api.transaction(check_error=True) as tr:
+            tr.add(self.api.add_br(self.brname))
+        return tr
+
+    def _add_br_and_test(self):
+        self._add_br()
+        ofport = self.api.db_get("Interface", self.brname, "ofport").execute(
+            check_error=True)
+        self.assertTrue(int(ofport))
+        self.assertGreater(ofport, -1)
+
+    def test_post_commit_vswitchd_completed_no_failures(self):
+        self._add_br_and_test()
+
+    @trpatch("vswitchd_has_completed", return_value=True)
+    @trpatch("post_commit_failed_interfaces", return_value=["failed_if1"])
+    @trpatch("timeout_exceeded", return_value=False)
+    def test_post_commit_vswitchd_completed_failures(self, *args):
+        self.assertRaises(impl_idl.VswitchdInterfaceAddException,
+                          self._add_br)
+
+    @trpatch("vswitchd_has_completed", return_value=False)
+    def test_post_commit_vswitchd_incomplete_timeout(self, *args):
+        # Due to timing issues we may rarely hit the global timeout, which
+        # raises RuntimeError to match the vsctl implementation
+        self.api.ovsdb_connection.timeout = 1
+        self.assertRaises((exc.TimeoutException, RuntimeError), self._add_br)
