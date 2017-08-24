@@ -75,7 +75,6 @@ class OvsVsctlTransaction(transaction.Transaction):
 
 class OvsdbIdl(ovs_idl.Backend, api.API):
     schema = 'Open_vSwitch'
-    ovsdb_connection = None
 
     @property
     def _ovs(self):

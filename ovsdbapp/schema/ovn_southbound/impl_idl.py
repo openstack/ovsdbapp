@@ -18,7 +18,6 @@ from ovsdbapp.schema.ovn_southbound import commands as cmd
 
 class OvnSbApiIdlImpl(ovs_idl.Backend, api.API):
     schema = 'OVN_Southbound'
-    ovsdb_connection = None
     lookup_table = {
         'Chassis': idlutils.RowLookup('Chassis', 'name', None),
     }

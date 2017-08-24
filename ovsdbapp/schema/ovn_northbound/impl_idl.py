@@ -19,7 +19,6 @@ from ovsdbapp.schema.ovn_northbound import commands as cmd
 
 class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     schema = 'OVN_Northbound'
-    ovsdb_connection = None
     lookup_table = {
         'Logical_Switch': idlutils.RowLookup('Logical_Switch', 'name', None),
         'Logical_Router': idlutils.RowLookup('Logical_Router', 'name', None),
