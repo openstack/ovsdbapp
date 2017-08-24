@@ -990,3 +990,64 @@ class LsLbListCommand(cmd.BaseCommand):
     def run_idl(self, txn):
         ls = self.api.lookup('Logical_Switch', self.switch)
         self.result = [rowview.RowView(r) for r in ls.load_balancer]
+
+
+class DnsAddCommand(cmd.AddCommand):
+    table_name = 'DNS'
+
+    def __init__(self, api, **columns):
+        super(DnsAddCommand, self).__init__(api)
+        self.columns = columns
+
+    def run_idl(self, txn):
+        dns = txn.insert(self.api.tables[self.table_name])
+        # Transaction will not be commited if the row is not initialized with
+        # any columns.
+        dns.external_ids = {}
+        self.set_columns(dns, **self.columns)
+        self.result = dns.uuid
+
+
+class DnsDelCommand(cmd.DbDestroyCommand):
+    def __init__(self, api, uuid):
+        super(DnsDelCommand, self).__init__(api, 'DNS', uuid)
+
+
+class DnsGetCommand(cmd.BaseGetRowCommand):
+    table = 'DNS'
+
+
+class DnsListCommand(cmd.BaseCommand):
+    def run_idl(self, txn):
+        table = self.api.tables['DNS']
+        self.result = [rowview.RowView(r) for r in table.rows.values()]
+
+
+class DnsSetRecordsCommand(cmd.BaseCommand):
+    def __init__(self, api, row_uuid, **records):
+        super(DnsSetRecordsCommand, self).__init__(api)
+        self.row_uuid = row_uuid
+        self.records = records
+
+    def run_idl(self, txn):
+        try:
+            dns = self.api.lookup('DNS', self.row_uuid)
+            dns.records = self.records
+        except idlutils.RowNotFound:
+            msg = "DNS %s does not exist" % self.row_uuid
+            raise RuntimeError(msg)
+
+
+class DnsSetExternalIdsCommand(cmd.BaseCommand):
+    def __init__(self, api, row_uuid, **external_ids):
+        super(DnsSetExternalIdsCommand, self).__init__(api)
+        self.row_uuid = row_uuid
+        self.external_ids = external_ids
+
+    def run_idl(self, txn):
+        try:
+            dns = self.api.lookup('DNS', self.row_uuid)
+            dns.external_ids = self.external_ids
+        except idlutils.RowNotFound:
+            msg = "DNS %s does not exist" % self.row_uuid
+            raise RuntimeError(msg)

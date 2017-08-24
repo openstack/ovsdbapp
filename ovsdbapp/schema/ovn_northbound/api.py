@@ -65,6 +65,34 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def ls_set_dns_records(self, switch_uuid, dns_uuids):
+        """Sets 'dns_records' column on the switch with uuid 'switch_uuid'
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ls_clear_dns_records(self, switch):
+        """Clears 'dns_records' from the switch with uuid 'switch_uuid'
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ls_add_dns_record(self, switch_uuid, dns_uuid):
+        """Add the 'dns_record' to the switch's 'dns_records' list
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ls_remove_dns_record(self, switch_uuid, dns_uuid):
+        """Remove the 'dns_record' from the switch's 'dns_records' list
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
     def acl_add(self, switch, direction, priority, match, action, log=False):
         """Add an ACL to 'switch'
 
@@ -656,4 +684,79 @@ class API(api.API):
         :param uuid:  The uuid of the DHCP Options row
         :type uuid:   string or uuid.UUID
         :returns:     :class:`Command` with dict result
+        """
+
+    @abc.abstractmethod
+    def dns_add(self, **external_ids):
+        """Create a DNS row with external_ids
+
+        :param external_ids: external_id field key/value mapping
+        :type external_ids:  key: string, value: string
+        :returns:            :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def dns_del(self, uuid):
+        """Delete DNS row with 'uuid'
+
+        :param uuid: The uuid of the DNS row to delete
+        :type uuid:  string or uuid.UUID
+        :returns:    :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def dns_get(self, uuid):
+        """Get DNS row with 'uuid'
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def dns_list(self):
+        """Get all DNS rows
+
+        :returns: :class:`Command with RowView list result
+        """
+
+    @abc.abstractmethod
+    def dns_set_records(self, uuid, **records):
+        """Sets the 'records' field of the DNS row
+
+        :param uuid: The uuid of the DNS row to set the records with
+        :type uuid:  string or uuid.UUID
+        :param records: keys and values for the DNS 'records' dict
+        :type records:  key: string, value: string
+        :returns:    :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def dns_add_record(self, uuid, hostname, ips):
+        """Add the record 'hostname: ips' into the records column of the DNS
+
+        :param uuid: The uuid of the DNS row to add the record
+        :type uuid:  string or uuid.UUID
+        :param hostname: hostname as the key to the record dict
+        :type ips:  IPs as the value to the hostname key in the 'records'
+        :returns:    :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def dns_remove_record(self, uuid, hostname):
+        """Remove the 'hostname' from the 'records' field of the DNS row
+
+        :param uuid: The uuid of the DNS row to set the records with
+        :type uuid:  string or uuid.UUID
+        :param hostname: hostname as the key to the record dict
+        :returns:    :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def dns_set_external_ids(self, uuid, **external_ids):
+        """Sets the 'external_ids' field of the DNS row
+
+        :param uuid: The uuid of the DNS row to set the external_ids with
+        :type uuid:  string or uuid.UUID
+        :param external_ids: keys and values for the DNS 'external_ids' dict
+        :type external_ids:  key: string, value: string
+        :returns:    :class:`Command` with no result
         """

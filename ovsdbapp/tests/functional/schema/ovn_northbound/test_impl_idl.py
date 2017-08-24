@@ -1087,3 +1087,113 @@ class TestCommonDbOps(OvnNorthboundTest):
         # should be a NoOp, not fail
         self.api.db_remove('Logical_Switch', self.switch.uuid, 'ports',
                            "badvalue").execute(check_error=True)
+
+
+class TestDnsOps(OvnNorthboundTest):
+    def _dns_add(self, *args, **kwargs):
+        dns = self.useFixture(fixtures.DnsFixture(*args, **kwargs)).obj
+        return dns
+
+    def test_dns_get(self):
+        dns = self._dns_add()
+        found = self.api.dns_get(dns.uuid).execute(
+            check_error=True)
+        self.assertEqual(dns, found)
+
+    def test_dns_get_no_exist(self):
+        cmd = self.api.dns_get("noexist")
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
+    def test_dns_add(self):
+        self._dns_add()
+
+    def test_dns_add_ext_ids(self):
+        ext_ids = {'net-id': '1', 'other-id': '2'}
+        dns = self._dns_add(external_ids=ext_ids)
+        self.assertEqual(ext_ids, dns.external_ids)
+
+    def test_dns_list(self):
+        dnses = {self._dns_add() for d in range(3)}
+        dnses_set = set(
+            self.api.dns_list().execute(check_error=True))
+        self.assertTrue(dnses.issubset(dnses_set))
+
+    def test_dns_set_records(self):
+        dns = self._dns_add()
+        records = {'a': 'one', 'b': 'two'}
+        self.api.dns_set_records(
+            dns.uuid, **records).execute(check_error=True)
+        dns = self.api.dns_get(dns.uuid).execute(
+            check_error=True)
+        self.assertEqual(records, dns.records)
+        self.api.dns_set_records(
+            dns.uuid, **{}).execute(check_error=True)
+        self.assertEqual({}, dns.records)
+
+    def test_dns_set_external_ids(self):
+        dns = self._dns_add()
+        external_ids = {'a': 'one', 'b': 'two'}
+        self.api.dns_set_external_ids(
+            dns.uuid, **external_ids).execute(check_error=True)
+        dns = self.api.dns_get(dns.uuid).execute(
+            check_error=True)
+        self.assertEqual(external_ids, dns.external_ids)
+        self.api.dns_set_external_ids(
+            dns.uuid, **{}).execute(check_error=True)
+        self.assertEqual({}, dns.external_ids)
+
+    def test_dns_add_remove_records(self):
+        dns = self._dns_add()
+        self.api.dns_add_record(dns.uuid, 'a', 'one').execute()
+        self.api.dns_add_record(dns.uuid, 'b', 'two').execute()
+        dns = self.api.dns_get(dns.uuid).execute(
+            check_error=True)
+        records = {'a': 'one', 'b': 'two'}
+        self.assertEqual(records, dns.records)
+        self.api.dns_remove_record(dns.uuid, 'a').execute()
+        records.pop('a')
+        self.assertEqual(records, dns.records)
+        self.api.dns_remove_record(dns.uuid, 'b').execute()
+        self.assertEqual({}, dns.records)
+
+
+class TestLsDnsOps(OvnNorthboundTest):
+    def _dns_add(self, *args, **kwargs):
+        dns = self.useFixture(fixtures.DnsFixture(*args, **kwargs)).obj
+        return dns
+
+    def _ls_add(self, *args, **kwargs):
+        fix = self.useFixture(fixtures.LogicalSwitchFixture(*args, **kwargs))
+        return fix.obj
+
+    def test_ls_dns_set_clear_records(self):
+        dns1 = self._dns_add()
+        dns2 = self._dns_add()
+
+        ls1 = self._ls_add('ls1')
+        self.api.ls_set_dns_records(ls1.uuid, [dns1.uuid, dns2.uuid]).execute()
+        self.assertItemsEqual([dns1.uuid, dns2.uuid],
+                              [dns.uuid for dns in ls1.dns_records])
+
+        self.api.ls_clear_dns_records(ls1.uuid).execute()
+        self.assertEqual([], ls1.dns_records)
+
+    def test_ls_dns_add_remove_records(self):
+        dns1 = self._dns_add()
+        dns2 = self._dns_add()
+
+        ls1 = self._ls_add('ls1')
+
+        self.api.ls_add_dns_record(ls1.uuid, dns1.uuid).execute()
+        self.assertItemsEqual([dns1.uuid],
+                              [dns.uuid for dns in ls1.dns_records])
+
+        self.api.ls_add_dns_record(ls1.uuid, dns2.uuid).execute()
+        self.assertItemsEqual([dns1.uuid, dns2.uuid],
+                              [dns.uuid for dns in ls1.dns_records])
+
+        self.api.ls_remove_dns_record(ls1.uuid, dns2.uuid).execute()
+        self.assertItemsEqual([dns1.uuid],
+                              [dns.uuid for dns in ls1.dns_records])
+        self.api.ls_remove_dns_record(ls1.uuid, dns1.uuid).execute()
+        self.assertEqual([], ls1.dns_records)

@@ -37,3 +37,10 @@ class LoadBalancerFixture(fixtures.ImplIdlFixture):
     api = impl_idl.OvnNbApiIdlImpl
     create = 'lb_add'
     delete = 'lb_del'
+
+
+class DnsFixture(fixtures.ImplIdlFixture):
+    api = impl_idl.OvnNbApiIdlImpl
+    create = 'dns_add'
+    delete = 'dns_del'
+    delete_args = {}

@@ -15,6 +15,7 @@ from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants as const
 from ovsdbapp.schema.ovn_northbound import api
 from ovsdbapp.schema.ovn_northbound import commands as cmd
+from ovsdbapp import utils
 
 
 class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
@@ -36,6 +37,21 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def ls_get(self, switch):
         return cmd.LsGetCommand(self, switch)
+
+    def ls_set_dns_records(self, switch_uuid, dns_uuids):
+        return self.db_set('Logical_Switch', switch_uuid,
+                           ('dns_records', dns_uuids))
+
+    def ls_clear_dns_records(self, switch_uuid):
+        return self.db_clear('Logical_Switch', switch_uuid, 'dns_records')
+
+    def ls_add_dns_record(self, switch_uuid, dns_uuid):
+        return self.db_add('Logical_Switch', switch_uuid, 'dns_records',
+                           dns_uuid)
+
+    def ls_remove_dns_record(self, switch_uuid, dns_uuid):
+        return self.db_remove('Logical_Switch', switch_uuid, 'dns_records',
+                              dns_uuid)
 
     def acl_add(self, switch, direction, priority, match, action, log=False,
                 may_exist=False, **external_ids):
@@ -204,3 +220,29 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def dhcp_options_get_options(self, dhcpopt_uuid):
         return cmd.DhcpOptionsGetOptionsCommand(self, dhcpopt_uuid)
+
+    def dns_add(self, **columns):
+        return cmd.DnsAddCommand(self, **columns)
+
+    def dns_del(self, uuid):
+        return cmd.DnsDelCommand(self, uuid)
+
+    def dns_get(self, uuid):
+        return cmd.DnsGetCommand(self, uuid)
+
+    def dns_list(self):
+        return cmd.DnsListCommand(self)
+
+    def dns_set_records(self, uuid, **records):
+        return cmd.DnsSetRecordsCommand(self, uuid, **records)
+
+    def dns_add_record(self, uuid, hostname, ips):
+        if isinstance(ips, list):
+            ips = " ".join(utils.normalize_ip_port(ip) for ip in ips)
+        return self.db_add('DNS', uuid, 'records', {hostname: ips})
+
+    def dns_remove_record(self, uuid, hostname):
+        return self.db_remove('DNS', uuid, 'records', hostname)
+
+    def dns_set_external_ids(self, uuid, **external_ids):
+        return cmd.DnsSetExternalIdsCommand(self, uuid, **external_ids)
