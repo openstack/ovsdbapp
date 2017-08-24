@@ -18,3 +18,4 @@ class BridgeFixture(fixtures.ImplIdlFixture):
     api = impl_idl.OvsdbIdl
     create = 'add_br'
     delete = 'del_br'
+    delete_id = 'name'
