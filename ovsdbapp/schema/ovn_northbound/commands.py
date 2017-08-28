@@ -841,7 +841,7 @@ class LbAddCommand(cmd.BaseCommand):
         super(LbAddCommand, self).__init__(api)
         self.lb = lb
         self.vip = utils.normalize_ip_port(vip)
-        self.ips = ",".join(utils.normalize_ip(ip) for ip in ips)
+        self.ips = ",".join(utils.normalize_ip_port(ip) for ip in ips)
         self.protocol = protocol
         self.may_exist = may_exist
         self.columns = columns
