@@ -33,7 +33,7 @@ for d in sys.argv[1:]:
 venvdir = os.path.abspath(sys.argv[1])
 ovsdir = os.path.abspath(sys.argv[2])
 
-v = venv.OvsVenvFixture(venvdir, ovsdir)
+v = venv.OvsOvnVenvFixture(venvdir, ovsdir)
 try:
     atexit.register(v.cleanUp)
     v.setUp()
