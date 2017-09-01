@@ -429,6 +429,10 @@ class TestDhcpOptionsOps(OvnNorthboundTest):
             check_error=True)
         self.assertEqual(dhcpopt, found)
 
+    def test_dhcp_options_get_no_exist(self):
+        cmd = self.api.dhcp_options_get("noexist")
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
     def test_dhcp_options_add(self):
         self._dhcpopt_add('192.0.2.1/24')
 
