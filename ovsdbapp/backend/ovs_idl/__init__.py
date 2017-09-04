@@ -132,7 +132,9 @@ class Backend(object):
         if rl.table is None:
             raise idlutils.RowNotFound(table=table, col='uuid', match=record)
         if rl.column is None:
-            return next(iter(t.rows.values()))
+            if t.max_rows == 1:
+                return next(iter(t.rows.values()))
+            raise idlutils.RowNotFound(table=table, col='uuid', match=record)
         row = idlutils.row_by_value(self, rl.table, rl.column, record)
         if rl.uuid_column:
             rows = getattr(row, rl.uuid_column)
