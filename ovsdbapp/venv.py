@@ -39,21 +39,30 @@ class OvsVenvFixture(fixtures.Fixture):
         :param remove: Boolean value whether venv directory should be removed
                        at the fixture cleanup.
         """
-        if not os.path.isdir(ovsdir):
-            raise Exception("%s is not a directory" % ovsdir)
         self.venv = venv
-        self.ovsdir = ovsdir
+        self.env = {'OVS_RUNDIR': self.venv, 'OVS_LOGDIR': self.venv,
+                    'OVS_DBDIR': self.venv, 'OVS_SYSCONFDIR': self.venv}
+        if ovsdir:
+            self.ovsdir = ovsdir
+            self.env['PATH'] = (self.PATH_VAR_TEMPLATE.format(self.ovsdir) +
+                                ":%s" % os.getenv('PATH'))
+        else:
+            self.env['PATH'] = os.getenv('PATH')
+            self.ovsdir = os.path.join('/usr', 'local', 'share', 'openvswitch')
+            if not os.path.isdir(self.ovsdir):
+                self.ovsdir = os.path.join('/usr', 'share', 'openvswitch')
+        if not os.path.isdir(self.ovsdir):
+            raise Exception("%s is not a directory" % self.ovsdir)
         self._dummy = dummy
         self.remove = remove
-        self.env = {'OVS_RUNDIR': self.venv, 'OVS_LOGDIR': self.venv,
-                    'OVS_DBDIR': self.venv, 'OVS_SYSCONFDIR': self.venv,
-                    'PATH': self.PATH_VAR_TEMPLATE.format(
-                        self.ovsdir) + ":%s" % os.getenv('PATH')}
         self.ovsdb_server_dbs = []
 
     @property
     def ovs_schema(self):
-        return os.path.join(self.ovsdir, 'vswitchd', 'vswitch.ovsschema')
+        path = os.path.join(self.ovsdir, 'vswitchd', 'vswitch.ovsschema')
+        if os.path.isfile(path):
+            return path
+        return os.path.join(self.ovsdir, 'vswitch.ovsschema')
 
     @property
     def dummy_arg(self):
@@ -131,15 +140,24 @@ class OvsOvnVenvFixture(OvsVenvFixture):
 
     @property
     def vtep_schema(self):
-        return os.path.join(self.ovsdir, 'vtep', 'vtep.ovsschema')
+        path = os.path.join(self.ovsdir, 'vtep', 'vtep.ovsschema')
+        if os.path.isfile(path):
+            return path
+        return os.path.join(self.ovsdir, 'vtep.ovsschema')
 
     @property
     def ovnsb_schema(self):
-        return os.path.join(self.ovsdir, 'ovn', 'ovn-sb.ovsschema')
+        path = os.path.join(self.ovsdir, 'ovn', 'ovn-sb.ovsschema')
+        if os.path.isfile(path):
+            return path
+        return os.path.join(self.ovsdir, 'ovn-sb.ovsschema')
 
     @property
     def ovnnb_schema(self):
-        return os.path.join(self.ovsdir, 'ovn', 'ovn-nb.ovsschema')
+        path = os.path.join(self.ovsdir, 'ovn', 'ovn-nb.ovsschema')
+        if os.path.isfile(path):
+            return path
+        return os.path.join(self.ovsdir, 'ovn-nb.ovsschema')
 
     @property
     def ovnnb_connection(self):
