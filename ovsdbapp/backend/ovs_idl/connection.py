@@ -21,6 +21,7 @@ from ovs import poller
 from six.moves import queue as Queue
 
 from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp import exceptions
 
 if os.name == 'nt':
     from ovsdbapp.backend.ovs_idl.windows import connection_utils
@@ -64,6 +65,7 @@ class Connection(object):
         self.lock = threading.Lock()
         self.idl = idl
         self.thread = None
+        self._is_running = None
 
     def start(self):
         """Start the connection."""
@@ -78,12 +80,13 @@ class Connection(object):
                     # An ovs.db.Idl class has no post_connect
                     pass
             self.poller = poller.Poller()
+            self._is_running = True
             self.thread = threading.Thread(target=self.run)
             self.thread.setDaemon(True)
             self.thread.start()
 
     def run(self):
-        while True:
+        while self._is_running:
             self.idl.wait(self.poller)
             self.poller.fd_wait(self.txns.alert_fileno, poller.POLLIN)
             # TODO(jlibosva): Remove next line once losing connection to ovsdb
@@ -101,7 +104,20 @@ class Connection(object):
                     txn.results.put(er)
                 self.txns.task_done()
 
+    def stop(self, timeout=None):
+        if not self._is_running:
+            return True
+        self._is_running = False
+        self.txns.put(None)
+        self.thread.join(timeout)
+        if self.thread.is_alive():
+            return False
+        self.thread = None
+        return True
+
     def queue_txn(self, txn):
+        if not self._is_running:
+            raise exceptions.NotConnectedError(txn=txn)
         self.txns.put(txn)
 
 

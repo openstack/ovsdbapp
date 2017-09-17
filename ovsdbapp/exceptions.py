@@ -59,3 +59,7 @@ class OvsdbConnectionUnavailable(OvsdbAppException):
                "'%(error)s'. Verify that the OVS and OVN services are "
                "available and that the 'ovn_nb_connection' and "
                "'ovn_sb_connection' configuration options are correct.")
+
+
+class NotConnectedError(OvsdbAppException):
+    message = "Cannot commit transaction %(txn)s. Not connected"
