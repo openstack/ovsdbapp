@@ -47,6 +47,7 @@ class TestOVSNativeConnection(base.TestCase):
         mock_thread.return_value.start.assert_called_once_with()
 
     def test_queue_txn(self):
+        self.conn.start()
         self.conn.queue_txn('blah')
         self.conn.txns.put.assert_called_once_with('blah')
 

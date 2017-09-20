@@ -101,6 +101,22 @@ class TestOvsdbIdl(base.FunctionalTestCase):
         cmd = self.api.del_port(utils.get_rand_device_name(), if_exists=False)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
+    def test_connection_reconnect(self):
+        self.api.ovsdb_connection.stop()
+        existsCmd = self.api.br_exists(self.brname)
+        self.assertRaises(exc.NotConnectedError,
+                          existsCmd.execute, check_error=True)
+        self.api.ovsdb_connection.start()
+        exists = self.api.br_exists(self.brname).execute(check_error=True)
+        self.assertFalse(exists)
+
+    def test_connection_disconnect_timeout(self):
+        _is_running_mock = mock.PropertyMock(return_value=True)
+        connection = self.api.ovsdb_connection
+        type(connection)._is_running = _is_running_mock
+        self.addCleanup(delattr, type(connection), '_is_running')
+        self.assertFalse(connection.stop(1))
+
 
 class ImplIdlTestCase(base.FunctionalTestCase):
     schemas = ['Open_vSwitch']

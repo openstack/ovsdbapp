@@ -54,10 +54,12 @@ class FunctionalTestCase(base.TestCase):
             return
         cls._connections = {}
         for schema in cls.schemas:
-            idl = connection.OvsdbIdl.from_server(cls.schema_map[schema],
-                                                  schema)
-            cls._connections[schema] = connection.Connection(
-                idl, constants.DEFAULT_TIMEOUT)
+            cls._connections[schema] = cls.create_connection(schema)
+
+    @classmethod
+    def create_connection(cls, schema):
+        idl = connection.OvsdbIdl.from_server(cls.schema_map[schema], schema)
+        return connection.Connection(idl, constants.DEFAULT_TIMEOUT)
 
     def setUp(self):
         super(FunctionalTestCase, self).setUp()

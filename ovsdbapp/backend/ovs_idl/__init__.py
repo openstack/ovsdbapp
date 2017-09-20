@@ -42,6 +42,11 @@ class Backend(object):
             LOG.exception(connection_exception)
             raise connection_exception
 
+    @classmethod
+    def restart_connection(cls):
+        cls.ovsdb_connection.stop()
+        cls.ovsdb_connection.start()
+
     @property
     def idl(self):
         return self.__class__.ovsdb_connection.idl
