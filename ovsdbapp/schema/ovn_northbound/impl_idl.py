@@ -133,6 +133,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lr_list(self):
         return cmd.LrListCommand(self)
 
+    def lr_get(self, router):
+        return cmd.LrGetCommand(self, router)
+
     def lrp_add(self, router, port, mac, networks, peer=None, may_exist=False,
                 **columns):
         return cmd.LrpAddCommand(self, router, port, mac, networks,
