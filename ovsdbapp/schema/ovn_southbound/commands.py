@@ -44,7 +44,7 @@ class ChassisAddCommand(cmd.AddCommand):
             encap = txn.insert(self.api.tables['Encap'])
             encap.type = encap_type
             encap.ip = self.encap_ip
-            encap.options = {'csum': True}  # ovn-sbctl silently does this...
+            encap.options = {'csum': 'True'}  # ovn-sbctl silently does this...
             # NOTE(twilson) addvalue seems like it should work, but fails with
             # Chassis table col encaps references nonexistent row error
             # chassis.addvalue('encaps', encap)
