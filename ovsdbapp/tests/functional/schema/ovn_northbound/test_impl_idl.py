@@ -225,43 +225,44 @@ class TestLspOps(OvnNorthboundTest):
 
     def test_lsp_add_parent(self):
         lsp1 = self._lsp_add(self.switch, None)
-        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        lsp2 = self._lsp_add(self.switch, None, parent_name=lsp1.name, tag=0)
         # parent_name, being optional, is stored as a list
         self.assertIn(lsp1.name, lsp2.parent_name)
 
     def test_lsp_add_parent_no_tag(self):
         self.assertRaises(TypeError, self._lsp_add, self.switch,
-                          None, parent="fake_parent")
+                          None, parent_name="fake_parent")
 
     def test_lsp_add_parent_may_exist(self):
         lsp1 = self._lsp_add(self.switch, None)
-        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
-        lsp3 = self._lsp_add(self.switch, lsp2.name, parent=lsp1.name,
+        lsp2 = self._lsp_add(self.switch, None, parent_name=lsp1.name, tag=0)
+        lsp3 = self._lsp_add(self.switch, lsp2.name, parent_name=lsp1.name,
                              tag=0, may_exist=True)
         self.assertEqual(lsp2, lsp3)
 
     def test_lsp_add_parent_may_exist_no_parent(self):
         lsp1 = self._lsp_add(self.switch, None)
         self.assertRaises(RuntimeError, self._lsp_add, self.switch,
-                          lsp1.name, parent="fake_parent", tag=0,
+                          lsp1.name, parent_name="fake_parent", tag=0,
                           may_exist=True)
 
     def test_lsp_add_parent_may_exist_different_parent(self):
         lsp1 = self._lsp_add(self.switch, None)
-        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        lsp2 = self._lsp_add(self.switch, None, parent_name=lsp1.name, tag=0)
         self.assertRaises(RuntimeError, self._lsp_add, self.switch,
-                          lsp2.name, parent="fake_parent", tag=0,
+                          lsp2.name, parent_name="fake_parent", tag=0,
                           may_exist=True)
 
     def test_lsp_add_parent_may_exist_different_tag(self):
         lsp1 = self._lsp_add(self.switch, None)
-        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        lsp2 = self._lsp_add(self.switch, None, parent_name=lsp1.name, tag=0)
         self.assertRaises(RuntimeError, self._lsp_add, self.switch,
-                          lsp2.name, parent=lsp1.name, tag=1, may_exist=True)
+                          lsp2.name, parent_name=lsp1.name, tag=1,
+                          may_exist=True)
 
     def test_lsp_add_may_exist_existing_parent(self):
         lsp1 = self._lsp_add(self.switch, None)
-        lsp2 = self._lsp_add(self.switch, None, parent=lsp1.name, tag=0)
+        lsp2 = self._lsp_add(self.switch, None, parent_name=lsp1.name, tag=0)
         self.assertRaises(RuntimeError, self._lsp_add, self.switch,
                           lsp2.name, may_exist=True)
 
@@ -328,14 +329,14 @@ class TestLspOps(OvnNorthboundTest):
 
     def test_lsp_get_parent(self):
         ls1 = self._lsp_add(self.switch, None)
-        ls2 = self._lsp_add(self.switch, None, parent=ls1.name, tag=0)
+        ls2 = self._lsp_add(self.switch, None, parent_name=ls1.name, tag=0)
         self.assertEqual(
             ls1.name, self.api.lsp_get_parent(ls2.name).execute(
                 check_error=True))
 
     def test_lsp_get_tag(self):
         ls1 = self._lsp_add(self.switch, None)
-        ls2 = self._lsp_add(self.switch, None, parent=ls1.name, tag=0)
+        ls2 = self._lsp_add(self.switch, None, parent_name=ls1.name, tag=0)
         self.assertIsInstance(self.api.lsp_get_tag(ls2.uuid).execute(
             check_error=True), int)
 

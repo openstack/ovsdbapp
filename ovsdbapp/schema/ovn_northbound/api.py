@@ -113,26 +113,26 @@ class API(api.API):
         """
 
     @abc.abstractmethod
-    def lsp_add(self, switch, port, parent=None, tag=None, may_exist=False,
-                **columns):
+    def lsp_add(self, switch, port, parent_name=None, tag=None,
+                may_exist=False, **columns):
         """Add logical port 'port' on 'switch'
 
         NOTE: for the purposes of testing the existence of the 'port',
         'port' is treated as either a name or a uuid, as in ovn-nbctl.
 
-        :param switch:    The name or uuid of the switch
-        :type switch:     string or uuid.UUID
-        :param port:      The name of the port
-        :type port:       string or uuid.UUID
-        :param parent:    The name of the parent port (requires tag)
-        :type parent:     string
-        :param tag:       The tag_request field of the port. 0 causes
-                          ovn-northd to assign a unique tag
-        :type tag:        int [0, 4095]
-        :param may_exist: If True, don't fail if the switch already exists
-        :type may_exist:  boolean
-        :param columns:   Additional columns to directly set on the switch
-        :returns:         :class:`Command` with RowView result
+        :param switch:      The name or uuid of the switch
+        :type switch:       string or uuid.UUID
+        :param port:        The name of the port
+        :type port:         string or uuid.UUID
+        :param parent_name: The name of the parent port (requires tag)
+        :type parent_name:  string
+        :param tag:         The tag_request field of the port. 0 causes
+                            ovn-northd to assign a unique tag
+        :type tag:          int [0, 4095]
+        :param may_exist:   If True, don't fail if the switch already exists
+        :type may_exist:    boolean
+        :param columns:     Additional columns to directly set on the switch
+        :returns:           :class:`Command` with RowView result
         """
 
     @abc.abstractmethod

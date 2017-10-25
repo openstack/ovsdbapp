@@ -167,16 +167,16 @@ class AclListCommand(cmd.BaseCommand):
 class LspAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch_Port'
 
-    def __init__(self, api, switch, port, parent=None, tag=None,
+    def __init__(self, api, switch, port, parent_name=None, tag=None,
                  may_exist=False, **columns):
         if tag and not 0 <= tag <= 4095:
             raise TypeError("tag must be 0 to 4095, inclusive")
-        if (parent is None) != (tag is None):
+        if (parent_name is None) != (tag is None):
             raise TypeError("parent and tag must be passed together")
         super(LspAddCommand, self).__init__(api)
         self.switch = switch
         self.port = port
-        self.parent = parent
+        self.parent = parent_name
         self.tag = tag
         self.may_exist = may_exist
         self.columns = columns

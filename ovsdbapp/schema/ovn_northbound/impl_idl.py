@@ -48,10 +48,10 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def acl_list(self, switch):
         return cmd.AclListCommand(self, switch)
 
-    def lsp_add(self, switch, port, parent=None, tag=None, may_exist=False,
-                **columns):
-        return cmd.LspAddCommand(self, switch, port, parent, tag, may_exist,
-                                 **columns)
+    def lsp_add(self, switch, port, parent_name=None, tag=None,
+                may_exist=False, **columns):
+        return cmd.LspAddCommand(self, switch, port, parent_name, tag,
+                                 may_exist, **columns)
 
     def lsp_del(self, port, switch=None, if_exists=False):
         return cmd.LspDelCommand(self, port, switch, if_exists)
