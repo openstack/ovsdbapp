@@ -49,8 +49,7 @@ class LsAddCommand(cmd.AddCommand):
         else:
             # because ovs.db.idl brokenly requires a changed column
             sw.name = ""
-        for col, value in self.columns.items():
-            setattr(sw, col, value)
+        self.set_columns(sw, **self.columns)
         self.result = sw.uuid
 
 
@@ -172,7 +171,7 @@ class LspAddCommand(cmd.AddCommand):
         if tag and not 0 <= tag <= 4095:
             raise TypeError("tag must be 0 to 4095, inclusive")
         if (parent_name is None) != (tag is None):
-            raise TypeError("parent and tag must be passed together")
+            raise TypeError("parent_name and tag must be passed together")
         super(LspAddCommand, self).__init__(api)
         self.switch = switch
         self.port = port
@@ -215,8 +214,7 @@ class LspAddCommand(cmd.AddCommand):
             lsp.parent_name = self.parent
             lsp.tag_request = self.tag
         ls.addvalue('ports', lsp)
-        for col, value in self.columns.items():
-            setattr(lsp, col, value)
+        self.set_columns(lsp, **self.columns)
         self.result = lsp.uuid
 
 
@@ -519,8 +517,7 @@ class LrAddCommand(cmd.BaseCommand):
                 pass
         lr = txn.insert(self.api.tables['Logical_Router'])
         lr.name = self.router if self.router else ""
-        for col, value in self.columns.items():
-            setattr(lr, col, value)
+        self.set_columns(lr, **self.columns)
         self.result = lr.uuid
 
     def post_commit(self, txn):
@@ -596,8 +593,7 @@ class LrpAddCommand(cmd.BaseCommand):
         if self.peer:
             lrp.peer = self.peer
         lr.addvalue('ports', lrp)
-        for col, value in self.columns.items():
-            setattr(lrp, col, value)
+        self.set_columns(lrp, **self.columns)
         self.result = lrp.uuid
 
     def post_commit(self, txn):
@@ -861,9 +857,7 @@ class LbAddCommand(cmd.BaseCommand):
             lb.name = self.lb
             lb.protocol = self.protocol
             lb.vips = {self.vip: self.ips}
-        for col, val in self.columns.items():
-            setattr(lb, col, val)
-
+        self.set_columns(lb, **self.columns)
         self.result = lb.uuid
 
     def post_commit(self, txn):

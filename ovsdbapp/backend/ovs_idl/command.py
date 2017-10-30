@@ -40,6 +40,15 @@ class BaseCommand(api.Command):
             if check_error:
                 raise
 
+    @classmethod
+    def set_column(cls, row, col, val):
+        setattr(row, col, idlutils.db_replace_record(val))
+
+    @classmethod
+    def set_columns(cls, row, **columns):
+        for col, val in columns.items():
+            cls.set_column(row, col, val)
+
     def post_commit(self, txn):
         pass
 
@@ -70,8 +79,7 @@ class DbCreateCommand(BaseCommand):
 
     def run_idl(self, txn):
         row = txn.insert(self.api._tables[self.table])
-        for col, val in self.columns.items():
-            setattr(row, col, idlutils.db_replace_record(val))
+        self.set_columns(row, **self.columns)
         # This is a temporary row to be used within the transaction
         self.result = row
 
@@ -112,7 +120,7 @@ class DbSetCommand(BaseCommand):
                 existing = getattr(record, col, {})
                 existing.update(val)
                 val = existing
-            setattr(record, col, idlutils.db_replace_record(val))
+            self.set_column(record, col, val)
 
 
 class DbAddCommand(BaseCommand):
@@ -146,7 +154,7 @@ class DbAddCommand(BaseCommand):
                     field = getattr(record, self.column, [])
                     field.append(value)
             record.verify(self.column)
-            setattr(record, self.column, idlutils.db_replace_record(field))
+            self.set_column(record, self.column, field)
 
 
 class DbClearCommand(BaseCommand):
