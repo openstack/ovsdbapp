@@ -163,31 +163,6 @@ class ListBridgesCommand(BaseCommand):
                        self.api._tables['Bridge'].rows.values()]
 
 
-class BrGetExternalIdCommand(BaseCommand):
-    def __init__(self, api, name, field):
-        super(BrGetExternalIdCommand, self).__init__(api)
-        self.name = name
-        self.field = field
-
-    def run_idl(self, txn):
-        br = idlutils.row_by_value(self.api.idl, 'Bridge', 'name', self.name)
-        self.result = br.external_ids[self.field]
-
-
-class BrSetExternalIdCommand(BaseCommand):
-    def __init__(self, api, name, field, value):
-        super(BrSetExternalIdCommand, self).__init__(api)
-        self.name = name
-        self.field = field
-        self.value = value
-
-    def run_idl(self, txn):
-        br = idlutils.row_by_value(self.api.idl, 'Bridge', 'name', self.name)
-        external_ids = getattr(br, 'external_ids', {})
-        external_ids[self.field] = self.value
-        br.external_ids = external_ids
-
-
 class SetControllerCommand(BaseCommand):
     def __init__(self, api, bridge, targets):
         super(SetControllerCommand, self).__init__(api)
@@ -367,3 +342,56 @@ class InterfaceToBridgeCommand(BaseCommand):
 
         bridges = self.api._tables['Bridge'].rows.values()
         self.result = next(br.name for br in bridges if pname in br.ports)
+
+
+class GetExternalIdCommand(BaseCommand):
+    def __init__(self, api, table, name, field):
+        super(GetExternalIdCommand, self).__init__(api)
+        self.table = table
+        self.name = name
+        self.field = field
+
+    def run_idl(self, txn):
+        row = idlutils.row_by_value(
+            self.api.idl, self.table, 'name', self.name)
+        self.result = row.external_ids[self.field]
+
+
+class SetExternalIdCommand(BaseCommand):
+    def __init__(self, api, table, name, field, value):
+        super(SetExternalIdCommand, self).__init__(api)
+        self.table = table
+        self.name = name
+        self.field = field
+        self.value = value
+
+    def run_idl(self, txn):
+        row = idlutils.row_by_value(
+            self.api.idl, self.table, 'name', self.name)
+        external_ids = getattr(row, 'external_ids', {})
+        external_ids[self.field] = self.value
+        row.external_ids = external_ids
+
+
+class BrGetExternalIdCommand(GetExternalIdCommand):
+    def __init__(self, api, name, field):
+        super(BrGetExternalIdCommand, self).__init__(
+            api, 'Bridge', name, field)
+
+
+class BrSetExternalIdCommand(SetExternalIdCommand):
+    def __init__(self, api, name, field, value):
+        super(BrSetExternalIdCommand, self).__init__(
+            api, 'Bridge', name, field, value)
+
+
+class IfaceGetExternalIdCommand(GetExternalIdCommand):
+    def __init__(self, api, name, field):
+        super(IfaceGetExternalIdCommand, self).__init__(
+            api, 'Interface', name, field)
+
+
+class IfaceSetExternalIdCommand(SetExternalIdCommand):
+    def __init__(self, api, name, field, value):
+        super(IfaceSetExternalIdCommand, self).__init__(
+            api, 'Interface', name, field, value)
