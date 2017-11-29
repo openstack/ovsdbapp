@@ -21,7 +21,6 @@ from ovs import poller
 from six.moves import queue as Queue
 
 from ovsdbapp.backend.ovs_idl import idlutils
-from ovsdbapp import exceptions
 
 if os.name == 'nt':
     from ovsdbapp.backend.ovs_idl.windows import connection_utils
@@ -116,8 +115,8 @@ class Connection(object):
         return True
 
     def queue_txn(self, txn):
-        if not self._is_running:
-            raise exceptions.NotConnectedError(txn=txn)
+        # Even if we aren't started, we can queue a transaction and it will
+        # run when we are started
         self.txns.put(txn)
 
 

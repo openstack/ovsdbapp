@@ -104,11 +104,12 @@ class TestOvsdbIdl(base.FunctionalTestCase):
     def test_connection_reconnect(self):
         self.api.ovsdb_connection.stop()
         existsCmd = self.api.br_exists(self.brname)
-        self.assertRaises(exc.NotConnectedError,
-                          existsCmd.execute, check_error=True)
+        txn = self.api.create_transaction(check_error=True)
+        txn.add(existsCmd)
+        self.api.ovsdb_connection.queue_txn(txn)
         self.api.ovsdb_connection.start()
-        exists = self.api.br_exists(self.brname).execute(check_error=True)
-        self.assertFalse(exists)
+        result = txn.results.get(timeout=self.api.ovsdb_connection.timeout)
+        self.assertEqual(result, [False])
 
     def test_connection_disconnect_timeout(self):
         _is_running_mock = mock.PropertyMock(return_value=True)
