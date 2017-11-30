@@ -145,3 +145,9 @@ class OvsdbIdl(ovs_idl.Backend, api.API):
 
     def list_ifaces(self, bridge):
         return cmd.ListIfacesCommand(self, bridge)
+
+    def iface_get_external_id(self, name, field):
+        return cmd.IfaceGetExternalIdCommand(self, name, field)
+
+    def iface_set_external_id(self, name, field, value):
+        return cmd.IfaceSetExternalIdCommand(self, name, field, value)

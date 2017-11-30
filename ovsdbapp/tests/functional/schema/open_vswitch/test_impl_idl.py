@@ -118,6 +118,26 @@ class TestOvsdbIdl(base.FunctionalTestCase):
         self.addCleanup(delattr, type(connection), '_is_running')
         self.assertFalse(connection.stop(1))
 
+    def test_br_external_id(self):
+        KEY = "foo"
+        VALUE = "bar"
+        self.api.add_br(self.brname).execute(check_error=True)
+        self.api.br_set_external_id(self.brname, KEY, VALUE).execute(
+            check_error=True)
+        external_id = self.api.br_get_external_id(self.brname, KEY).execute(
+            check_error=True)
+        self.assertEqual(VALUE, external_id)
+
+    def test_iface_external_id(self):
+        KEY = "foo"
+        VALUE = "bar"
+        self.api.add_br(self.brname).execute(check_error=True)
+        self.api.iface_set_external_id(self.brname, KEY, VALUE).execute(
+            check_error=True)
+        external_id = self.api.iface_get_external_id(self.brname, KEY).execute(
+            check_error=True)
+        self.assertEqual(VALUE, external_id)
+
 
 class ImplIdlTestCase(base.FunctionalTestCase):
     schemas = ['Open_vSwitch']
