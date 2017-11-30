@@ -296,13 +296,14 @@ class LspGetTagCommand(cmd.BaseCommand):
 
 class LspSetAddressesCommand(cmd.BaseCommand):
     addr_re = re.compile(
-        r'^(router|unknown|dynamic|([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2} .+)$')
+        r'^(router|unknown|dynamic|([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}( .+)*)$')
 
     def __init__(self, api, port, addresses):
         for addr in addresses:
             if not self.addr_re.match(addr):
                 raise TypeError(
-                    "address must be router/unknown/dynamic/ethaddr ipaddr...")
+                    "address must be router/unknown/dynamic/"
+                    "ethaddr[ ipaddr...]")
         super(LspSetAddressesCommand, self).__init__(api)
         self.port = port
         self.addresses = addresses

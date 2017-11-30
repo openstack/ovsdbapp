@@ -342,7 +342,7 @@ class TestLspOps(OvnNorthboundTest):
 
     def test_lsp_set_addresses(self):
         lsp = self._lsp_add(self.switch, None)
-        for addr in ('dynamic', 'unknown', 'router',
+        for addr in ('dynamic', 'unknown', 'router', 'de:ad:be:ef:4d:ad',
                      'de:ad:be:ef:4d:ad 192.0.2.1'):
             self.api.lsp_set_addresses(lsp.name, [addr]).execute(
                 check_error=True)
@@ -351,7 +351,7 @@ class TestLspOps(OvnNorthboundTest):
     def test_lsp_set_addresses_invalid(self):
         self.assertRaises(
             TypeError,
-            self.api.lsp_set_addresses, 'fake', '01:02:03:04:05:06')
+            self.api.lsp_set_addresses, 'fake', 'invalidaddress')
 
     def test_lsp_get_addresses(self):
         addresses = [
