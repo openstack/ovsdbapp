@@ -75,8 +75,8 @@ class TestOvsdbIdl(base.FunctionalTestCase):
     def _test_add_port(self):
         pname = utils.get_rand_device_name()
         with self.api.transaction(check_error=True) as txn:
-            txn.add(self.api.add_br(self.brname))
-            txn.add(self.api.add_port(self.brname, pname))
+            txn.extend([self.api.add_br(self.brname),
+                        self.api.add_port(self.brname, pname)])
         return pname
 
     def test_add_port(self):
