@@ -80,8 +80,8 @@ class Transaction(api.Transaction):
             txn = idl.Transaction(self.api.idl)
             self.pre_commit(txn)
             for i, command in enumerate(self.commands):
-                LOG.debug("Running txn command(idx=%(idx)s): %(cmd)s",
-                          {'idx': i, 'cmd': command})
+                LOG.debug("Running txn n=%(n)d command(idx=%(idx)s): %(cmd)s",
+                          {'idx': i, 'cmd': command, 'n': attempts})
                 try:
                     command.run_idl(txn)
                 except Exception:
