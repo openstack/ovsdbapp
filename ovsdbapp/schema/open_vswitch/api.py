@@ -121,6 +121,19 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def br_set_external_id(self, name, field, value):
+        """Create a command to set the OVS Bridge's external_ids
+
+        :param name:  The name of the bridge
+        :type name:   string
+        :param field: The external_ids field to set
+        :type field:  string
+        :param value: The external_ids value to set
+        :type value:  string
+        :returns:     :class:`Command` with field no result
+        """
+
+    @abc.abstractmethod
     def set_controller(self, bridge, controllers):
         """Create a command to set an OVS bridge's OpenFlow controllers
 
@@ -202,4 +215,28 @@ class API(api.API):
         :param bridge: The name of the bridge
         :type bridge:  string
         :returns:      :class:`Command` with list of interfaces names result
+        """
+
+    @abc.abstractmethod
+    def iface_get_external_id(self, name, field):
+        """Create a command to return a field from the Interface's external_ids
+
+        :param name:  The name of the interface
+        :type name:   string
+        :param field: The external_ids field to return
+        :type field:  string
+        :returns:     :class:`Command` with field value result
+        """
+
+    @abc.abstractmethod
+    def iface_set_external_id(self, name, field, value):
+        """Create a command to set the OVS Interface's external_ids
+
+        :param name:  The name of the interface
+        :type name:   string
+        :param field: The external_ids field to set
+        :type field:  string
+        :param value: The external_ids value to set
+        :type value:  string
+        :returns:     :class:`Command` with field no result
         """
