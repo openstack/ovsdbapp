@@ -44,7 +44,17 @@ class Transaction(object):
 
     @abc.abstractmethod
     def add(self, command):
-        """Append an OVSDB operation to the transaction"""
+        """Append an OVSDB operation to the transaction
+
+        Operation is returned back as a convenience.
+        """
+
+    def extend(self, commands):
+        """Add multiple OVSDB operations to the transaction
+
+        List of operations is returned back as a convenience.
+        """
+        return [self.add(command) for command in commands]
 
     def __enter__(self):
         return self
