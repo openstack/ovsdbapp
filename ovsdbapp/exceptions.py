@@ -56,6 +56,6 @@ class TimeoutException(OvsdbAppException):
 
 class OvsdbConnectionUnavailable(OvsdbAppException):
     message = ("OVS database connection to %(db_schema)s failed with error: "
-               "'%(error)s'. Verify that the OVS and OVN services are "
-               "available and that the 'ovn_nb_connection' and "
-               "'ovn_sb_connection' configuration options are correct.")
+               "'%(error)s'. Verify that OVS and related services are "
+               "available and that the relevant configuration options "
+               "are correct.")
