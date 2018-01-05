@@ -551,6 +551,10 @@ class LrListCommand(cmd.BaseCommand):
                        r in self.api.tables['Logical_Router'].rows.values()]
 
 
+class LrGetCommand(cmd.BaseGetRowCommand):
+    table = 'Logical_Router'
+
+
 class LrpAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, port, mac, networks,
                  peer=None, may_exist=False, **columns):

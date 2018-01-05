@@ -364,6 +364,13 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def lr_get(self, router):
+        """Get logical router for 'router'
+
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
     def lrp_add(self, router, port, mac, networks, peer=None, may_exist=False,
                 **columns):
         """Add logical port 'port' on 'router'
