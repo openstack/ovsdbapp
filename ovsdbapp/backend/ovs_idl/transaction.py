@@ -91,6 +91,13 @@ class Transaction(api.Transaction):
             status = txn.commit_block()
             if status == txn.TRY_AGAIN:
                 LOG.debug("OVSDB transaction returned TRY_AGAIN, retrying")
+                # In the case that there is a reconnection after
+                # Connection.run() calls self.idl.run() but before do_commit()
+                # is called, commit_block() can loop w/o calling idl.run()
+                # which does the reconnect logic. It will then always return
+                # TRY_AGAIN until we time out and Connection.run() calls
+                # idl.run() again. So, call idl.run() here just in case.
+                self.api.idl.run()
                 continue
             elif status == txn.ERROR:
                 msg = "OVSDB Error: %s" % txn.get_error()
