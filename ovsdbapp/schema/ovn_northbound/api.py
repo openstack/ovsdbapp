@@ -141,6 +141,61 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def qos_add(self, switch, direction, priority, match, rate=None,
+                burst=None, dscp=None, may_exist=False, **columns):
+        """Add an Qos rules to 'switch'
+
+        :param switch:    The name or uuid of the switch
+        :type switch:     string or uuid.UUID
+        :param direction: The traffic direction to match
+        :type direction:  'from-lport' or 'to-lport'
+        :param priority:  The priority field of the QoS
+        :type priority:   int
+        :param match:     The match rule
+        :type match:      string
+        :param dscp:      The dscp mark to take upon match
+        :type dscp:       int
+        :param rate:      The rate limit to take upon match
+        :type rate:       int
+        :param burst:     The burst rate limit to take upon match
+        :type burst:      int
+        :param may_exist: If True, don't fail if the QoS rule already exists
+        :type may_exist:  boolean
+        :param columns:   Additional columns to directly set on the switch
+        :returns:         :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def qos_del(self, switch, direction=None, priority=None, match=None):
+        """Remove Qos rules from 'switch'
+
+        If only switch is supplied, all the QoS rules from the logical switch
+        are deleted. If direction is also specified, then all the flows in
+        that direction will be deleted from the logical switch. If all the
+        fields are given, then only flows that match all fields will be
+        deleted.
+
+        :param switch:    The name or uuid of the switch
+        :type switch:     string or uuid.UUID
+        :param direction: The traffic direction to match
+        :type direction:  'from-lport' or 'to-lport'
+        :param priority:  The priority field of the QoS
+        :type priority:   int
+        :param match:     The match rule
+        :type match:      string
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def qos_list(self, switch):
+        """Get the Qos rules for 'switch'
+
+        :param switch: The name or uuid of the switch
+        :type switch:  string or uuid.UUID
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
     def lsp_add(self, switch, port, parent_name=None, tag=None,
                 may_exist=False, **columns):
         """Add logical port 'port' on 'switch'

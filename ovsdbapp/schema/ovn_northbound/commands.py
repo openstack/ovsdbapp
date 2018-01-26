@@ -163,6 +163,102 @@ class AclListCommand(cmd.BaseCommand):
         self.result = [rowview.RowView(acl) for acl in ls.acls]
 
 
+class QoSAddCommand(cmd.AddCommand):
+    table_name = 'QoS'
+
+    def __init__(self, api, switch, direction, priority, match, rate=None,
+                 burst=None, dscp=None, may_exist=False, **columns):
+        if direction not in ('from-lport', 'to-lport'):
+            raise TypeError("direction must be either from-lport or to-lport")
+        if not 0 <= priority <= const.ACL_PRIORITY_MAX:
+            raise ValueError("priority must be between 0 and %s, inclusive" %
+                             const.ACL_PRIORITY_MAX)
+        if rate is not None and not 1 <= rate <= const.QOS_BANDWIDTH_MAX:
+            raise ValueError("rate(%s) must be between 1 and %s, inclusive" %
+                             rate, const.QOS_BANDWIDTH_MAX)
+        if burst is not None and not 1 <= burst <= const.QOS_BANDWIDTH_MAX:
+            raise ValueError("burst(%s) must be between 1 and %s, "
+                             "inclusive" % burst, const.QOS_BANDWIDTH_MAX)
+        if dscp is not None and not 0 <= dscp <= const.QOS_DSCP_MAX:
+            raise ValueError("dscp(%s) must be between 0 and %s, inclusive" %
+                             dscp, const.QOS_DSCP_MAX)
+        if rate is None and dscp is None:
+            raise ValueError("One of the rate or dscp must be configured")
+        super(QoSAddCommand, self).__init__(api)
+        self.switch = switch
+        self.direction = direction
+        self.priority = priority
+        self.match = match
+        self.rate = rate
+        self.burst = burst
+        self.dscp = dscp
+        self.may_exist = may_exist
+        self.columns = columns
+
+    def qos_match(self, row):
+        return (self.direction == row.direction and
+                self.priority == row.priority and
+                self.match == row.match)
+
+    def run_idl(self, txn):
+        ls = self.api.lookup('Logical_Switch', self.switch)
+        qos_rules = [row for row in ls.qos_rules if self.qos_match(row)]
+        if qos_rules:
+            if self.may_exist:
+                self.result = rowview.RowView(qos_rules[0])
+                return
+            raise RuntimeError("QoS (%s, %s, %s) already exists" % (
+                self.direction, self.priority, self.match))
+        row = txn.insert(self.api.tables[self.table_name])
+        row.direction = self.direction
+        row.priority = self.priority
+        row.match = self.match
+        if self.rate:
+            row.setkey('bandwidth', 'rate', self.rate)
+            if self.burst:
+                row.setkey('bandwidth', 'burst', self.burst)
+        if self.dscp is not None:
+            row.setkey('action', 'dscp', self.dscp)
+        self.set_columns(row, **self.columns)
+        ls.addvalue('qos_rules', row)
+        self.result = row.uuid
+
+
+class QoSDelCommand(cmd.BaseCommand):
+    def __init__(self, api, switch, direction=None,
+                 priority=None, match=None):
+        if (priority is None) != (match is None):
+            raise TypeError("Must specify priority and match together")
+        if priority is not None and not direction:
+            raise TypeError("Cannot specify priority/match without direction")
+        super(QoSDelCommand, self).__init__(api)
+        self.switch = switch
+        self.conditions = []
+        if direction:
+            self.conditions.append(('direction', '=', direction))
+            # priority can be 0
+            if match:  # and therefor priority due to the above check
+                self.conditions += [('priority', '=', priority),
+                                    ('match', '=', match)]
+
+    def run_idl(self, txn):
+        ls = self.api.lookup('Logical_Switch', self.switch)
+        for row in ls.qos_rules:
+            if idlutils.row_match(row, self.conditions):
+                ls.delvalue('qos_rules', row)
+                row.delete()
+
+
+class QoSListCommand(cmd.BaseCommand):
+    def __init__(self, api, switch):
+        super(QoSListCommand, self).__init__(api)
+        self.switch = switch
+
+    def run_idl(self, txn):
+        ls = self.api.lookup('Logical_Switch', self.switch)
+        self.result = [rowview.RowView(row) for row in ls.qos_rules]
+
+
 class LspAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch_Port'
 
