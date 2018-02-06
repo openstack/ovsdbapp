@@ -88,7 +88,7 @@ class AclAddCommand(cmd.AddCommand):
         if direction not in ('from-lport', 'to-lport'):
             raise TypeError("direction must be either from-lport or to-lport")
         if not 0 <= priority <= const.ACL_PRIORITY_MAX:
-            raise ValueError("priority must be beween 0 and %s, inclusive" % (
+            raise ValueError("priority must be between 0 and %s, inclusive" % (
                              const.ACL_PRIORITY_MAX))
         if action not in ('allow', 'allow-related', 'drop', 'reject'):
             raise TypeError("action must be allow/allow-related/drop/reject")
