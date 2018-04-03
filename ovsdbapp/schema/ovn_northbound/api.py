@@ -694,12 +694,11 @@ class API(api.API):
         """
 
     @abc.abstractmethod
-    def dns_add(self, **external_ids):
-        """Create a DNS row with external_ids
+    def dns_add(self, **columns):
+        """Create a DNS row with columns
 
-        :param external_ids: external_id field key/value mapping
-        :type external_ids:  key: string, value: string
-        :returns:            :class:`Command` with RowView result
+        :param **columns:  Additional columns to directly set on the dns
+        :returns:          :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
