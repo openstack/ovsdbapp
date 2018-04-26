@@ -49,7 +49,8 @@ class TestOVSNativeConnection(base.TestCase):
     def test_queue_txn(self):
         self.conn.start()
         self.conn.queue_txn('blah')
-        self.conn.txns.put.assert_called_once_with('blah')
+        self.conn.txns.put.assert_called_once_with('blah',
+                                                   timeout=self.conn.timeout)
 
 
 class TestTransactionQueue(base.TestCase):
