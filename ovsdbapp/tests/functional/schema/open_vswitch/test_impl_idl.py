@@ -40,6 +40,21 @@ class TestOvsdbIdl(base.FunctionalTestCase):
         cleanup_cmd = self.api.del_br(self.brname)
         self.addCleanup(cleanup_cmd.execute)
 
+    def test_idl_run_exception_terminates(self):
+        run = self.api.idl.run
+        with mock.patch.object(self.api.idl, "run") as runmock:
+            exceptions = iter([Exception("TestException")])
+
+            def side_effect():
+                try:
+                    raise next(exceptions)
+                except StopIteration:
+                    return run()
+
+            runmock.side_effect = side_effect
+            exists = self.api.br_exists(self.brname).execute(check_error=True)
+            self.assertFalse(exists)
+
     def test_br_exists_false(self):
         exists = self.api.br_exists(self.brname).execute(check_error=True)
         self.assertFalse(exists)
