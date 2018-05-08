@@ -202,8 +202,12 @@ class DbListCommand(BaseCommand):
 
     def run_idl(self, txn):
         table_schema = self.api._tables[self.table]
+        idx = idlutils.get_index_column(table_schema)
         columns = self.columns or list(table_schema.columns.keys()) + ['_uuid']
-        if self.records:
+        # If there's an index for this table, we'll fetch all columns and
+        # remove the unwanted ones based on self.records. Otherwise, let's try
+        # to get the uuid of the wanted ones which is an O(n^2) operation.
+        if not idx and self.records:
             rows = []
             for record in self.records:
                 try:
@@ -216,13 +220,40 @@ class DbListCommand(BaseCommand):
                     raise
         else:
             rows = table_schema.rows.values()
+
+        def _match(row):
+            elem = getattr(row, idx)
+            found = elem in self.records
+            if found:
+                records_found.remove(elem)
+            return found
+
+        records_found = []
+        if idx and self.records:
+            if self.if_exists:
+                match = lambda row: getattr(row, idx) in self.records
+            else:
+                # If we're using the approach of removing the unwanted
+                # elements, we'll use a helper list to remove elements as we
+                # find them in the DB contents. This will help us identify
+                # quickly if there's some record missing to raise a RowNotFound
+                # exception later.
+                records_found = list(self.records)
+                match = _match
+        else:
+            match = lambda row: True
+
         self.result = [
             rowview.RowView(row) if self.row else {
                 c: idlutils.get_column_value(row, c)
                 for c in columns
             }
-            for row in rows
+            for row in rows if match(row)
         ]
+
+        if records_found:
+            raise idlutils.RowNotFound(table=self.table, col=idx,
+                                       match=records_found[0])
 
 
 class DbFindCommand(BaseCommand):
