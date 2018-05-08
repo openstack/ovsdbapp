@@ -79,6 +79,13 @@ class TestBackendDb(base.FunctionalTestCase):
         cmd = self.api.db_list('Bridge', ['unpossible'])
         self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
 
+    def test_db_list_multiple_records_no_exist(self):
+        # Check the case where some records are found and some are not. We
+        # should still be getting the RowNotFound exception in this case.
+        cmd = self.api.db_list('Bridge',
+                               [self.bridges[0]['name'], 'unpossible'])
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
     def test_db_list_record_if_exsists(self):
         self.api.db_list('Bridge', ['unpossible'])
 
