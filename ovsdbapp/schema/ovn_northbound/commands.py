@@ -12,6 +12,7 @@
 import re
 
 import netaddr
+from oslo_utils import uuidutils
 
 from ovsdbapp.backend.ovs_idl import command as cmd
 from ovsdbapp.backend.ovs_idl import idlutils
@@ -1056,3 +1057,101 @@ class DnsSetExternalIdsCommand(cmd.BaseCommand):
         except idlutils.RowNotFound:
             msg = "DNS %s does not exist" % self.row_uuid
             raise RuntimeError(msg)
+
+
+class PgAddCommand(cmd.AddCommand):
+    table_name = 'Port_Group'
+
+    def __init__(self, api, name, may_exist=False, **columns):
+        super(PgAddCommand, self).__init__(api)
+        self.name = name
+        self.may_exist = may_exist
+        self.columns = columns
+
+    def run_idl(self, txn):
+        if self.may_exist:
+            try:
+                pg = self.api.lookup(self.table_name, self.name)
+                self.result = rowview.RowView(pg)
+            except idlutils.RowNotFound:
+                pass
+
+        pg = txn.insert(self.api._tables[self.table_name])
+        pg.name = self.name
+        self.set_columns(pg, **self.columns)
+        self.result = pg.uuid
+
+
+class PgDelCommand(cmd.BaseCommand):
+    table_name = 'Port_Group'
+
+    def __init__(self, api, name, if_exists=False):
+        super(PgDelCommand, self).__init__(api)
+        self.name = name
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        try:
+            pg = self.api.lookup(self.table_name, self.name)
+            pg.delete()
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+            raise RuntimeError('Port group %s does not exist' % self.name)
+
+
+class _PgUpdateHelper(cmd.BaseCommand):
+    method = None
+
+    def __init__(self, api, port_group, lsp=None, acl=None, if_exists=False):
+        super(_PgUpdateHelper, self).__init__(api)
+        self.port_group = port_group
+        self.lsp = [] if lsp is None else self._listify(lsp)
+        self.acl = [] if acl is None else self._listify(acl)
+        self.if_exists = if_exists
+
+    def _listify(self, res):
+        return res if isinstance(res, (list, tuple)) else [res]
+
+    def _fetch_resource(self, type_, uuid_):
+        table = 'Logical_Switch_Port' if type_ == 'ports' else 'ACL'
+        return self.api.lookup(table, uuid_)
+
+    def _run_method(self, pg, column, resource):
+        if not resource:
+            return
+
+        if isinstance(resource, cmd.BaseCommand):
+            resource = resource.result
+        elif uuidutils.is_uuid_like(resource):
+            try:
+                resource = self._fetch_resource(column, resource)
+            except idlutils.RowNotFound:
+                if self.if_exists:
+                    return
+                raise RuntimeError(
+                    'Resource %(res)s of type "%(type)s" does not exist' %
+                    {'res': resource, 'type': column})
+
+        getattr(pg, self.method)(column, resource)
+
+    def run_idl(self, txn):
+        try:
+            pg = self.api.lookup('Port_Group', self.port_group)
+        except idlutils.RowNotFound:
+            raise RuntimeError('Port group %s does not exist' %
+                               self.port_group)
+
+        for lsp in self.lsp:
+            self._run_method(pg, 'ports', lsp)
+
+        for acl in self.acl:
+            self._run_method(pg, 'acls', acl)
+
+
+class PgAddDataCommand(_PgUpdateHelper):
+    method = 'addvalue'
+
+
+class PgDelDataCommand(_PgUpdateHelper):
+    method = 'delvalue'

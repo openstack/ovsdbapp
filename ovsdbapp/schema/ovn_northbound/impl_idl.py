@@ -249,3 +249,21 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def dns_set_external_ids(self, uuid, **external_ids):
         return cmd.DnsSetExternalIdsCommand(self, uuid, **external_ids)
+
+    def pg_add(self, name, may_exist=False, **columns):
+        return cmd.PgAddCommand(self, name, may_exist=may_exist, **columns)
+
+    def pg_del(self, name, if_exists=False):
+        return cmd.PgDelCommand(self, name, if_exists=if_exists)
+
+    def pg_add_ports(self, pg_id, lsp):
+        return cmd.PgAddDataCommand(self, pg_id, lsp=lsp)
+
+    def pg_del_ports(self, pg_id, lsp, if_exists=False):
+        return cmd.PgDelDataCommand(self, pg_id, lsp=lsp, if_exists=if_exists)
+
+    def pg_add_acls(self, pg_id, acl):
+        return cmd.PgAddDataCommand(self, pg_id, acl=acl)
+
+    def pg_del_acls(self, pg_id, acl, if_exists=False):
+        return cmd.PgDelDataCommand(self, pg_id, acl=acl, if_exists=if_exists)

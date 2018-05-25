@@ -766,3 +766,89 @@ class API(api.API):
         :type external_ids:  key: string, value: string
         :returns:    :class:`Command` with no result
         """
+
+    @abc.abstractmethod
+    def pg_add(self, name, may_exist=False, **columns):
+        """Create a port group
+
+        :param name:        The name of the port group
+        :type name:         string
+        :param may_exist:   If True, don't fail if the port group already
+                            exists
+        :type may_exist:    bool
+        :param columns:     Additional columns to directly set on the port
+                            group (e.g external_ids, ports, acls)
+        :type columns:      dictionary
+        :returns:           :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def pg_del(self, name, if_exists=False):
+        """Delete a port group
+
+        :param name:        The name of the port group
+        :type name:         string
+        :param if_exists:   If True, don't fail if the router doesn't exist
+        :type if_exists:    boolean
+        :returns:           :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def pg_add_ports(self, pg_id, lsp):
+        """Add a list of logical port to a port group
+
+        :param pg_id:     The name or uuid of the port group
+        :type pg_id:      string or uuid.UUID
+        :param lsp:       A list of :class:`Command` with a Logical_Switch_Port
+                          instance result or UUID
+        :type lsp:        A list of :class:`Command` with a Logical_Switch_Port
+                          or string or uuid.UUID
+        A Logical_Switch_Port instance or string
+                          or uuid.UUID
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def pg_del_ports(self, pg_id, lsp, if_exists=False):
+        """Delete a list of logical port from a port group
+
+        :param pg_id:     The name or uuid of the port group
+        :type pg_id:      string or uuid.UUID
+        :param lsp:       A list of :class:`Command` with a Logical_Switch_Port
+                          instance result or UUID
+        :type lsp:        A list of :class:`Command` with a Logical_Switch_Port
+                          or string or uuid.UUID
+        :type if_exists:  If True, don't fail if the logical port(s) doesn't
+                          exist
+        :type if_exists:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def pg_add_acls(self, pg_id, acl):
+        """Add a list of ACL to a port group
+
+        :param pg_id:     The name or uuid of the port group
+        :type pg_id:      string or uuid.UUID
+        :param acl:       The ACL instance or UUID
+        :type acl:        A list of ACL instance or string or uuid.UUID
+        :param acl:       A list of :class:`Command` with an ACL instance
+                          result or UUID
+        :type acl:        A :class:`Command` with an ACL or string
+                          r uuid.UUID
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def pg_del_acls(self, pg_id, acl, if_exists=False):
+        """Delete a list of ACL from a port group
+
+        :param pg_id:     The name or uuid of the port group
+        :type pg_id:      string or uuid.UUID
+        :type acl:        A list of ACL instance or string or uuid.UUID
+        :param acl:       A list of :class:`Command` with an ACL instance
+                          result or UUID
+        :type if_exists:  If True, don't fail if the ACL(s) doesn't exist
+        :type if_exists:  boolean
+        :returns:         :class:`Command` with no result
+        """
