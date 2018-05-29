@@ -178,6 +178,106 @@ class TestAclOps(OvnNorthboundTest):
         self.assertIn(r2, acls)
 
 
+class TestQoSOps(OvnNorthboundTest):
+    def setUp(self):
+        super(TestQoSOps, self).setUp()
+        self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+
+    def _qos_add(self, *args, **kwargs):
+        cmd = self.api.qos_add(self.switch.uuid, *args, **kwargs)
+        row = cmd.execute(check_error=True)
+        self.assertIn(row._row, self.switch.qos_rules)
+        self.assertEqual(cmd.direction, row.direction)
+        self.assertEqual(cmd.priority, row.priority)
+        self.assertEqual(cmd.match, row.match)
+        self.assertEqual(cmd.rate, row.bandwidth.get('rate', None))
+        self.assertEqual(cmd.burst, row.bandwidth.get('burst', None))
+        self.assertEqual(cmd.dscp, row.action.get('dscp', None))
+        return row
+
+    def test_qos_add_dscp(self):
+        self._qos_add('from-lport', 0, 'output == "fake_port" && ip', dscp=33)
+
+    def test_qos_add_rate(self):
+        self._qos_add('from-lport', 0, 'output == "fake_port" && ip', rate=100)
+
+    def test_qos_add_rate_burst(self):
+        self._qos_add('from-lport', 0, 'output == "fake_port" && ip', rate=101,
+                      burst=1001)
+
+    def test_qos_add_rate_dscp(self):
+        self._qos_add('from-lport', 0, 'output == "fake_port" && ip', rate=102,
+                      burst=1002, dscp=56)
+
+    def test_qos_add_raises(self):
+        self.assertRaises(TypeError, self.api.qos_add, 'from-lport', 0,
+                          'output == "fake_port" && ip')
+
+    def test_qos_add_direction_raises(self):
+        self.assertRaises(TypeError, self.api.qos_add, 'foo', 0, 'ip',
+                          bandwidth={'rate': 102, 'burst': 1002})
+
+    def test_qos_add_priority_raises(self):
+        self.assertRaises(TypeError, self.api.qos_add, 'from-lport', 32768,
+                          'ip', bandwidth={'rate': 102, 'burst': 1002})
+
+    def test_qos_add_exists(self):
+        args = ('from-lport', 0, 'output == "fake_port" && ip', 1000)
+        self._qos_add(*args)
+        self.assertRaises(RuntimeError, self._qos_add, *args)
+
+    def test_qos_add_may_exist(self):
+        args = ('from-lport', 0, 'output == "fake_port" && ip', 1000)
+        row = self._qos_add(*args)
+        row2 = self._qos_add(*args, may_exist=True)
+        self.assertEqual(row, row2)
+
+    def test_qos_add_extids(self):
+        external_ids = {'mykey': 'myvalue', 'yourkey': 'yourvalue'}
+        qos = self._qos_add('from-lport', 0, 'output == "fake_port" && ip',
+                            dscp=11, external_ids=external_ids)
+        self.assertEqual(external_ids, qos.external_ids)
+
+    def test_qos_del_all(self):
+        r1 = self._qos_add('from-lport', 0, 'output == "fake_port"', 1000)
+        self.api.qos_del(self.switch.uuid).execute(check_error=True)
+        self.assertNotIn(r1.uuid, self.api.tables['QoS'].rows)
+        self.assertEqual([], self.switch.qos_rules)
+
+    def test_qos_del_direction(self):
+        r1 = self._qos_add('from-lport', 0, 'output == "fake_port"', 1000)
+        r2 = self._qos_add('to-lport', 0, 'output == "fake_port"', 1000)
+        self.api.qos_del(self.switch.uuid, 'from-lport').execute(
+            check_error=True)
+        self.assertNotIn(r1, self.switch.qos_rules)
+        self.assertIn(r2, self.switch.qos_rules)
+
+    def test_qos_del_direction_priority_match(self):
+        r1 = self._qos_add('from-lport', 0, 'output == "fake_port"', 1000)
+        r2 = self._qos_add('from-lport', 1, 'output == "fake_port"', 1000)
+        cmd = self.api.qos_del(self.switch.uuid,
+                               'from-lport', 0, 'output == "fake_port"')
+        cmd.execute(check_error=True)
+        self.assertNotIn(r1, self.switch.qos_rules)
+        self.assertIn(r2, self.switch.qos_rules)
+
+    def test_qos_del_priority_without_match(self):
+        self.assertRaises(TypeError, self.api.qos_del, self.switch.uuid,
+                          'from-lport', 0)
+
+    def test_qos_del_priority_without_direction(self):
+        self.assertRaises(TypeError, self.api.qos_del, self.switch.uuid,
+                          priority=0)
+
+    def test_qos_list(self):
+        r1 = self._qos_add('from-lport', 0, 'output == "fake_port"', 1000)
+        r2 = self._qos_add('from-lport', 1, 'output == "fake_port2"', 1000)
+        qos_rules = self.api.qos_list(self.switch.uuid).execute(
+            check_error=True)
+        self.assertIn(r1, qos_rules)
+        self.assertIn(r2, qos_rules)
+
+
 class TestLspOps(OvnNorthboundTest):
     def setUp(self):
         super(TestLspOps, self).setUp()

@@ -64,6 +64,17 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def acl_list(self, switch):
         return cmd.AclListCommand(self, switch)
 
+    def qos_add(self, switch, direction, priority, match, rate=None,
+                burst=None, dscp=None, may_exist=False, **columns):
+        return cmd.QoSAddCommand(self, switch, direction, priority, match,
+                                 rate, burst, dscp, may_exist, **columns)
+
+    def qos_del(self, switch, direction=None, priority=None, match=None):
+        return cmd.QoSDelCommand(self, switch, direction, priority, match)
+
+    def qos_list(self, switch):
+        return cmd.QoSListCommand(self, switch)
+
     def lsp_add(self, switch, port, parent_name=None, tag=None,
                 may_exist=False, **columns):
         return cmd.LspAddCommand(self, switch, port, parent_name, tag,
