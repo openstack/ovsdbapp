@@ -11,6 +11,7 @@
 #    under the License.
 
 import netaddr
+from oslo_utils import uuidutils
 import testscenarios
 
 from ovsdbapp.backend.ovs_idl import idlutils
@@ -1297,3 +1298,93 @@ class TestLsDnsOps(OvnNorthboundTest):
                               [dns.uuid for dns in ls1.dns_records])
         self.api.ls_remove_dns_record(ls1.uuid, dns1.uuid).execute()
         self.assertEqual([], ls1.dns_records)
+
+
+class TestPortGroup(OvnNorthboundTest):
+
+    def setUp(self):
+        super(TestPortGroup, self).setUp()
+        self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        self.pg_name = 'testpg-%s' % uuidutils.generate_uuid()
+
+    def test_port_group(self):
+        # Assert the Port Group was added
+        self.api.pg_add(self.pg_name).execute(check_error=True)
+        row = self.api.db_find(
+            'Port_Group',
+            ('name', '=', self.pg_name)).execute(check_error=True)
+        self.assertIsNotNone(row)
+        self.assertEqual(self.pg_name, row[0]['name'])
+        self.assertEqual([], row[0]['ports'])
+        self.assertEqual([], row[0]['acls'])
+
+        # Assert the Port Group was deleted
+        self.api.pg_del(self.pg_name).execute(check_error=True)
+        row = self.api.db_find(
+            'Port_Group',
+            ('name', '=', self.pg_name)).execute(check_error=True)
+        self.assertEqual([], row)
+
+    def test_port_group_ports_and_acls(self):
+        lsp_add_cmd = self.api.lsp_add(self.switch.uuid, 'testport')
+        acl_add_cmd_1 = self.api.acl_add(
+            self.switch.uuid, 'from-lport', 0, 'output == "fake_port"',
+            'drop')
+        acl_add_cmd_2 = self.api.acl_add(
+            self.switch.uuid, 'from-lport', 0, 'output == "fake_port" && ip',
+            'drop')
+        with self.api.transaction(check_error=True) as txn:
+            txn.add(lsp_add_cmd)
+            txn.add(acl_add_cmd_1)
+            txn.add(acl_add_cmd_2)
+            txn.add(self.api.pg_add(self.pg_name))
+            txn.add(self.api.pg_add_acls(
+                self.pg_name, [acl_add_cmd_1, acl_add_cmd_2]))
+
+        port_uuid = lsp_add_cmd.result.uuid
+        acl_uuid_1 = acl_add_cmd_1.result.uuid
+        acl_uuid_2 = acl_add_cmd_2.result.uuid
+
+        # Lets add the port using the UUID instead of a `Command` to
+        # exercise the API
+        self.api.pg_add_ports(self.pg_name, port_uuid).execute(
+            check_error=True)
+        row = self.api.db_find(
+            'Port_Group',
+            ('name', '=', self.pg_name)).execute(check_error=True)
+        self.assertIsNotNone(row)
+        self.assertEqual(self.pg_name, row[0]['name'])
+        # Assert the port and ACLs were added from the Port Group
+        self.assertEqual([port_uuid], row[0]['ports'])
+        self.assertEqual(sorted([acl_uuid_1, acl_uuid_2]),
+                         sorted(row[0]['acls']))
+
+        # Delete an ACL and the Port from the Port Group
+        with self.api.transaction(check_error=True) as txn:
+            txn.add(self.api.pg_del_ports(self.pg_name, port_uuid))
+            txn.add(self.api.pg_del_acls(self.pg_name, acl_uuid_1))
+
+        row = self.api.db_find(
+            'Port_Group',
+            ('name', '=', self.pg_name)).execute(check_error=True)
+        self.assertIsNotNone(row)
+        self.assertEqual(self.pg_name, row[0]['name'])
+        # Assert the port and ACL were removed from the Port Group
+        self.assertEqual([], row[0]['ports'])
+        self.assertEqual([acl_uuid_2], row[0]['acls'])
+
+    def test_pg_del_ports_and_acls_if_exists(self):
+        self.api.pg_add(self.pg_name).execute(check_error=True)
+        non_existent_res = uuidutils.generate_uuid()
+
+        # Assert that if if_exists is False (default) it will raise an error
+        self.assertRaises(RuntimeError, self.api.pg_del_ports(self.pg_name,
+                          non_existent_res).execute, True)
+        self.assertRaises(RuntimeError, self.api.pg_del_acls(self.pg_name,
+                          non_existent_res).execute, True)
+
+        # Assert that if if_exists is True it won't raise an error
+        self.api.pg_del_ports(self.pg_name, non_existent_res,
+                              if_exists=True).execute(check_error=True)
+        self.api.pg_del_acls(self.pg_name, non_existent_res,
+                             if_exists=True).execute(check_error=True)
