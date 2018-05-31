@@ -286,3 +286,6 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def pg_del_ports(self, pg_id, lsp, if_exists=False):
         return cmd.PgDelPortCommand(self, pg_id, lsp=lsp, if_exists=if_exists)
+
+    def pg_get(self, pg):
+        return cmd.PgGetCommand(self, pg)

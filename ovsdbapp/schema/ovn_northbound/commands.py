@@ -1214,6 +1214,7 @@ class PgAddCommand(cmd.AddCommand):
             try:
                 pg = self.api.lookup(self.table_name, self.name)
                 self.result = rowview.RowView(pg)
+                return
             except idlutils.RowNotFound:
                 pass
 
@@ -1287,3 +1288,7 @@ class PgAddPortCommand(_PgUpdatePortsHelper):
 
 class PgDelPortCommand(_PgUpdatePortsHelper):
     method = 'delvalue'
+
+
+class PgGetCommand(cmd.BaseGetRowCommand):
+    table = 'Port_Group'

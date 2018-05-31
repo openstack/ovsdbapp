@@ -893,7 +893,8 @@ class API(api.API):
 
         :param name:        The name of the port group
         :type name:         string
-        :param if_exists:   If True, don't fail if the router doesn't exist
+        :param if_exists:   If True, don't fail if the port group
+                            doesn't exist
         :type if_exists:    boolean
         :returns:           :class:`Command` with no result
         """
@@ -904,9 +905,9 @@ class API(api.API):
 
         :param pg_id:     The name or uuid of the port group
         :type pg_id:      string or uuid.UUID
-        :param lsp:       A list of :class:`Command` with a Logical_Switch_Port
+        :param lsp:       A list of :class:`Command` Logical_Switch_Port
                           instance result or UUID
-        :type lsp:        A list of :class:`Command` with a Logical_Switch_Port
+        :type lsp:        A list of :class:`Command` Logical_Switch_Port
                           or string or uuid.UUID
         A Logical_Switch_Port instance or string
                           or uuid.UUID
@@ -919,12 +920,21 @@ class API(api.API):
 
         :param pg_id:     The name or uuid of the port group
         :type pg_id:      string or uuid.UUID
-        :param lsp:       A list of :class:`Command` with a Logical_Switch_Port
+        :param lsp:       A list of :class:`Command` Logical_Switch_Port
                           instance result or UUID
-        :type lsp:        A list of :class:`Command` with a Logical_Switch_Port
+        :type lsp:        A list of :class:`Command` Logical_Switch_Port
                           or string or uuid.UUID
         :type if_exists:  If True, don't fail if the logical port(s) doesn't
                           exist
         :type if_exists:  boolean
         :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def pg_get(self, pg_id):
+        """Get port group
+
+        :param pg_id: The name or uuid of the port group
+        :type pg_id:  string or uuid.UUID
+        :returns:     :class:`Command` with RowView result
         """
