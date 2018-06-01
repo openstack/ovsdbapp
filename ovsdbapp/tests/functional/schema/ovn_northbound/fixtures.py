@@ -44,3 +44,9 @@ class DnsFixture(fixtures.ImplIdlFixture):
     create = 'dns_add'
     delete = 'dns_del'
     delete_args = {}
+
+
+class PortGroupFixture(fixtures.ImplIdlFixture):
+    api = impl_idl.OvnNbApiIdlImpl
+    create = 'pg_add'
+    delete = 'pg_del'

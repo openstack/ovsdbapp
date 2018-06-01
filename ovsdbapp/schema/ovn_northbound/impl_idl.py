@@ -64,6 +64,20 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def acl_list(self, switch):
         return cmd.AclListCommand(self, switch)
 
+    def pg_acl_add(self, port_group, direction, priority, match, action,
+                   log=False, may_exist=False, **external_ids):
+        return cmd.PgAclAddCommand(self, port_group, direction, priority,
+                                   match, action, log, may_exist,
+                                   **external_ids)
+
+    def pg_acl_del(self, port_group, direction=None, priority=None,
+                   match=None):
+        return cmd.PgAclDelCommand(self, port_group, direction, priority,
+                                   match)
+
+    def pg_acl_list(self, port_group):
+        return cmd.PgAclListCommand(self, port_group)
+
     def lsp_add(self, switch, port, parent_name=None, tag=None,
                 may_exist=False, **columns):
         return cmd.LspAddCommand(self, switch, port, parent_name, tag,
@@ -247,20 +261,14 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def dns_set_external_ids(self, uuid, **external_ids):
         return cmd.DnsSetExternalIdsCommand(self, uuid, **external_ids)
 
-    def pg_add(self, name, may_exist=False, **columns):
+    def pg_add(self, name=None, may_exist=False, **columns):
         return cmd.PgAddCommand(self, name, may_exist=may_exist, **columns)
 
     def pg_del(self, name, if_exists=False):
         return cmd.PgDelCommand(self, name, if_exists=if_exists)
 
     def pg_add_ports(self, pg_id, lsp):
-        return cmd.PgAddDataCommand(self, pg_id, lsp=lsp)
+        return cmd.PgAddPortCommand(self, pg_id, lsp=lsp)
 
     def pg_del_ports(self, pg_id, lsp, if_exists=False):
-        return cmd.PgDelDataCommand(self, pg_id, lsp=lsp, if_exists=if_exists)
-
-    def pg_add_acls(self, pg_id, acl):
-        return cmd.PgAddDataCommand(self, pg_id, acl=acl)
-
-    def pg_del_acls(self, pg_id, acl, if_exists=False):
-        return cmd.PgDelDataCommand(self, pg_id, acl=acl, if_exists=if_exists)
+        return cmd.PgDelPortCommand(self, pg_id, lsp=lsp, if_exists=if_exists)
