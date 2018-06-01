@@ -141,6 +141,56 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def pg_acl_add(self, port_group, direction, priority, match, action,
+                   log=False):
+        """Add an ACL to 'port_group'
+
+        :param port_group: The name or uuid of the port group
+        :type port_group:  string or uuid.UUID
+        :param direction:  The traffic direction to match
+        :type direction:   'from-lport' or 'to-lport'
+        :param priority:   The priority field of the ACL
+        :type priority:    int
+        :param match:      The match rule
+        :type match:       string
+        :param action:     The action to take upon match
+        :type action:      'allow', 'allow-related', 'drop', or 'reject'
+        :param log:        If True, enable packet logging for the ACL
+        :type log:         boolean
+        :returns:          :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def pg_acl_del(self, port_group, direction=None, priority=None,
+                   match=None):
+        """Remove ACLs from 'port_group'
+
+        If only port_group is supplied, all the ACLs from the logical switch
+        are deleted. If direction is also specified, then all the flows in
+        that direction will be deleted from the Port Group. If all the fields
+        are given, then only flows that match all fields will be deleted.
+
+        :param port_group: The name or uuid of the port group
+        :type port_group:  string or uuid.UUID
+        :param direction:  The traffic direction to match
+        :type direction:   'from-lport' or 'to-lport'
+        :param priority:   The priority field of the ACL
+        :type priority:    int
+        :param match:      The match rule
+        :type match:       string
+        :returns:          :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def pg_acl_list(self, port_group):
+        """Get the ACLs for 'port group'
+
+        :param port_group: The name or uuid of the switch
+        :type port_group:  string or uuid.UUID
+        :returns:          :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
     def qos_add(self, switch, direction, priority, match, rate=None,
                 burst=None, dscp=None, may_exist=False, **columns):
         """Add an Qos rules to 'switch'
@@ -823,10 +873,10 @@ class API(api.API):
         """
 
     @abc.abstractmethod
-    def pg_add(self, name, may_exist=False, **columns):
+    def pg_add(self, name=None, may_exist=False, **columns):
         """Create a port group
 
-        :param name:        The name of the port group
+        :param name:        The name of the port group (optional)
         :type name:         string
         :param may_exist:   If True, don't fail if the port group already
                             exists
@@ -875,35 +925,6 @@ class API(api.API):
                           or string or uuid.UUID
         :type if_exists:  If True, don't fail if the logical port(s) doesn't
                           exist
-        :type if_exists:  boolean
-        :returns:         :class:`Command` with no result
-        """
-
-    @abc.abstractmethod
-    def pg_add_acls(self, pg_id, acl):
-        """Add a list of ACL to a port group
-
-        :param pg_id:     The name or uuid of the port group
-        :type pg_id:      string or uuid.UUID
-        :param acl:       The ACL instance or UUID
-        :type acl:        A list of ACL instance or string or uuid.UUID
-        :param acl:       A list of :class:`Command` with an ACL instance
-                          result or UUID
-        :type acl:        A :class:`Command` with an ACL or string
-                          r uuid.UUID
-        :returns:         :class:`Command` with no result
-        """
-
-    @abc.abstractmethod
-    def pg_del_acls(self, pg_id, acl, if_exists=False):
-        """Delete a list of ACL from a port group
-
-        :param pg_id:     The name or uuid of the port group
-        :type pg_id:      string or uuid.UUID
-        :type acl:        A list of ACL instance or string or uuid.UUID
-        :param acl:       A list of :class:`Command` with an ACL instance
-                          result or UUID
-        :type if_exists:  If True, don't fail if the ACL(s) doesn't exist
         :type if_exists:  boolean
         :returns:         :class:`Command` with no result
         """

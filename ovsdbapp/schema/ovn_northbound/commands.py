@@ -81,11 +81,12 @@ class LsGetCommand(cmd.BaseGetRowCommand):
     table = 'Logical_Switch'
 
 
-class AclAddCommand(cmd.AddCommand):
+class _AclAddHelper(cmd.AddCommand):
     table_name = 'ACL'
 
-    def __init__(self, api, switch, direction, priority, match, action,
-                 log=False, may_exist=False, **external_ids):
+    def __init__(self, api, entity, direction, priority, match, action,
+                 log=False, may_exist=False, severity=None, name=None,
+                 **external_ids):
         if direction not in ('from-lport', 'to-lport'):
             raise TypeError("direction must be either from-lport or to-lport")
         if not 0 <= priority <= const.ACL_PRIORITY_MAX:
@@ -93,14 +94,16 @@ class AclAddCommand(cmd.AddCommand):
                              const.ACL_PRIORITY_MAX))
         if action not in ('allow', 'allow-related', 'drop', 'reject'):
             raise TypeError("action must be allow/allow-related/drop/reject")
-        super(AclAddCommand, self).__init__(api)
-        self.switch = switch
+        super(_AclAddHelper, self).__init__(api)
+        self.entity = entity
         self.direction = direction
         self.priority = priority
         self.match = match
         self.action = action
         self.log = log
         self.may_exist = may_exist
+        self.severity = severity
+        self.name = name
         self.external_ids = external_ids
 
     def acl_match(self, row):
@@ -109,8 +112,8 @@ class AclAddCommand(cmd.AddCommand):
                 self.match == row.match)
 
     def run_idl(self, txn):
-        ls = self.api.lookup('Logical_Switch', self.switch)
-        acls = [acl for acl in ls.acls if self.acl_match(acl)]
+        entity = self.api.lookup(self.lookup_table, self.entity)
+        acls = [acl for acl in entity.acls if self.acl_match(acl)]
         if acls:
             if self.may_exist:
                 self.result = rowview.RowView(acls[0])
@@ -123,45 +126,87 @@ class AclAddCommand(cmd.AddCommand):
         acl.match = self.match
         acl.action = self.action
         acl.log = self.log
-        ls.addvalue('acls', acl)
+        acl.severity = self.severity
+        acl.name = self.name
+        entity.addvalue('acls', acl)
         for col, value in self.external_ids.items():
             acl.setkey('external_ids', col, value)
         self.result = acl.uuid
 
 
-class AclDelCommand(cmd.BaseCommand):
-    def __init__(self, api, switch, direction=None,
+class AclAddCommand(_AclAddHelper):
+    lookup_table = 'Logical_Switch'
+
+    def __init__(self, api, switch, direction, priority, match, action,
+                 log=False, may_exist=False, severity=None, name=None,
+                 **external_ids):
+        # NOTE: we're overriding the constructor here to not break any
+        # existing callers before we introduced Port Groups.
+        super(AclAddCommand, self).__init__(api, switch, direction, priority,
+                                            match, action, log, may_exist,
+                                            severity, name, **external_ids)
+
+
+class PgAclAddCommand(_AclAddHelper):
+    lookup_table = 'Port_Group'
+
+
+class _AclDelHelper(cmd.BaseCommand):
+    def __init__(self, api, entity, direction=None,
                  priority=None, match=None):
         if (priority is None) != (match is None):
             raise TypeError("Must specify priority and match together")
         if priority is not None and not direction:
             raise TypeError("Cannot specify priority/match without direction")
-        super(AclDelCommand, self).__init__(api)
-        self.switch = switch
+        super(_AclDelHelper, self).__init__(api)
+        self.entity = entity
         self.conditions = []
         if direction:
             self.conditions.append(('direction', '=', direction))
             # priority can be 0
-            if match:  # and therefor prioroity due to the above check
+            if match:  # and therefore priority due to the above check
                 self.conditions += [('priority', '=', priority),
                                     ('match', '=', match)]
 
     def run_idl(self, txn):
-        ls = self.api.lookup('Logical_Switch', self.switch)
-        for acl in [a for a in ls.acls
+        entity = self.api.lookup(self.lookup_table, self.entity)
+        for acl in [a for a in entity.acls
                     if idlutils.row_match(a, self.conditions)]:
-            ls.delvalue('acls', acl)
+            entity.delvalue('acls', acl)
             acl.delete()
 
 
-class AclListCommand(cmd.BaseCommand):
-    def __init__(self, api, switch):
-        super(AclListCommand, self).__init__(api)
-        self.switch = switch
+class AclDelCommand(_AclDelHelper):
+    lookup_table = 'Logical_Switch'
+
+    def __init__(self, api, switch, direction=None,
+                 priority=None, match=None):
+        # NOTE: we're overriding the constructor here to not break any
+        # existing callers before we introduced Port Groups.
+        super(AclDelCommand, self).__init__(api, switch, direction, priority,
+                                            match)
+
+
+class PgAclDelCommand(_AclDelHelper):
+    lookup_table = 'Port_Group'
+
+
+class _AclListHelper(cmd.BaseCommand):
+    def __init__(self, api, entity):
+        super(_AclListHelper, self).__init__(api)
+        self.entity = entity
 
     def run_idl(self, txn):
-        ls = self.api.lookup('Logical_Switch', self.switch)
-        self.result = [rowview.RowView(acl) for acl in ls.acls]
+        entity = self.api.lookup(self.lookup_table, self.entity)
+        self.result = [rowview.RowView(acl) for acl in entity.acls]
+
+
+class AclListCommand(_AclListHelper):
+    lookup_table = 'Logical_Switch'
+
+
+class PgAclListCommand(_AclListHelper):
+    lookup_table = 'Port_Group'
 
 
 class QoSAddCommand(cmd.AddCommand):
@@ -1173,7 +1218,7 @@ class PgAddCommand(cmd.AddCommand):
                 pass
 
         pg = txn.insert(self.api._tables[self.table_name])
-        pg.name = self.name
+        pg.name = self.name or ""
         self.set_columns(pg, **self.columns)
         self.result = pg.uuid
 
@@ -1196,40 +1241,34 @@ class PgDelCommand(cmd.BaseCommand):
             raise RuntimeError('Port group %s does not exist' % self.name)
 
 
-class _PgUpdateHelper(cmd.BaseCommand):
+class _PgUpdatePortsHelper(cmd.BaseCommand):
     method = None
 
-    def __init__(self, api, port_group, lsp=None, acl=None, if_exists=False):
-        super(_PgUpdateHelper, self).__init__(api)
+    def __init__(self, api, port_group, lsp=None, if_exists=False):
+        super(_PgUpdatePortsHelper, self).__init__(api)
         self.port_group = port_group
         self.lsp = [] if lsp is None else self._listify(lsp)
-        self.acl = [] if acl is None else self._listify(acl)
         self.if_exists = if_exists
 
     def _listify(self, res):
         return res if isinstance(res, (list, tuple)) else [res]
 
-    def _fetch_resource(self, type_, uuid_):
-        table = 'Logical_Switch_Port' if type_ == 'ports' else 'ACL'
-        return self.api.lookup(table, uuid_)
-
-    def _run_method(self, pg, column, resource):
-        if not resource:
+    def _run_method(self, pg, port):
+        if not port:
             return
 
-        if isinstance(resource, cmd.BaseCommand):
-            resource = resource.result
-        elif uuidutils.is_uuid_like(resource):
+        if isinstance(port, cmd.BaseCommand):
+            port = port.result
+        elif uuidutils.is_uuid_like(port):
             try:
-                resource = self._fetch_resource(column, resource)
+                port = self.api.lookup('Logical_Switch_Port', port)
             except idlutils.RowNotFound:
                 if self.if_exists:
                     return
                 raise RuntimeError(
-                    'Resource %(res)s of type "%(type)s" does not exist' %
-                    {'res': resource, 'type': column})
+                    'Port %s does not exist' % port)
 
-        getattr(pg, self.method)(column, resource)
+        getattr(pg, self.method)('ports', port)
 
     def run_idl(self, txn):
         try:
@@ -1239,15 +1278,12 @@ class _PgUpdateHelper(cmd.BaseCommand):
                                self.port_group)
 
         for lsp in self.lsp:
-            self._run_method(pg, 'ports', lsp)
-
-        for acl in self.acl:
-            self._run_method(pg, 'acls', acl)
+            self._run_method(pg, lsp)
 
 
-class PgAddDataCommand(_PgUpdateHelper):
+class PgAddPortCommand(_PgUpdatePortsHelper):
     method = 'addvalue'
 
 
-class PgDelDataCommand(_PgUpdateHelper):
+class PgDelPortCommand(_PgUpdatePortsHelper):
     method = 'delvalue'

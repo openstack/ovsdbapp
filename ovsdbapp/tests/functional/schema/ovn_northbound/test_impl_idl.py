@@ -108,11 +108,19 @@ class TestAclOps(OvnNorthboundTest):
     def setUp(self):
         super(TestAclOps, self).setUp()
         self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        self.port_group = self.useFixture(fixtures.PortGroupFixture()).obj
 
-    def _acl_add(self, *args, **kwargs):
-        cmd = self.api.acl_add(self.switch.uuid, *args, **kwargs)
+    def _acl_add(self, entity, *args, **kwargs):
+        self.assertIn(entity, ['lswitch', 'port_group'])
+        if entity == 'lswitch':
+            cmd = self.api.acl_add(self.switch.uuid, *args, **kwargs)
+            resource = self.switch
+        else:
+            cmd = self.api.pg_acl_add(self.port_group.uuid, *args, **kwargs)
+            resource = self.port_group
+
         aclrow = cmd.execute(check_error=True)
-        self.assertIn(aclrow._row, self.switch.acls)
+        self.assertIn(aclrow._row, resource.acls)
         self.assertEqual(cmd.direction, aclrow.direction)
         self.assertEqual(cmd.priority, aclrow.priority)
         self.assertEqual(cmd.match, aclrow.match)
@@ -120,43 +128,50 @@ class TestAclOps(OvnNorthboundTest):
         return aclrow
 
     def test_acl_add(self):
-        self._acl_add('from-lport', 0, 'output == "fake_port" && ip',
-                      'drop')
+        self._acl_add('lswitch', 'from-lport', 0,
+                      'output == "fake_port" && ip', 'drop')
 
     def test_acl_add_exists(self):
-        args = ('from-lport', 0, 'output == "fake_port" && ip', 'drop')
+        args = ('lswitch', 'from-lport', 0, 'output == "fake_port" && ip',
+                'drop')
         self._acl_add(*args)
         self.assertRaises(RuntimeError, self._acl_add, *args)
 
     def test_acl_add_may_exist(self):
         args = ('from-lport', 0, 'output == "fake_port" && ip', 'drop')
-        row = self._acl_add(*args)
-        row2 = self._acl_add(*args, may_exist=True)
+        row = self._acl_add('lswitch', *args)
+        row2 = self._acl_add('lswitch', *args, may_exist=True)
         self.assertEqual(row, row2)
 
     def test_acl_add_extids(self):
         external_ids = {'mykey': 'myvalue', 'yourkey': 'yourvalue'}
-        acl = self._acl_add('from-lport', 0, 'output == "fake_port" && ip',
+        acl = self._acl_add('lswitch',
+                            'from-lport', 0, 'output == "fake_port" && ip',
                             'drop', **external_ids)
         self.assertEqual(external_ids, acl.external_ids)
 
     def test_acl_del_all(self):
-        r1 = self._acl_add('from-lport', 0, 'output == "fake_port"', 'drop')
+        r1 = self._acl_add('lswitch', 'from-lport', 0, 'output == "fake_port"',
+                           'drop')
         self.api.acl_del(self.switch.uuid).execute(check_error=True)
         self.assertNotIn(r1.uuid, self.api.tables['ACL'].rows)
         self.assertEqual([], self.switch.acls)
 
     def test_acl_del_direction(self):
-        r1 = self._acl_add('from-lport', 0, 'output == "fake_port"', 'drop')
-        r2 = self._acl_add('to-lport', 0, 'output == "fake_port"', 'allow')
+        r1 = self._acl_add('lswitch', 'from-lport', 0,
+                           'output == "fake_port"', 'drop')
+        r2 = self._acl_add('lswitch', 'to-lport', 0,
+                           'output == "fake_port"', 'allow')
         self.api.acl_del(self.switch.uuid, 'from-lport').execute(
             check_error=True)
         self.assertNotIn(r1, self.switch.acls)
         self.assertIn(r2, self.switch.acls)
 
     def test_acl_del_direction_priority_match(self):
-        r1 = self._acl_add('from-lport', 0, 'output == "fake_port"', 'drop')
-        r2 = self._acl_add('from-lport', 1, 'output == "fake_port"', 'allow')
+        r1 = self._acl_add('lswitch', 'from-lport', 0,
+                           'output == "fake_port"', 'drop')
+        r2 = self._acl_add('lswitch', 'from-lport', 1,
+                           'output == "fake_port"', 'allow')
         cmd = self.api.acl_del(self.switch.uuid,
                                'from-lport', 0, 'output == "fake_port"')
         cmd.execute(check_error=True)
@@ -172,9 +187,32 @@ class TestAclOps(OvnNorthboundTest):
                           priority=0)
 
     def test_acl_list(self):
-        r1 = self._acl_add('from-lport', 0, 'output == "fake_port"', 'drop')
-        r2 = self._acl_add('from-lport', 1, 'output == "fake_port2"', 'allow')
+        r1 = self._acl_add('lswitch', 'from-lport', 0,
+                           'output == "fake_port"', 'drop')
+        r2 = self._acl_add('lswitch', 'from-lport', 1,
+                           'output == "fake_port2"', 'allow')
         acls = self.api.acl_list(self.switch.uuid).execute(check_error=True)
+        self.assertIn(r1, acls)
+        self.assertIn(r2, acls)
+
+    def test_pg_acl_add(self):
+        self._acl_add('port_group', 'from-lport', 0,
+                      'output == "fake_port" && ip', 'drop')
+
+    def test_pg_acl_del_all(self):
+        r1 = self._acl_add('port_group', 'from-lport', 0,
+                           'output == "fake_port"', 'drop')
+        self.api.pg_acl_del(self.port_group.uuid).execute(check_error=True)
+        self.assertNotIn(r1.uuid, self.api.tables['ACL'].rows)
+        self.assertEqual([], self.port_group.acls)
+
+    def test_pg_acl_list(self):
+        r1 = self._acl_add('port_group', 'from-lport', 0,
+                           'output == "fake_port"', 'drop')
+        r2 = self._acl_add('port_group', 'from-lport', 1,
+                           'output == "fake_port2"', 'allow')
+        acls = self.api.pg_acl_list(self.port_group.uuid).execute(
+            check_error=True)
         self.assertIn(r1, acls)
         self.assertIn(r2, acls)
 
@@ -1325,25 +1363,13 @@ class TestPortGroup(OvnNorthboundTest):
             ('name', '=', self.pg_name)).execute(check_error=True)
         self.assertEqual([], row)
 
-    def test_port_group_ports_and_acls(self):
+    def test_port_group_ports(self):
         lsp_add_cmd = self.api.lsp_add(self.switch.uuid, 'testport')
-        acl_add_cmd_1 = self.api.acl_add(
-            self.switch.uuid, 'from-lport', 0, 'output == "fake_port"',
-            'drop')
-        acl_add_cmd_2 = self.api.acl_add(
-            self.switch.uuid, 'from-lport', 0, 'output == "fake_port" && ip',
-            'drop')
         with self.api.transaction(check_error=True) as txn:
             txn.add(lsp_add_cmd)
-            txn.add(acl_add_cmd_1)
-            txn.add(acl_add_cmd_2)
             txn.add(self.api.pg_add(self.pg_name))
-            txn.add(self.api.pg_add_acls(
-                self.pg_name, [acl_add_cmd_1, acl_add_cmd_2]))
 
         port_uuid = lsp_add_cmd.result.uuid
-        acl_uuid_1 = acl_add_cmd_1.result.uuid
-        acl_uuid_2 = acl_add_cmd_2.result.uuid
 
         # Lets add the port using the UUID instead of a `Command` to
         # exercise the API
@@ -1354,37 +1380,29 @@ class TestPortGroup(OvnNorthboundTest):
             ('name', '=', self.pg_name)).execute(check_error=True)
         self.assertIsNotNone(row)
         self.assertEqual(self.pg_name, row[0]['name'])
-        # Assert the port and ACLs were added from the Port Group
+        # Assert the port was added from the Port Group
         self.assertEqual([port_uuid], row[0]['ports'])
-        self.assertEqual(sorted([acl_uuid_1, acl_uuid_2]),
-                         sorted(row[0]['acls']))
 
-        # Delete an ACL and the Port from the Port Group
+        # Delete the Port from the Port Group
         with self.api.transaction(check_error=True) as txn:
             txn.add(self.api.pg_del_ports(self.pg_name, port_uuid))
-            txn.add(self.api.pg_del_acls(self.pg_name, acl_uuid_1))
 
         row = self.api.db_find(
             'Port_Group',
             ('name', '=', self.pg_name)).execute(check_error=True)
         self.assertIsNotNone(row)
         self.assertEqual(self.pg_name, row[0]['name'])
-        # Assert the port and ACL were removed from the Port Group
+        # Assert the port was removed from the Port Group
         self.assertEqual([], row[0]['ports'])
-        self.assertEqual([acl_uuid_2], row[0]['acls'])
 
-    def test_pg_del_ports_and_acls_if_exists(self):
+    def test_pg_del_ports_if_exists(self):
         self.api.pg_add(self.pg_name).execute(check_error=True)
         non_existent_res = uuidutils.generate_uuid()
 
         # Assert that if if_exists is False (default) it will raise an error
         self.assertRaises(RuntimeError, self.api.pg_del_ports(self.pg_name,
                           non_existent_res).execute, True)
-        self.assertRaises(RuntimeError, self.api.pg_del_acls(self.pg_name,
-                          non_existent_res).execute, True)
 
         # Assert that if if_exists is True it won't raise an error
         self.api.pg_del_ports(self.pg_name, non_existent_res,
                               if_exists=True).execute(check_error=True)
-        self.api.pg_del_acls(self.pg_name, non_existent_res,
-                             if_exists=True).execute(check_error=True)
