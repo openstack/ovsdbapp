@@ -14,6 +14,7 @@
 from __future__ import print_function
 import atexit
 import os
+import six
 import subprocess
 import sys
 
@@ -38,7 +39,7 @@ try:
     atexit.register(v.cleanUp)
     v.setUp()
 except fixture.MultipleExceptions as e:
-    raise e.args[0][0], e.args[0][1], e.args[0][2]
+    six.reraise(*e.args[0])
 try:
     print("*** Exit the shell when finished debugging ***")
     subprocess.call([os.getenv('SHELL'), '-i'], env=v.env)
