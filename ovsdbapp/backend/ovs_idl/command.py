@@ -95,7 +95,7 @@ class DbDestroyCommand(BaseCommand):
         self.record = record
 
     def run_idl(self, txn):
-        record = idlutils.row_by_record(self.api.idl, self.table, self.record)
+        record = self.api.lookup(self.table, self.record)
         record.delete()
 
 
@@ -107,7 +107,7 @@ class DbSetCommand(BaseCommand):
         self.col_values = col_values
 
     def run_idl(self, txn):
-        record = idlutils.row_by_record(self.api.idl, self.table, self.record)
+        record = self.api.lookup(self.table, self.record)
         for col, val in self.col_values:
             # TODO(twilson) Ugh, the OVS library doesn't like OrderedDict
             # We're only using it to make a unit test work, so we should fix
@@ -132,7 +132,7 @@ class DbAddCommand(BaseCommand):
         self.values = values
 
     def run_idl(self, txn):
-        record = idlutils.row_by_record(self.api.idl, self.table, self.record)
+        record = self.api.lookup(self.table, self.record)
         for value in self.values:
             if isinstance(value, collections.Mapping):
                 # We should be doing an add on a 'map' column. If the key is
@@ -165,7 +165,7 @@ class DbClearCommand(BaseCommand):
         self.column = column
 
     def run_idl(self, txn):
-        record = idlutils.row_by_record(self.api.idl, self.table, self.record)
+        record = self.api.lookup(self.table, self.record)
         # Create an empty value of the column type
         value = type(getattr(record, self.column))()
         setattr(record, self.column, value)
@@ -179,7 +179,7 @@ class DbGetCommand(BaseCommand):
         self.column = column
 
     def run_idl(self, txn):
-        record = idlutils.row_by_record(self.api.idl, self.table, self.record)
+        record = self.api.lookup(self.table, self.record)
         # TODO(twilson) This feels wrong, but ovs-vsctl returns single results
         # on set types without the list. The IDL is returning them as lists,
         # even if the set has the maximum number of items set to 1. Might be
@@ -211,9 +211,7 @@ class DbListCommand(BaseCommand):
             rows = []
             for record in self.records:
                 try:
-                    rows.append(idlutils.row_by_record(
-                                self.api.idl, self.table, record))
-
+                    rows.append(self.api.idl.lookup(self.table, record))
                 except idlutils.RowNotFound:
                     if self.if_exists:
                         continue

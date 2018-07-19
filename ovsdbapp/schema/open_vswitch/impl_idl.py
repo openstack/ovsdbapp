@@ -15,6 +15,7 @@
 import logging
 
 from ovsdbapp.backend import ovs_idl
+from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.backend.ovs_idl import transaction
 from ovsdbapp import exceptions
 from ovsdbapp.schema.open_vswitch import api
@@ -75,6 +76,7 @@ class OvsVsctlTransaction(transaction.Transaction):
 
 class OvsdbIdl(ovs_idl.Backend, api.API):
     schema = 'Open_vSwitch'
+    lookup_table = idlutils._LOOKUP_TABLE
 
     @property
     def connection(self):
