@@ -436,8 +436,8 @@ class TestLspOps(OvnNorthboundTest):
 
     def test_lsp_del_wrong_switch(self):
         lsp = self._lsp_add(self.switch, None)
-        sw_id = self.useFixture(fixtures.LogicalSwitchFixture()).obj
-        cmd = self.api.lsp_del(lsp.uuid, sw_id)
+        sw = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        cmd = self.api.lsp_del(lsp.uuid, sw.uuid)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
     def test_lsp_del_switch_no_exist(self):
@@ -964,8 +964,8 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
 
     def test_lrp_del_wrong_router(self):
         lrp = self._lrp_add(None)
-        sw_id = self.useFixture(fixtures.LogicalSwitchFixture()).obj
-        cmd = self.api.lrp_del(lrp.uuid, sw_id)
+        sw = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        cmd = self.api.lrp_del(lrp.uuid, sw.uuid)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
     def test_lrp_del_router_no_exist(self):
