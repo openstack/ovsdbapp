@@ -11,6 +11,7 @@
 #    under the License.
 
 import netaddr
+import uuid
 
 from ovsdbapp.tests import base
 from ovsdbapp import utils
@@ -51,3 +52,20 @@ class TestUtils(base.TestCase):
         for val in bad:
             self.assertRaises(netaddr.AddrFormatError,
                               utils.normalize_ip_port, val)
+
+    def test_is_uuid_like(self):
+        self.assertTrue(utils.is_uuid_like(str(uuid.uuid4())))
+        self.assertTrue(utils.is_uuid_like(
+            '{12345678-1234-1234-1234-123456781234}'))
+        self.assertTrue(utils.is_uuid_like(
+            '12345678123412341234123456781234'))
+        self.assertTrue(utils.is_uuid_like(
+            'urn:uuid:12345678-1234-1234-1234-123456781234'))
+        self.assertTrue(utils.is_uuid_like(
+            'urn:bbbaaaaa-aaaa-aaaa-aabb-bbbbbbbbbbbb'))
+        self.assertTrue(utils.is_uuid_like(
+            'uuid:bbbaaaaa-aaaa-aaaa-aabb-bbbbbbbbbbbb'))
+        self.assertFalse(utils.is_uuid_like(
+            'uuid:batrdbaa-aaaa-aaaa-aabb-bbbbbbbbbbbb'))
+        self.assertFalse(utils.is_uuid_like(
+            '123456781234123412341234567812345678'))

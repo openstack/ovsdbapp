@@ -11,7 +11,6 @@
 #    under the License.
 
 import netaddr
-from oslo_utils import uuidutils
 import testscenarios
 
 from ovsdbapp.backend.ovs_idl import idlutils
@@ -1343,7 +1342,7 @@ class TestPortGroup(OvnNorthboundTest):
     def setUp(self):
         super(TestPortGroup, self).setUp()
         self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
-        self.pg_name = 'testpg-%s' % uuidutils.generate_uuid()
+        self.pg_name = 'testpg-%s' % ovsdb_utils.generate_uuid()
 
     def test_port_group(self):
         # Assert the Port Group was added
@@ -1397,7 +1396,7 @@ class TestPortGroup(OvnNorthboundTest):
 
     def test_pg_del_ports_if_exists(self):
         self.api.pg_add(self.pg_name).execute(check_error=True)
-        non_existent_res = uuidutils.generate_uuid()
+        non_existent_res = ovsdb_utils.generate_uuid()
 
         # Assert that if if_exists is False (default) it will raise an error
         self.assertRaises(RuntimeError, self.api.pg_del_ports(self.pg_name,

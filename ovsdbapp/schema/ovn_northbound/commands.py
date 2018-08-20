@@ -12,7 +12,6 @@
 import re
 
 import netaddr
-from oslo_utils import uuidutils
 
 from ovsdbapp.backend.ovs_idl import command as cmd
 from ovsdbapp.backend.ovs_idl import idlutils
@@ -1260,7 +1259,7 @@ class _PgUpdatePortsHelper(cmd.BaseCommand):
 
         if isinstance(port, cmd.BaseCommand):
             port = port.result
-        elif uuidutils.is_uuid_like(port):
+        elif utils.is_uuid_like(port):
             try:
                 port = self.api.lookup('Logical_Switch_Port', port)
             except idlutils.RowNotFound:
