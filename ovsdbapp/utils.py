@@ -10,8 +10,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import netaddr
 import uuid
+
+import netaddr
 
 # NOTE(twilson) Clearly these are silly, but they are good enough for now
 # I'm happy for someone to replace them with better parsing

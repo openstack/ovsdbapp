@@ -37,6 +37,9 @@ disable=
  too-many-locals,
  too-many-public-methods,
  too-many-return-statements,
+ inconsistent-return-statements,
+ catching-non-exception,
+ using-constant-test,
  too-many-statements
 
 [BASIC]
