@@ -39,5 +39,4 @@ def avoid_blocking_call(f, *args, **kwargs):
     # loop greenlet.
     if eventlet.getcurrent().parent:
         return tpool.execute(f, *args, **kwargs)
-    else:
-        return f(*args, **kwargs)
+    return f(*args, **kwargs)
