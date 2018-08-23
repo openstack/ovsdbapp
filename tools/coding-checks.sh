@@ -27,10 +27,20 @@ process_options () {
         case $opt in
             -h|--help) usage;;
             -Y|--pylint) pylint=1;;
+            -O|--oslo) oslo=1;;
+            -a|--all) oslo=1; pylint=1;;
             *) join_args;;
         esac
         i=$((i+1))
     done
+}
+
+run_oslo () {
+    echo "Checking for oslo libraries in requirements.txt..."
+    if grep -q "^oslo[.-]" requirements.txt; then
+        echo "oslo libraries are not allowed"
+        exit 1
+    fi
 }
 
 run_pylint () {
@@ -56,10 +66,14 @@ run_pylint () {
 }
 
 scriptargs=
-pylint=1
+pylint=0
+oslo=0
 
 process_options $@
 
+if [ $oslo -eq 1 ]; then
+    run_oslo
+fi
 if [ $pylint -eq 1 ]; then
     run_pylint
     exit 0
