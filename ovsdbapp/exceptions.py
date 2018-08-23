@@ -37,7 +37,7 @@ class OvsdbAppException(RuntimeError):
 
     if six.PY2:
         def __unicode__(self):
-            return unicode(self.msg)  # noqa
+            return unicode(self.msg)  # noqa pylint: disable=undefined-variable
 
     def __str__(self):
         return self.msg
