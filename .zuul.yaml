@@ -1,0 +1,16 @@
+- project:
+    templates:
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - check-requirements
+    check:
+      jobs:
+        - openstack-tox-functional
+        - legacy-tempest-dsvm-networking-ovn-ovs-release-ovsdbapp-src:
+            voting: false
+            irrelevant-files:
+              - ^(test-|)requirements.txt$
+              - ^setup.cfg$
+    gate:
+      jobs:
+        - openstack-tox-functional
