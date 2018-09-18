@@ -86,9 +86,16 @@ class API(api.API):
         """
 
     @abc.abstractmethod
-    def ls_remove_dns_record(self, switch_uuid, dns_uuid):
+    def ls_remove_dns_record(self, switch_uuid, dns_uuid, if_exists=False):
         """Remove the 'dns_record' from the switch's 'dns_records' list
 
+        :param switch_uuid: The uuid of the switch
+        :type switch_uuid:  string or uuid.UUID
+        :param dns_uuid:    The uuid of the DNS record
+        :type dns_uuid:     string or uuid.UUID
+        :param if_exists:   If True, don't fail if the DNS record
+                            doesn't exist
+        :type if_exists:    boolean
         :returns: :class:`Command` with RowView result
         """
 
@@ -852,12 +859,15 @@ class API(api.API):
         """
 
     @abc.abstractmethod
-    def dns_remove_record(self, uuid, hostname):
+    def dns_remove_record(self, uuid, hostname, if_exists=False):
         """Remove the 'hostname' from the 'records' field of the DNS row
 
         :param uuid: The uuid of the DNS row to set the records with
         :type uuid:  string or uuid.UUID
         :param hostname: hostname as the key to the record dict
+        :param if_exists:   If True, don't fail if the DNS record
+                            doesn't exist
+        :type if_exists:    boolean
         :returns:    :class:`Command` with no result
         """
 

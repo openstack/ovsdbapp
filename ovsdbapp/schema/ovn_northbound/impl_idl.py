@@ -49,9 +49,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return self.db_add('Logical_Switch', switch_uuid, 'dns_records',
                            dns_uuid)
 
-    def ls_remove_dns_record(self, switch_uuid, dns_uuid):
+    def ls_remove_dns_record(self, switch_uuid, dns_uuid, if_exists=False):
         return self.db_remove('Logical_Switch', switch_uuid, 'dns_records',
-                              dns_uuid)
+                              dns_uuid, if_exists=if_exists)
 
     def acl_add(self, switch, direction, priority, match, action, log=False,
                 may_exist=False, **external_ids):
@@ -269,8 +269,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
             ips = " ".join(utils.normalize_ip_port(ip) for ip in ips)
         return self.db_add('DNS', uuid, 'records', {hostname: ips})
 
-    def dns_remove_record(self, uuid, hostname):
-        return self.db_remove('DNS', uuid, 'records', hostname)
+    def dns_remove_record(self, uuid, hostname, if_exists=False):
+        return self.db_remove('DNS', uuid, 'records', hostname,
+                              if_exists=if_exists)
 
     def dns_set_external_ids(self, uuid, **external_ids):
         return cmd.DnsSetExternalIdsCommand(self, uuid, **external_ids)
