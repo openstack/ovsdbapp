@@ -14,9 +14,23 @@
 
 import mock
 import testtools
+import time
 
 from ovsdbapp import api
 from ovsdbapp.tests import base
+
+try:
+    import eventlet
+
+    def create_thread(executable):
+        eventlet.spawn_n(executable)
+
+except ImportError:
+    import threading
+
+    def create_thread(executable):
+        thread = threading.Thread(target=executable)
+        thread.start()
 
 
 class FakeTransaction(object):
@@ -60,3 +74,30 @@ class TransactionTestCase(base.TestCase):
 
         with self.api.transaction() as txn2:
             self.assertIsNot(txn1, txn2)
+
+    def test_transaction_nested_multiple_threads(self):
+        shared_resource = []
+
+        def thread1():
+            with self.api.transaction() as txn:
+                shared_resource.append(txn)
+                while len(shared_resource) == 1:
+                    time.sleep(0.1)
+            shared_resource.append(0)
+
+        def thread2():
+            while len(shared_resource) != 1:
+                time.sleep(0.1)
+            with self.api.transaction() as txn:
+                shared_resource.append(txn)
+            shared_resource.append(0)
+
+        create_thread(thread1)
+        create_thread(thread2)
+
+        while len(shared_resource) != 4:
+            time.sleep(0.1)
+
+        txn1, txn2 = shared_resource[:2]
+
+        self.assertNotEqual(txn1, txn2)

@@ -16,6 +16,11 @@ import abc
 import contextlib
 
 import six
+try:
+    # Python 3 no longer has thread module
+    import thread  # noqa
+except ImportError:
+    import threading as thread
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -67,7 +72,8 @@ class Transaction(object):
 @six.add_metaclass(abc.ABCMeta)
 class API(object):
     def __init__(self):
-        self._nested_txn = None
+        # Mapping between a (green)thread and its transaction.
+        self._nested_txns_map = {}
 
     @abc.abstractmethod
     def create_transaction(self, check_error=False, log_errors=True, **kwargs):
@@ -92,16 +98,18 @@ class API(object):
         :returns: Either a new transaction or an existing one.
         :rtype: :class:`Transaction`
         """
-        if self._nested_txn:
-            yield self._nested_txn
-        else:
+        cur_thread_id = thread.get_ident()
+
+        try:
+            yield self._nested_txns_map[cur_thread_id]
+        except KeyError:
             with self.create_transaction(
                     check_error, log_errors, **kwargs) as txn:
-                self._nested_txn = txn
+                self._nested_txns_map[cur_thread_id] = txn
                 try:
                     yield txn
                 finally:
-                    self._nested_txn = None
+                    del self._nested_txns_map[cur_thread_id]
 
     @abc.abstractmethod
     def db_create(self, table, **col_values):
