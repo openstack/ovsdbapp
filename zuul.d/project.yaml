@@ -7,12 +7,9 @@
       jobs:
         - openstack-tox-lower-constraints
         - openstack-tox-functional
-        - legacy-tempest-dsvm-networking-ovn-ovs-release-ovsdbapp-src:
-            voting: false
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^setup.cfg$
+        - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
     gate:
       jobs:
         - openstack-tox-lower-constraints
         - openstack-tox-functional
+        - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
