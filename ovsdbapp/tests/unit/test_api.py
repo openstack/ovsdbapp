@@ -12,25 +12,44 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sys
+
+import fixtures
 import mock
 import testtools
-import time
 
 from ovsdbapp import api
 from ovsdbapp.tests import base
 
 try:
     import eventlet
+    from eventlet.green import thread
+
+    sleep = eventlet.sleep
 
     def create_thread(executable):
         eventlet.spawn_n(executable)
 
 except ImportError:
     import threading
+    import time
+
+    sleep = time.sleep
 
     def create_thread(executable):
         thread = threading.Thread(target=executable)
         thread.start()
+
+
+class GreenThreadingFixture(fixtures.Fixture):
+    def _setUp(self):
+        if 'eventlet' in sys.modules:
+            self._orig = api.thread.get_ident
+            api.thread.get_ident = thread.get_ident
+            self.addCleanup(self.cleanup)
+
+    def cleanup(self):
+        api.thread.get_ident = self._orig
 
 
 class FakeTransaction(object):
@@ -57,6 +76,7 @@ class TransactionTestCase(base.TestCase):
         super(TransactionTestCase, self).setUp()
         self.api = TestingAPI()
         mock.patch.object(FakeTransaction, 'commit').start()
+        self.useFixture(GreenThreadingFixture())
 
     def test_transaction_nested(self):
         with self.api.transaction() as txn1:
@@ -82,12 +102,12 @@ class TransactionTestCase(base.TestCase):
             with self.api.transaction() as txn:
                 shared_resource.append(txn)
                 while len(shared_resource) == 1:
-                    time.sleep(0.1)
+                    sleep(0.1)
             shared_resource.append(0)
 
         def thread2():
             while len(shared_resource) != 1:
-                time.sleep(0.1)
+                sleep(0.1)
             with self.api.transaction() as txn:
                 shared_resource.append(txn)
             shared_resource.append(0)
@@ -96,7 +116,7 @@ class TransactionTestCase(base.TestCase):
         create_thread(thread2)
 
         while len(shared_resource) != 4:
-            time.sleep(0.1)
+            sleep(0.1)
 
         txn1, txn2 = shared_resource[:2]
 
