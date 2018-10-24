@@ -68,6 +68,26 @@ class RowEvent(object):
         """Method to run when the event matches"""
 
 
+class WaitEvent(RowEvent):
+    event_name = 'WaitEvent'
+    ONETIME = True
+
+    def __init__(self, *args, **kwargs):
+        self.event = threading.Event()
+        self.timeout = kwargs.pop('timeout', None)
+        super(WaitEvent, self).__init__(*args, **kwargs)
+
+    @abc.abstractmethod
+    def matches(self, event, row, old=None):
+        """Test that `event on `row` matches watched events. See: RowEvent"""
+
+    def run(self, event, row, old):
+        self.event.set()
+
+    def wait(self):
+        return self.event.wait(self.timeout)
+
+
 class RowEventHandler(object):
     def __init__(self):
         self.__watched_events = set()

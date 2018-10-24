@@ -39,3 +39,7 @@ class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
         LOG.debug("%s : Matched %s, %s, %s %s", self.event_name, self.table,
                   self.events, self.conditions, self.old_conditions)
         return True
+
+
+class WaitEvent(RowEvent, ovsdb_event.WaitEvent):
+    pass
