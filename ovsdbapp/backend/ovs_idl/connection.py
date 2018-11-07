@@ -91,18 +91,18 @@ class Connection(object):
     def run(self):
         errors = 0
         while self._is_running:
-            self.idl.wait(self.poller)
-            self.poller.fd_wait(self.txns.alert_fileno, poller.POLLIN)
-            # TODO(jlibosva): Remove next line once losing connection to ovsdb
-            #                 is solved.
-            self.poller.timer_wait(self.timeout * 1000)
-            self.poller.block()
-            # If we fail on a run() call, we could have missed an update
+            # If we fail in an Idl call, we could have missed an update
             # from the server, leaving us out of sync with ovsdb-server.
             # It is not safe to continue without restarting the connection,
             # though it is likely that the error is unrecoverable, so only try
             # a few times before bailing completely.
             try:
+                self.idl.wait(self.poller)
+                self.poller.fd_wait(self.txns.alert_fileno, poller.POLLIN)
+                # TODO(jlibosva): Remove next line once losing connection to
+                #                 ovsdb is solved.
+                self.poller.timer_wait(self.timeout * 1000)
+                self.poller.block()
                 self.idl.run()
             except Exception as e:
                 # This shouldn't happen, but is possible if there is a bug
