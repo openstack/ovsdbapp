@@ -197,5 +197,6 @@ class ImplIdlTestCase(base.FunctionalTestCase):
     def test_post_commit_vswitchd_incomplete_timeout(self, *args):
         # Due to timing issues we may rarely hit the global timeout, which
         # raises RuntimeError to match the vsctl implementation
-        self.api.ovsdb_connection.timeout = 1
+        mock.patch('ovsdbapp.backend.ovs_idl.transaction.'
+                   'Transaction.timeout_exceeded', return_value=True).start()
         self.assertRaises((exc.TimeoutException, RuntimeError), self._add_br)
