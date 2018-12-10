@@ -13,6 +13,7 @@
 #    under the License.
 
 import collections
+import logging
 import os
 import sys
 import time
@@ -27,6 +28,7 @@ import six
 from ovsdbapp import api
 from ovsdbapp import exceptions
 
+LOG = logging.getLogger(__name__)
 
 RowLookup = collections.namedtuple('RowLookup',
                                    ['table', 'column', 'uuid_column'])
@@ -114,21 +116,48 @@ def get_schema_helper(connection, schema_name):
     :param schema_name: The schema on the server to pull
     :type schema_name: string
     """
-    err, strm = stream.Stream.open_block(
-        stream.Stream.open(connection))
-    if err:
-        raise Exception("Could not connect to %s" % connection)
-    rpc = jsonrpc.Connection(strm)
-    req = jsonrpc.Message.create_request('get_schema', [schema_name])
-    err, resp = rpc.transact_block(req)
-    rpc.close()
-    if err:
-        raise Exception("Could not retrieve schema from %(conn)s: "
-                        "%(err)s" % {'conn': connection,
-                                     'err': os.strerror(err)})
-    elif resp.error:
-        raise Exception(resp.error)
-    return idl.SchemaHelper(None, resp.result)
+    parsed_connections = parse_connection(connection)
+
+    for c in parsed_connections:
+        err, strm = stream.Stream.open_block(
+            stream.Stream.open(c))
+        if err:
+            LOG.error("Unable to open stream to %(conn)s to retrieve schema: "
+                      "%(err)s", {'conn': c,
+                                  'err': os.strerror(err)})
+            continue
+        rpc = jsonrpc.Connection(strm)
+        req = jsonrpc.Message.create_request('get_schema', [schema_name])
+        err, resp = rpc.transact_block(req)
+        rpc.close()
+        if err:
+            LOG.info("Could not retrieve schema from %(conn)s: "
+                     "%(err)s", {'conn': c,
+                                 'err': os.strerror(err)})
+            continue
+        elif resp.error:
+            LOG.error("TRXN error, failed to retrieve schema from %(conn)s: "
+                      "%(err)s", {'conn': c,
+                                  'err': resp.error})
+            continue
+        return idl.SchemaHelper(None, resp.result)
+    raise Exception("Could not retrieve schema from %s" % connection)
+
+
+def parse_connection(connection_string):
+    """Parse a connection string.
+
+    The connection string must be of the form
+    proto:address:port,proto:address:port,...
+
+    The parsing logic here must be identical to the one at
+    https://github.com/openvswitch/ovs/blob/master/python/ovs/db/idl.py#L162
+    for remote connections.
+
+    :param connection_string: The ovsdb-server connection string
+    :type connection_string: string
+    """
+    return [c.strip() for c in connection_string.split(',')]
 
 
 def wait_for_change(_idl, timeout, seqno=None):
