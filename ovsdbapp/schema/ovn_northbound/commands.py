@@ -739,6 +739,13 @@ class LrpAddCommand(cmd.BaseCommand):
         if self.peer:
             lrp.peer = self.peer
         lr.addvalue('ports', lrp)
+        gwcs = self.columns.pop('gateway_chassis', [])
+        for n, chassis in enumerate(gwcs):
+            gwc_name = '%s_%s' % (lrp.name, chassis)
+            cmd = GatewayChassisAddCommand(self.api, gwc_name, chassis,
+                                           len(gwcs) - n, may_exist=True)
+            cmd.run_idl(txn)
+            lrp.addvalue('gateway_chassis', cmd.result)
         self.set_columns(lrp, **self.columns)
         self.result = lrp.uuid
 
@@ -1291,3 +1298,30 @@ class PgDelPortCommand(_PgUpdatePortsHelper):
 
 class PgGetCommand(cmd.BaseGetRowCommand):
     table = 'Port_Group'
+
+
+class GatewayChassisAddCommand(cmd.AddCommand):
+    table_name = 'Gateway_Chassis'
+
+    def __init__(self, api, name, chassis_name, priority=0, may_exist=False,
+                 **columns):
+        super(GatewayChassisAddCommand, self).__init__(api)
+        self.name = name
+        self.chassis_name = chassis_name
+        self.priority = priority
+        self.may_exist = may_exist
+        self.columns = columns
+
+    def run_idl(self, txn):
+        if self.may_exist:
+            gwc = self.api.lookup(self.table_name, self.name, None)
+        else:
+            gwc = None
+        if not gwc:
+            # If gwc exists with name, this will properly fail if not may_exist
+            # since 'name' is indexed
+            gwc = txn.insert(self.api.tables[self.table_name])
+            gwc.name = self.name
+        gwc.priority = self.priority
+        self.set_columns(gwc, **self.columns)
+        self.result = gwc
