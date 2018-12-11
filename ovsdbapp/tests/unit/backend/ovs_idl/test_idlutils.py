@@ -62,7 +62,7 @@ class TestIdlUtils(base.TestCase):
 
         * if column type is_optional and value is a single element, value is
           transformed to a length-1-list
-        * any other value is returned as it is, no type convertions
+        * any other value is returned as it is, no type conversions
         """
 
         table = MockTable("SomeTable",
