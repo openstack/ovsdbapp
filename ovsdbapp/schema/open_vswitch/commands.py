@@ -41,7 +41,7 @@ class AddManagerCommand(command.AddCommand):
         self.result = row.uuid
 
 
-class GetManagerCommand(BaseCommand):
+class GetManagerCommand(command.ReadOnlyCommand):
     def __init__(self, api):
         super(GetManagerCommand, self).__init__(api)
 
@@ -143,7 +143,7 @@ class DelBridgeCommand(BaseCommand):
         br.delete()
 
 
-class BridgeExistsCommand(BaseCommand):
+class BridgeExistsCommand(command.ReadOnlyCommand):
     def __init__(self, api, name):
         super(BridgeExistsCommand, self).__init__(api)
         self.name = name
@@ -153,7 +153,7 @@ class BridgeExistsCommand(BaseCommand):
                                                  'name', self.name, None))
 
 
-class ListBridgesCommand(BaseCommand):
+class ListBridgesCommand(command.ReadOnlyCommand):
     def __init__(self, api):
         super(ListBridgesCommand, self).__init__(api)
 
@@ -190,7 +190,7 @@ class DelControllerCommand(BaseCommand):
         br.controller = []
 
 
-class GetControllerCommand(BaseCommand):
+class GetControllerCommand(command.ReadOnlyCommand):
     def __init__(self, api, bridge):
         super(GetControllerCommand, self).__init__(api)
         self.bridge = bridge
@@ -291,7 +291,7 @@ class DelPortCommand(BaseCommand):
         port.delete()
 
 
-class ListPortsCommand(BaseCommand):
+class ListPortsCommand(command.ReadOnlyCommand):
     def __init__(self, api, bridge):
         super(ListPortsCommand, self).__init__(api)
         self.bridge = bridge
@@ -301,7 +301,7 @@ class ListPortsCommand(BaseCommand):
         self.result = [p.name for p in br.ports if p.name != self.bridge]
 
 
-class ListIfacesCommand(BaseCommand):
+class ListIfacesCommand(command.ReadOnlyCommand):
     def __init__(self, api, bridge):
         super(ListIfacesCommand, self).__init__(api)
         self.bridge = bridge
@@ -312,7 +312,7 @@ class ListIfacesCommand(BaseCommand):
                        for i in p.interfaces]
 
 
-class PortToBridgeCommand(BaseCommand):
+class PortToBridgeCommand(command.ReadOnlyCommand):
     def __init__(self, api, name):
         super(PortToBridgeCommand, self).__init__(api)
         self.name = name
@@ -328,7 +328,7 @@ class PortToBridgeCommand(BaseCommand):
         self.result = next(br.name for br in bridges if port in br.ports)
 
 
-class InterfaceToBridgeCommand(BaseCommand):
+class InterfaceToBridgeCommand(command.ReadOnlyCommand):
     def __init__(self, api, name):
         super(InterfaceToBridgeCommand, self).__init__(api)
         self.name = name
@@ -344,7 +344,7 @@ class InterfaceToBridgeCommand(BaseCommand):
         self.result = next(br.name for br in bridges if pname in br.ports)
 
 
-class GetExternalIdCommand(BaseCommand):
+class GetExternalIdCommand(command.ReadOnlyCommand):
     def __init__(self, api, table, name, field):
         super(GetExternalIdCommand, self).__init__(api)
         self.table = table

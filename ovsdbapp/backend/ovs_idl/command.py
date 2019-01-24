@@ -25,12 +25,17 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseCommand(api.Command):
+    READ_ONLY = False
+
     def __init__(self, api):
         self.api = api
         self.result = None
 
     def execute(self, check_error=False, log_errors=True):
         try:
+            if self.READ_ONLY:
+                self.run_idl(None)
+                return self.result
             with self.api.transaction(check_error, log_errors) as txn:
                 txn.add(self)
             return self.result
@@ -58,6 +63,10 @@ class BaseCommand(api.Command):
             self.__class__.__name__,
             ", ".join("%s=%s" % (k, v) for k, v in command_info.items()
                       if k not in ['api', 'result']))
+
+
+class ReadOnlyCommand(BaseCommand):
+    READ_ONLY = True
 
 
 class AddCommand(BaseCommand):
@@ -274,7 +283,7 @@ class DbFindCommand(BaseCommand):
         ]
 
 
-class BaseGetRowCommand(BaseCommand):
+class BaseGetRowCommand(ReadOnlyCommand):
     def __init__(self, api, record):
         super(BaseGetRowCommand, self).__init__(api)
         self.record = record
