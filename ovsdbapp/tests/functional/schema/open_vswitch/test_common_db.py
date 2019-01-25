@@ -69,6 +69,10 @@ class TestBackendDb(base.FunctionalTestCase):
             columns=('name', 'datapath_type')).execute(check_error=True)
         self.assertTrue(all(b in res for b in self.bridges))
 
+    def test_db_list_nested(self):
+        with self.api.transaction(check_error=True):
+            self.test_db_list()
+
     def test_db_list_record(self):
         res = self.api.db_list(
             'Bridge', [self.bridges[0]['name']],
