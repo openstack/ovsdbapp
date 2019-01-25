@@ -180,7 +180,7 @@ class DbClearCommand(BaseCommand):
         setattr(record, self.column, value)
 
 
-class DbGetCommand(BaseCommand):
+class DbGetCommand(ReadOnlyCommand):
     def __init__(self, api, table, record, column):
         super(DbGetCommand, self).__init__(api)
         self.table = table
@@ -200,7 +200,7 @@ class DbGetCommand(BaseCommand):
             self.result = result
 
 
-class DbListCommand(BaseCommand):
+class DbListCommand(ReadOnlyCommand):
     def __init__(self, api, table, records, columns, if_exists, row=False):
         super(DbListCommand, self).__init__(api)
         self.table = table
@@ -263,7 +263,7 @@ class DbListCommand(BaseCommand):
                                        match=records_found[0])
 
 
-class DbFindCommand(BaseCommand):
+class DbFindCommand(ReadOnlyCommand):
     def __init__(self, api, table, *conditions, **kwargs):
         super(DbFindCommand, self).__init__(api)
         self.table = self.api._tables[table]
