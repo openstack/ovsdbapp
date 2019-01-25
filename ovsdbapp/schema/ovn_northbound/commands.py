@@ -487,7 +487,7 @@ class LspGetPortSecurityCommand(cmd.BaseCommand):
         self.result = lsp.port_security
 
 
-class LspGetUpCommand(cmd.BaseCommand):
+class LspGetUpCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetUpCommand, self).__init__(api)
         self.port = port
@@ -509,7 +509,7 @@ class LspSetEnabledCommand(cmd.BaseCommand):
         lsp.enabled = self.is_enabled
 
 
-class LspGetEnabledCommand(cmd.BaseCommand):
+class LspGetEnabledCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetEnabledCommand, self).__init__(api)
         self.port = port
@@ -531,7 +531,7 @@ class LspSetTypeCommand(cmd.BaseCommand):
         lsp.type = self.port_type
 
 
-class LspGetTypeCommand(cmd.BaseCommand):
+class LspGetTypeCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetTypeCommand, self).__init__(api)
         self.port = port
@@ -552,7 +552,7 @@ class LspSetOptionsCommand(cmd.BaseCommand):
         lsp.options = self.options
 
 
-class LspGetOptionsCommand(cmd.BaseCommand):
+class LspGetOptionsCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetOptionsCommand, self).__init__(api)
         self.port = port
@@ -573,7 +573,7 @@ class LspSetDhcpV4OptionsCommand(cmd.BaseCommand):
         lsp.dhcpv4_options = self.dhcpopt_uuid
 
 
-class LspGetDhcpV4OptionsCommand(cmd.BaseCommand):
+class LspGetDhcpV4OptionsCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetDhcpV4OptionsCommand, self).__init__(api)
         self.port = port
@@ -610,7 +610,7 @@ class DhcpOptionsDelCommand(cmd.BaseCommand):
         dhcpopt.delete()
 
 
-class DhcpOptionsListCommand(cmd.BaseCommand):
+class DhcpOptionsListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
         self.result = [rowview.RowView(r) for
                        r in self.api.tables['DHCP_Options'].rows.values()]
@@ -631,7 +631,7 @@ class DhcpOptionsSetOptionsCommand(cmd.BaseCommand):
         dhcpopt.options = self.options
 
 
-class DhcpOptionsGetOptionsCommand(cmd.BaseCommand):
+class DhcpOptionsGetOptionsCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, dhcpopt_uuid):
         super(DhcpOptionsGetOptionsCommand, self).__init__(api)
         self.dhcpopt_uuid = dhcpopt_uuid
@@ -686,7 +686,7 @@ class LrDelCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
-class LrListCommand(cmd.BaseCommand):
+class LrListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
         self.result = [rowview.RowView(r) for
                        r in self.api.tables['Logical_Router'].rows.values()]
@@ -763,7 +763,7 @@ class LrpDelCommand(PortDelCommand):
             if_exists)
 
 
-class LrpListCommand(cmd.BaseCommand):
+class LrpListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
         super(LrpListCommand, self).__init__(api)
         self.router = router
@@ -784,7 +784,7 @@ class LrpSetEnabledCommand(cmd.BaseCommand):
         lrp.enabled = self.is_enabled
 
 
-class LrpGetEnabledCommand(cmd.BaseCommand):
+class LrpGetEnabledCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LrpGetEnabledCommand, self).__init__(api)
         self.port = port
@@ -865,7 +865,7 @@ class LrRouteDelCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
-class LrRouteListCommand(cmd.BaseCommand):
+class LrRouteListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
         super(LrRouteListCommand, self).__init__(api)
         self.router = router
@@ -974,7 +974,7 @@ class LrNatDelCommand(cmd.BaseCommand):
                                        match=self.match_ip)
 
 
-class LrNatListCommand(cmd.BaseCommand):
+class LrNatListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
         super(LrNatListCommand, self).__init__(api)
         self.router = router
@@ -1041,7 +1041,7 @@ class LbDelCommand(cmd.BaseCommand):
                 raise
 
 
-class LbListCommand(cmd.BaseCommand):
+class LbListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
         self.result = [rowview.RowView(r)
                        for r in self.api.tables['Load_Balancer'].rows.values()]
@@ -1086,7 +1086,7 @@ class LrLbDelCommand(cmd.BaseCommand):
             raise
 
 
-class LrLbListCommand(cmd.BaseCommand):
+class LrLbListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
         super(LrLbListCommand, self).__init__(api)
         self.router = router
@@ -1135,7 +1135,7 @@ class LsLbDelCommand(cmd.BaseCommand):
             raise
 
 
-class LsLbListCommand(cmd.BaseCommand):
+class LsLbListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, switch):
         super(LsLbListCommand, self).__init__(api)
         self.switch = switch
@@ -1170,7 +1170,7 @@ class DnsGetCommand(cmd.BaseGetRowCommand):
     table = 'DNS'
 
 
-class DnsListCommand(cmd.BaseCommand):
+class DnsListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
         table = self.api.tables['DNS']
         self.result = [rowview.RowView(r) for r in table.rows.values()]

@@ -75,7 +75,7 @@ class ChassisDelCommand(cmd.BaseCommand):
         chassis.delete()
 
 
-class ChassisListCommand(cmd.BaseCommand):
+class ChassisListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
         self.result = [rowview.RowView(r)
                        for r in self.api.tables['Chassis'].rows.values()]
