@@ -14,8 +14,6 @@
 
 import os
 
-import six
-
 from ovsdbapp.backend.ovs_idl.common import base_connection_utils
 
 
@@ -31,7 +29,7 @@ class WaitQueue(base_connection_utils.WaitQueue):
         self.alertin.read(1)
 
     def alert_notify(self):
-        self.alertout.write(six.b('X'))
+        self.alertout.write('X'.encode("latin-1"))
         self.alertout.flush()
 
     @property

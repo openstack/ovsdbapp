@@ -14,13 +14,25 @@
 from __future__ import print_function
 import atexit
 import os
-import six
 import subprocess
 import sys
 
 from fixtures import fixture
 
 from ovsdbapp import venv
+
+
+def reraise(tp, value, tb=None):
+    try:
+        if value is None:
+            value = tp()
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
+    finally:
+        value = None
+        tb = None
+
 
 if len(sys.argv) != 4:
     print("Requires three arguments: venvdir ovsdir ovndir", file=sys.stderr)
@@ -40,7 +52,7 @@ try:
     atexit.register(v.cleanUp)
     v.setUp()
 except fixture.MultipleExceptions as e:
-    six.reraise(*e.args[0])
+    reraise(*e.args[0])
 try:
     print("*** Exit the shell when finished debugging ***")
     subprocess.call([os.getenv('SHELL'), '-i'], env=v.env)

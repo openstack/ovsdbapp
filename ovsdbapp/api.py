@@ -14,17 +14,10 @@
 
 import abc
 import contextlib
-
-import six
-try:
-    # Python 3 no longer has thread module
-    import thread  # noqa
-except ImportError:
-    import threading as thread
+import threading
 
 
-@six.add_metaclass(abc.ABCMeta)
-class Command(object):
+class Command(object, metaclass=abc.ABCMeta):
     """An OVSDB command that can be executed in a transaction
 
     :attr result: The result of executing the command in a transaction
@@ -41,8 +34,7 @@ class Command(object):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class Transaction(object):
+class Transaction(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def commit(self):
         """Commit the transaction to OVSDB"""
@@ -69,8 +61,7 @@ class Transaction(object):
             self.result = self.commit()
 
 
-@six.add_metaclass(abc.ABCMeta)
-class API(object):
+class API(object, metaclass=abc.ABCMeta):
     def __init__(self, nested_transactions=True):
         # Mapping between a (green)thread and its transaction.
         self._nested_txns = nested_transactions
@@ -105,7 +96,7 @@ class API(object):
         # ojbect() is unique, so if we are not nested, this will always result
         # in a KeyError on lookup and so a unique Transaction
         nested = nested and self._nested_txns
-        cur_thread_id = thread.get_ident() if nested else object()
+        cur_thread_id = threading.get_ident() if nested else object()
 
         if cur_thread_id in self._nested_txns_map:
             yield self._nested_txns_map[cur_thread_id]

@@ -14,13 +14,10 @@
 
 import abc
 
-import six
-
 from ovsdbapp import api
 
 
-@six.add_metaclass(abc.ABCMeta)
-class API(api.API):
+class API(api.API, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def add_manager(self, connection_uri):
         """Create a command to add a Manager to the OVS switch

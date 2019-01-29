@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six
-
 
 class OvsdbAppException(RuntimeError):
     """Base OvsdbApp Exception.
@@ -33,10 +31,6 @@ class OvsdbAppException(RuntimeError):
                 raise
             # at least get the core message out if something happened
             super(OvsdbAppException, self).__init__(self.message)
-
-    if six.PY2:
-        def __unicode__(self):
-            return unicode(self.msg)  # noqa pylint: disable=undefined-variable
 
     def __str__(self):
         return self.msg
