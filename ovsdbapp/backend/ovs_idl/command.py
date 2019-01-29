@@ -243,15 +243,22 @@ class DbListCommand(ReadOnlyCommand):
 
         def _match(row):
             elem = getattr(row, idx)
+            return elem in self.records
+
+        def _match_remove(row):
+            elem = getattr(row, idx)
             found = elem in self.records
             if found:
                 records_found.remove(elem)
             return found
 
+        def _match_true(row):
+            return True
+
         records_found = []
         if idx and self.records:
             if self.if_exists:
-                match = lambda row: getattr(row, idx) in self.records
+                match = _match
             else:
                 # If we're using the approach of removing the unwanted
                 # elements, we'll use a helper list to remove elements as we
@@ -259,9 +266,9 @@ class DbListCommand(ReadOnlyCommand):
                 # quickly if there's some record missing to raise a RowNotFound
                 # exception later.
                 records_found = list(self.records)
-                match = _match
+                match = _match_remove
         else:
-            match = lambda row: True
+            match = _match_true
 
         self.result = [
             rowview.RowView(row) if self.row else {
@@ -332,5 +339,4 @@ class DbRemoveCommand(BaseCommand):
         except idlutils.RowNotFound:
             if self.if_exists:
                 return
-            else:
-                raise
+            raise

@@ -31,9 +31,8 @@ class OvsdbAppException(RuntimeError):
         except Exception:
             if self.use_fatal_exceptions():
                 raise
-            else:
-                # at least get the core message out if something happened
-                super(OvsdbAppException, self).__init__(self.message)
+            # at least get the core message out if something happened
+            super(OvsdbAppException, self).__init__(self.message)
 
     if six.PY2:
         def __unicode__(self):

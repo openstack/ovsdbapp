@@ -210,7 +210,7 @@ def condition_match(row, condition):
     #                I haven't investigated the reason for the patch that
     #                added this code, but for now I check string_types
     if type(match) is not type(val) and not all(
-        isinstance(x, six.string_types) for x in (match, val)):
+            isinstance(x, six.string_types) for x in (match, val)):
         # Types of 'val' and 'match' arguments MUST match in all cases with 2
         # exceptions:
         # - 'match' is an empty list and column's type is optional;
@@ -297,8 +297,8 @@ def db_replace_record(obj):
         for k, v in six.iteritems(obj):
             if isinstance(v, api.Command):
                 obj[k] = v.result
-    elif (isinstance(obj, collections.Sequence)
-          and not isinstance(obj, six.string_types)):
+    elif (isinstance(obj, collections.Sequence) and
+          not isinstance(obj, six.string_types)):
         for i, v in enumerate(obj):
             if isinstance(v, api.Command):
                 try:

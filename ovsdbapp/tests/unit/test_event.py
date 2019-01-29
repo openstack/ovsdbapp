@@ -32,4 +32,4 @@ class TestEvent(event.RowEvent):
 class TestRowEvent(base.TestCase):
     def test_compare_stop_event(self):
         r = TestEvent()
-        self.assertFalse((r, "fake", "fake", "fake") == event.STOP_EVENT)
+        self.assertNotEqual((r, "fake", "fake", "fake"), event.STOP_EVENT)

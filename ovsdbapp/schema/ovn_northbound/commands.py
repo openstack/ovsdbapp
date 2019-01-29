@@ -727,7 +727,7 @@ class LrpAddCommand(cmd.BaseCommand):
                     msg = "Port %s exists with different networks" % (
                         self.port)
                 elif (not self.peer) != (not lrp.peer) or (
-                    self.peer != lrp.peer):
+                        self.peer != lrp.peer):
                     msg = "Port %s exists with different peer" % (self.port)
                 if msg:
                     raise RuntimeError(msg)

@@ -22,7 +22,7 @@ class RowView(object):
         # use other's == since it is likely to be a Row object
         try:
             return other == self._row
-        except NotImplemented:
+        except NotImplementedError:
             return other._row == self._row
 
     def __hash__(self):

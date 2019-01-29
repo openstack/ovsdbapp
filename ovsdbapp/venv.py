@@ -221,11 +221,8 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                 'external_ids:ovn-encap-type=geneve',
                 'external_ids:ovn-encap-ip=127.0.0.1'])
         # TODO(twilson) SSL stuff
-        if False:
-            pass
-        else:
-            self.call(['ovs-vsctl', 'set', 'open', '.',
-                       'external_ids:ovn-remote=' + self.ovnsb_connection])
+        self.call(['ovs-vsctl', 'set', 'open', '.',
+                   'external_ids:ovn-remote=' + self.ovnsb_connection])
         self.call(['ovn-northd', '--detach', '--no-chdir', '--pidfile',
                    '-vconsole:off', '--log-file',
                    '--ovnsb-db=' + self.ovnsb_connection,

@@ -5,28 +5,44 @@
 ignore=.git,tests
 
 [MESSAGES CONTROL]
-# NOTE: This list is copied from neutron, the options which do not need to be
-# suppressed have been removed.
+# TODO: This list is copied from neutron, the options which do not need to be
+# suppressed have been already removed, some of the remaining options will be
+# removed by code adjustment.
 disable=
 # "F" Fatal errors that prevent further processing
+ import-error,
 # "I" Informational noise
 # "E" Error for important programming issues (likely bugs)
  no-member,
 # "W" Warnings for stylistic problems or minor programming issues
+ abstract-method,
  arguments-differ,
  attribute-defined-outside-init,
  broad-except,
+ dangerous-default-value,
  fixme,
+ global-statement,
+ no-init,
  protected-access,
+ redefined-builtin,
  redefined-outer-name,
+ signature-differs,
  unused-argument,
+ unused-import,
+ unused-variable,
  useless-super-delegation,
 # "C" Coding convention violations
  bad-continuation,
  invalid-name,
+ len-as-condition,
+ misplaced-comparison-constant,
  missing-docstring,
+ superfluous-parens,
+ ungrouped-imports,
+ wrong-import-order,
 # "R" Refactor recommendations
  duplicate-code,
+ no-else-return,
  no-self-use,
  too-few-public-methods,
  too-many-ancestors,
@@ -37,10 +53,20 @@ disable=
  too-many-locals,
  too-many-public-methods,
  too-many-return-statements,
+ too-many-statements,
  inconsistent-return-statements,
- catching-non-exception,
- using-constant-test,
- too-many-statements
+ useless-object-inheritance,
+ too-many-nested-blocks,
+ too-many-boolean-expressions,
+ not-callable,
+# new for python3 version of pylint
+ chained-comparison,
+ consider-using-dict-comprehension,
+ consider-using-in,
+ consider-using-set-comprehension,
+ unnecessary-pass,
+ useless-object-inheritance
+
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores
@@ -75,6 +101,8 @@ ignore-iface-methods=
 [IMPORTS]
 # Deprecated modules which should not be used, separated by a comma
 deprecated-modules=
+# should use oslo_serialization.jsonutils
+ json
 
 [TYPECHECK]
 # List of module names for which member attributes should not be checked
