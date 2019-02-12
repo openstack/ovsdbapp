@@ -19,11 +19,7 @@ LOG = logging.getLogger(__name__)
 
 
 class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
-    def matches(self, event, row, old=None):
-        if event not in self.events:
-            return False
-        if row._table.name != self.table:
-            return False
+    def match_fn(self, event, row, old):
         if self.conditions and not idlutils.row_match(row, self.conditions):
             return False
         if self.old_conditions:
@@ -35,7 +31,15 @@ class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
             except (KeyError, AttributeError):
                 # Its possible that old row may not have all columns in it
                 return False
+        return True
 
+    def matches(self, event, row, old=None):
+        if event not in self.events:
+            return False
+        if row._table.name != self.table:
+            return False
+        if not self.match_fn(event, row, old):
+            return False
         LOG.debug("%s : Matched %s, %s, %s %s", self.event_name, self.table,
                   self.events, self.conditions, self.old_conditions)
         return True
