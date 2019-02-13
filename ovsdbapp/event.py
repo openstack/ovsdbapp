@@ -38,14 +38,15 @@ class RowEvent(object):
 
     @property
     def key(self):
-        return (self.__class__, self.table, self.events, self.conditions)
+        return (self.__class__, self.table, tuple(self.events))
 
     def __hash__(self):
         return hash(self.key)
 
     def __eq__(self, other):
         try:
-            return self.key == other.key
+            return (self.key == other.key and
+                    self.conditions == other.conditions)
         except AttributeError:
             return False
 
