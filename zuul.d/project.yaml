@@ -8,9 +8,11 @@
       jobs:
         - openstack-tox-lower-constraints
         - openstack-tox-functional
+        - openstack-tox-functional-py36
         - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
     gate:
       jobs:
         - openstack-tox-lower-constraints
         - openstack-tox-functional
+        - openstack-tox-functional-py36
         - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release

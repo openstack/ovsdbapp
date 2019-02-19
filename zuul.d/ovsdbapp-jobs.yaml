@@ -5,3 +5,4 @@
     vars:
       devstack_localrc:
         LIBS_FROM_GIT: ovsdbapp
+        USE_PYTHON3: true
