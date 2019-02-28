@@ -66,6 +66,9 @@ class Backend(object):
     def db_create(self, table, **col_values):
         return cmd.DbCreateCommand(self, table, **col_values)
 
+    def db_create_row(self, table, **col_values):
+        return cmd.DbCreateCommand(self, table, _as_row=True, **col_values)
+
     def db_destroy(self, table, record):
         return cmd.DbDestroyCommand(self, table, record)
 

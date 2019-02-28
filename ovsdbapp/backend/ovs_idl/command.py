@@ -81,10 +81,11 @@ class AddCommand(BaseCommand):
 
 
 class DbCreateCommand(BaseCommand):
-    def __init__(self, api, table, **columns):
+    def __init__(self, api, table, _as_row=False, **columns):
         super(DbCreateCommand, self).__init__(api)
         self.table = table
         self.columns = columns
+        self.row = _as_row
 
     def run_idl(self, txn):
         row = txn.insert(self.api._tables[self.table])
@@ -94,7 +95,11 @@ class DbCreateCommand(BaseCommand):
 
     def post_commit(self, txn):
         # Replace the temporary row with the post-commit UUID to match vsctl
-        self.result = txn.get_insert_uuid(self.result.uuid)
+        u = txn.get_insert_uuid(self.result.uuid)
+        if self.row:
+            self.result = rowview.RowView(self.api.tables[self.table].rows[u])
+        else:
+            self.result = u
 
 
 class DbDestroyCommand(BaseCommand):

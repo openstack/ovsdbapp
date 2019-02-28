@@ -120,8 +120,17 @@ class API(object):
         :param col_values: The columns and their associated values
                            to be set after create
         :type col_values:  Dictionary of columns id's and values
-        :returns:          :class:`Command` with no result
+        :returns:          :class:`Command` with uuid result
         """
+
+    def db_create_row(self, table, **col_values):
+        """Create a command to create new record
+
+        Identical to db_create, but returns a RowView result
+        :returns: :class:`Command` with RowView result
+        """
+        # vif_plug_ovs has a copy of impl_vsctl that doesn't implement this
+        raise NotImplementedError
 
     @abc.abstractmethod
     def db_destroy(self, table, record):

@@ -12,7 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import uuid
+
 from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp.backend.ovs_idl import rowview
 from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests.functional import base
 from ovsdbapp.tests.functional.schema.open_vswitch import fixtures
@@ -98,3 +101,15 @@ class TestBackendDb(base.FunctionalTestCase):
         self.assertTrue(
             set(b['name'] for b in self.bridges).issubset(
                 set(b.name for b in res)))
+
+    def test_db_create(self):
+        _uuid = self.api.db_create(
+            'Queue', external_ids={'x': 'x'}).execute(check_error=True)
+        self.assertIsInstance(_uuid, uuid.UUID)
+        self.api.db_destroy('Queue', _uuid).execute(check_error=True)
+
+    def test_db_create_row(self):
+        row = self.api.db_create_row(
+            'Queue', external_ids={'x': 'x'}).execute(check_error=True)
+        self.assertIsInstance(row, rowview.RowView)
+        self.api.db_destroy('Queue', row.uuid).execute(check_error=True)
