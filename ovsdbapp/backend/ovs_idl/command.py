@@ -31,13 +31,13 @@ class BaseCommand(api.Command):
         self.api = api
         self.result = None
 
-    def execute(self, check_error=False, log_errors=True):
+    def execute(self, check_error=False, log_errors=True, **kwargs):
         try:
             if self.READ_ONLY:
                 self.run_idl(None)
                 return self.result
-            with self.api.transaction(check_error, log_errors) as txn:
-                txn.add(self)
+            with self.api.transaction(check_error, log_errors, **kwargs) as t:
+                t.add(self)
             return self.result
         except Exception:
             if log_errors:
