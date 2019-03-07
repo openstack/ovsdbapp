@@ -130,20 +130,11 @@ class OvsVenvFixture(fixtures.Fixture):
 
 class OvsOvnVenvFixture(OvsVenvFixture):
     PATH_VAR_TEMPLATE = OvsVenvFixture.PATH_VAR_TEMPLATE + (
-        ":{0}/vtep"
-        ":{0}/ovn/controller:{0}/ovn/controller-vtep"
-        ":{0}/ovn/northd:{0}/ovn/utilities")
+        ":{0}/ovn/controller:{0}/ovn/northd:{0}/ovn/utilities")
 
     def __init__(self, *args, **kwargs):
         self.add_chassis = kwargs.pop('add_chassis', False)
         super(OvsOvnVenvFixture, self).__init__(*args, **kwargs)
-
-    @property
-    def vtep_schema(self):
-        path = os.path.join(self.ovsdir, 'vtep', 'vtep.ovsschema')
-        if os.path.isfile(path):
-            return path
-        return os.path.join(self.ovsdir, 'vtep.ovsschema')
 
     @property
     def ovnsb_schema(self):
@@ -169,8 +160,6 @@ class OvsOvnVenvFixture(OvsVenvFixture):
 
     def setup_dbs(self):
         super(OvsOvnVenvFixture, self).setup_dbs()
-        self.create_db('vtep.db', self.vtep_schema)
-        self.ovsdb_server_dbs.append('vtep.db')
         self.create_db('ovnsb.db', self.ovnsb_schema)
         self.create_db('ovnnb.db', self.ovnnb_schema)
 
@@ -220,6 +209,3 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                    '--ovnnb-db=' + self.ovnnb_connection])
         self.call(['ovn-controller', '--detach', '--no-chdir', '--pidfile',
                    '-vconsole:off', '--log-file'])
-        self.call(['ovn-controller-vtep', '--detach', '--no-chdir',
-                   '--pidfile', '-vconsole:off', '--log-file',
-                   '--ovnsb-db=' + self.ovnsb_connection])
