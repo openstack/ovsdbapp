@@ -13,7 +13,6 @@
 #    under the License.
 
 import mock
-import threading
 
 from ovs import poller
 
@@ -22,6 +21,7 @@ from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.tests import base
 
 
+@mock.patch.object(connection.threading, 'Thread')
 class TestOVSNativeConnection(base.TestCase):
 
     @mock.patch.object(connection, 'TransactionQueue')
@@ -32,7 +32,6 @@ class TestOVSNativeConnection(base.TestCase):
         self.conn = connection.Connection(self.idl, timeout=1)
         self.mock_trans_queue.assert_called_once_with(1)
 
-    @mock.patch.object(threading, 'Thread')
     @mock.patch.object(poller, 'Poller')
     @mock.patch.object(idlutils, 'wait_for_change')
     def test_start(self, mock_wait_for_change, mock_poller, mock_thread):
@@ -46,7 +45,7 @@ class TestOVSNativeConnection(base.TestCase):
         mock_thread.return_value.setDaemon.assert_called_once_with(True)
         mock_thread.return_value.start.assert_called_once_with()
 
-    def test_queue_txn(self):
+    def test_queue_txn(self, mock_thread):
         self.conn.start()
         self.conn.queue_txn('blah')
         self.conn.txns.put.assert_called_once_with('blah',
