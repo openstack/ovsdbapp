@@ -33,3 +33,10 @@ class TransactionTestCase(base.TestCase):
             transaction = impl_idl.OvsVsctlTransaction(mock.sentinel,
                                                        mock.Mock(), 0)
             transaction.post_commit(mock.Mock())
+
+
+class TestOvsdbIdl(base.TestCase):
+    def test_nested_txns(self):
+        conn = mock.MagicMock()
+        api = impl_idl.OvsdbIdl(conn, nested_transactions=False)
+        self.assertFalse(api._nested_txns)
