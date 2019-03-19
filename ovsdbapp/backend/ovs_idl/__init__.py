@@ -26,9 +26,10 @@ class Backend(object):
     lookup_table = {}
     ovsdb_connection = None
 
-    def __init__(self, connection, **kwargs):
+    def __init__(self, connection, start=True, **kwargs):
         super(Backend, self).__init__(**kwargs)
-        self.start_connection(connection)
+        if start:
+            self.start_connection(connection)
 
     @classmethod
     def start_connection(cls, connection):

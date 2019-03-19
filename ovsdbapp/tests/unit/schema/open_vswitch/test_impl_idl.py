@@ -36,7 +36,16 @@ class TransactionTestCase(base.TestCase):
 
 
 class TestOvsdbIdl(base.TestCase):
+    def setUp(self):
+        super(TestOvsdbIdl, self).setUp()
+        impl_idl.OvsdbIdl.ovsdb_connection = None
+
     def test_nested_txns(self):
         conn = mock.MagicMock()
         api = impl_idl.OvsdbIdl(conn, nested_transactions=False)
         self.assertFalse(api._nested_txns)
+
+    def test_init_session(self):
+        conn = mock.MagicMock()
+        backend = impl_idl.OvsdbIdl(conn, start=False)
+        self.assertIsNone(backend.ovsdb_connection)
