@@ -71,8 +71,9 @@ class Transaction(object):
 
 @six.add_metaclass(abc.ABCMeta)
 class API(object):
-    def __init__(self):
+    def __init__(self, nested_transactions=True):
         # Mapping between a (green)thread and its transaction.
+        self._nested_txns = nested_transactions
         self._nested_txns_map = {}
 
     @abc.abstractmethod
@@ -88,17 +89,23 @@ class API(object):
         """
 
     @contextlib.contextmanager
-    def transaction(self, check_error=False, log_errors=True, **kwargs):
+    def transaction(self, check_error=False, log_errors=True, nested=True,
+                    **kwargs):
         """Create a transaction context.
 
         :param check_error: Allow the transaction to raise an exception?
         :type check_error:  bool
         :param log_errors:  Log an error if the transaction fails?
         :type log_errors:   bool
+        :param nested:      Allow nested transactions be merged into one txn
+        :type nested:       bool
         :returns: Either a new transaction or an existing one.
         :rtype: :class:`Transaction`
         """
-        cur_thread_id = thread.get_ident()
+        # ojbect() is unique, so if we are not nested, this will always result
+        # in a KeyError on lookup and so a unique Transaction
+        nested = nested and self._nested_txns
+        cur_thread_id = thread.get_ident() if nested else object()
 
         try:
             yield self._nested_txns_map[cur_thread_id]

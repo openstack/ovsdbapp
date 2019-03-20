@@ -65,7 +65,9 @@ class FakeTransaction(object):
 
 class TestingAPI(api.API):
     def create_transaction(self, check_error=False, log_errors=True, **kwargs):
-        return FakeTransaction()
+        txn = FakeTransaction()
+        mock.patch.object(txn, 'commit').start()
+        return txn
 
 
 TestingAPI.__abstractmethods__ = set()
@@ -75,7 +77,6 @@ class TransactionTestCase(base.TestCase):
     def setUp(self):
         super(TransactionTestCase, self).setUp()
         self.api = TestingAPI()
-        mock.patch.object(FakeTransaction, 'commit').start()
         self.useFixture(GreenThreadingFixture())
 
     def test_transaction_nested(self):
@@ -83,6 +84,21 @@ class TransactionTestCase(base.TestCase):
             with self.api.transaction() as txn2:
                 self.assertIs(txn1, txn2)
         txn1.commit.assert_called_once_with()
+
+    def test_transaction_nested_false(self):
+        with self.api.transaction(nested=False) as txn1:
+            with self.api.transaction() as txn2:
+                self.assertIsNot(txn1, txn2)
+        txn1.commit.assert_called_once_with()
+        txn2.commit.assert_called_once_with()
+
+    def test_api_level_transaction_nested_fales(self):
+        api = TestingAPI(nested_transactions=False)
+        with api.transaction() as txn1:
+            with api.transaction() as txn2:
+                self.assertIsNot(txn1, txn2)
+        txn1.commit.assert_called_once_with()
+        txn2.commit.assert_called_once_with()
 
     def test_transaction_no_nested_transaction_after_error(self):
         class TestException(Exception):
