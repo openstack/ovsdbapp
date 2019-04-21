@@ -843,6 +843,32 @@ class TestLogicalRouterOps(OvnNorthboundTest):
                               if_exists=True)
         self.assertEqual(len(lr.nat), len(const.NAT_TYPES))
 
+    def test_lr_nat_del_specific_snat_ip_network(self):
+        lr = self._lr_add(utils.get_rand_device_name())
+        self._lr_nat_add(router=lr,
+                         nat_type=const.NAT_SNAT,
+                         logical_ip='10.17.4.0/24',
+                         external_ip='192.0.2.2')
+        # Attempt to delete NAT rule of type const.NAT_SNAT by passing
+        # an IP network (corresponding to logical_ip) as match_ip
+        self.api.lr_nat_del(lr.name,
+                            nat_type=const.NAT_SNAT,
+                            match_ip='10.17.4.0/24').execute(check_error=True)
+        # Assert that the NAT rule of type const.NAT_SNAT is deleted
+        self.assertEqual([], lr.nat)
+
+    def test_lr_nat_del_specific_snat_ip_network_not_found(self):
+        self.assertRaises(idlutils.RowNotFound, self._lr_nat_del,
+                          nat_type=const.NAT_SNAT, match_ip='10.17.4.0/24')
+
+    def test_lr_nat_del_specific_dnat_ip_network(self):
+        self.assertRaises(ValueError, self._lr_nat_del,
+                          nat_type=const.NAT_DNAT, match_ip='192.0.2.1/32')
+
+    def test_lr_nat_del_specific_both_ip_network(self):
+        self.assertRaises(ValueError, self._lr_nat_del,
+                          nat_type=const.NAT_BOTH, match_ip='192.0.2.0/24')
+
     def test_lr_nat_list(self):
         lr = self._three_nats()
         nats = self.api.lr_nat_list(lr.uuid).execute(check_error=True)
