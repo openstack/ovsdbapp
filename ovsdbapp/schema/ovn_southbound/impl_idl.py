@@ -36,8 +36,8 @@ class OvnSbApiIdlImpl(ovs_idl.Backend, api.API):
     def chassis_list(self):
         return cmd.ChassisListCommand(self)
 
-    def lsp_bind(self, chassis, port, may_exist=False):
-        return cmd.LspBindCommand(self, chassis, port, may_exist)
+    def lsp_bind(self, port, chassis, may_exist=False):
+        return cmd.LspBindCommand(self, port, chassis, may_exist)
 
     def lsp_unbind(self, port, if_exists=False):
         return cmd.LspUnbindCommand(self, port, if_exists)
