@@ -48,7 +48,7 @@ class API(api.API):
     def chassis_del(self, chassis, if_exists=False):
         """Deletes chassis and its encaps and gateway_ports
 
-        :param chassis:   The name of the chassis to create
+        :param chassis:   The name of the chassis to delete
         :type chassis:    string
         :param if_exsits: Don't fail if `chassis` doesn't exist
         :param if_exists: boolean
