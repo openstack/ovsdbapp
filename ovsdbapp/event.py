@@ -53,6 +53,11 @@ class RowEvent(object):
     def __ne__(self, other):
         return not self == other
 
+    def __repr__(self):
+        return "%s(events=%r, table=%r, conditions=%r, old_conditions=%r)" % (
+            self.__class__.__name__, self.events, self.table, self.conditions,
+            self.old_conditions)
+
     @abc.abstractmethod
     def matches(self, event, row, old=None):
         """Test that `event` on `row` matches watched events
