@@ -310,3 +310,14 @@ def db_replace_record(obj):
     elif isinstance(obj, api.Command):
         obj = obj.result
     return obj
+
+
+def row2str(row):
+    """Get a string representation of a Row"""
+
+    # This is not a repr, as the Row object takes a dict of Datum objects and
+    # we don't really want to deal with those, just what the Python values are.
+    # Row foreign keys are printed as their UUID
+    return "%s(%s)" % (row._table.name, ", ".join(
+        "%s=%s" % (col, idl._row_to_uuid(getattr(row, col)))
+        for col in row._table.columns if hasattr(row, col)))
