@@ -40,8 +40,8 @@ class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
             return False
         if not self.match_fn(event, row, old):
             return False
-        LOG.debug("%s : Matched %s, %s, %s %s", self.event_name, self.table,
-                  event, self.conditions, self.old_conditions)
+        LOG.debug("Matched %s: %r to row=%s old=%s", event.upper(), self,
+                  idlutils.row2str(row), idlutils.row2str(old) if old else '')
         return True
 
 
