@@ -948,7 +948,14 @@ class LrNatDelCommand(cmd.BaseCommand):
                 raise TypeError("nat_type not in %s" % str(const.NAT_TYPES))
             self.conditions += [('type', '=', nat_type)]
             if match_ip:
-                match_ip = str(netaddr.IPAddress(match_ip))
+                try:
+                    match_ip = str(netaddr.IPAddress(match_ip))
+                except ValueError:
+                    # logical_ip can be IPNetwork
+                    if nat_type == const.NAT_SNAT:
+                        match_ip = str(netaddr.IPNetwork(match_ip))
+                    else:
+                        raise
                 self.col = ('logical_ip' if nat_type == const.NAT_SNAT
                             else 'external_ip')
                 self.conditions += [(self.col, '=', match_ip)]
