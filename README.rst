@@ -9,7 +9,7 @@ via Open_vSwitch's OVSDB protocol (https://tools.ietf.org/html/rfc7047). It
 wraps the Python 'ovs' and adds an event loop and friendly transactions.
 
 * Free software: Apache license
-* Source: http://git.openstack.org/cgit/openstack/ovsdbapp
+* Source: https://opendev.org/openstack/ovsdbapp/
 * Bugs: http://bugs.launchpad.net/ovsdbapp
 
 Features
