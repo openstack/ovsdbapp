@@ -67,7 +67,7 @@ class API(api.API):
         """Bind a logical port to a chassis
 
         :param port:      The name of the logical port to bind
-        :type port:       chassis
+        :type port:       string
         :param chassis:   The name of the chassis
         :type chassis:    string
         :param may_exist: Don't fail if port is already bound to a chassis
