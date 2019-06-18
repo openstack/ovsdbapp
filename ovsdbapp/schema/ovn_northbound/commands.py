@@ -1041,6 +1041,96 @@ class LrNatListCommand(cmd.ReadOnlyCommand):
         self.result = [rowview.RowView(r) for r in lr.nat]
 
 
+class LrPolicyAddCommand(cmd.AddCommand):
+    table_name = 'Logical_Router_Policy'
+
+    def __init__(self, api, router, priority, match, action, may_exist=False,
+                 **columns):
+        if not 0 <= priority <= const.LR_POLICY_PRIORITY_MAX:
+            raise ValueError("priority must be between 0 and %s, inclusive"
+                             % (const.LR_POLICY_PRIORITY_MAX,))
+        if action not in const.POLICY_ACTION_TYPES:
+            raise TypeError("action not in %s" % (const.POLICY_ACTION_TYPES,))
+        if (action == const.POLICY_ACTION_REROUTE and not
+                (columns.get("nexthop") or columns.get("nexthops"))):
+            raise ValueError("must specify nexthop(s) for action %s"
+                             % (const.POLICY_ACTION_REROUTE,))
+        if ((columns.get("nexthop") or columns.get("nexthops")) and
+                action != const.POLICY_ACTION_REROUTE):
+            raise ValueError("nexthop only valid for action %s"
+                             % (const.POLICY_ACTION_REROUTE,))
+        super().__init__(api)
+        self.router = router
+        self.priority = priority
+        self.match = match
+        self.action = action
+        self.may_exist = may_exist
+        self.columns = columns
+
+    def run_idl(self, txn):
+        lr = self.api.lookup('Logical_Router', self.router)
+        for policy in lr.policies:
+            if (self.priority, self.match) == (policy.priority, policy.match):
+                if self.may_exist:
+                    policy.action = self.action
+                    self.set_columns(policy, **self.columns)
+                    self.result = rowview.RowView(policy)
+                    return
+                raise RuntimeError("Logical_Router Policy already exists")
+        policy = txn.insert(self.api.tables[self.table_name])
+        policy.priority = self.priority
+        policy.match = self.match
+        policy.action = self.action
+        self.set_columns(policy, **self.columns)
+        lr.addvalue('policies', policy)
+        self.result = policy.uuid
+
+
+class LrPolicyDelCommand(cmd.BaseCommand):
+    def __init__(self, api, router, priority=None, match=None,
+                 if_exists=False):
+        self.conditions = []
+        if priority is not None:
+            if not 0 <= priority <= const.LR_POLICY_PRIORITY_MAX:
+                raise ValueError("priority must be between 0 and %s, inclusive"
+                                 % (const.LR_POLICY_PRIORITY_MAX,))
+            self.conditions += [('priority', '=', priority)]
+            if match is not None:
+                self.conditions += [('match', '=', match)]
+        elif match:
+            raise TypeError("must specify priority with match")
+        super().__init__(api)
+        self.router = router
+        self.priority = priority
+        self.match = match
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        lr = self.api.lookup('Logical_Router', self.router)
+        found = False
+        for policy in lr.policies:
+            if idlutils.row_match(policy, self.conditions):
+                found = True
+                lr.delvalue('policies', policy)
+                policy.delete()
+                if self.match:
+                    return
+        if self.match and not (found or self.if_exists):
+            raise RuntimeError(
+                "Policy with match %s and priority %s does not exist in "
+                "router %s" % (self.match, self.priority, self.router))
+
+
+class LrPolicyListCommand(cmd.ReadOnlyCommand):
+    def __init__(self, api, router):
+        super().__init__(api)
+        self.router = router
+
+    def run_idl(self, txn):
+        lr = self.api.lookup('Logical_Router', self.router)
+        self.result = [rowview.RowView(r) for r in lr.policies]
+
+
 class LbAddCommand(cmd.BaseCommand):
     def __init__(self, api, lb, vip, ips, protocol=const.PROTO_TCP,
                  may_exist=False, **columns):

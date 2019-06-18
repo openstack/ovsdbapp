@@ -694,6 +694,9 @@ class TestDhcpOptionsOps(OvnNorthboundTest):
 
 
 class TestLogicalRouterOps(OvnNorthboundTest):
+    lr_policy_match1 = 'ip4.src==10.1.1.0/24 && ip4.dst==20.1.1.0/24'
+    lr_policy_match2 = 'ip4.src==30.1.1.0/24 && ip4.dst==40.1.1.0/24'
+
     def _lr_add(self, *args, **kwargs):
         lr = self.useFixture(
             fixtures.LogicalRouterFixture(self.api, *args, **kwargs)).obj
@@ -964,6 +967,153 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         lr = self._three_nats()
         nats = self.api.lr_nat_list(lr.uuid).execute(check_error=True)
         self.assertEqual(lr.nat, nats)
+
+    def _lr_policy_add(self, priority, match, action, *args, **kwargs):
+        lr = kwargs.pop('router', self._lr_add(utils.get_rand_device_name()))
+        policy = self.api.lr_policy_add(
+            lr.uuid, priority, match, action, *args, **kwargs).execute(
+            check_error=True)
+        self.assertIn(policy, lr.policies)
+        self.assertEqual(action, policy.action)
+        self.assertEqual(match, policy.match)
+        self.assertEqual(priority, policy.priority)
+        policy.router = lr
+        return policy
+
+    def test_lr_policy_add_allow(self):
+        priority = 10
+        action = const.POLICY_ACTION_ALLOW
+        policy = self._lr_policy_add(priority, self.lr_policy_match1, action)
+        self.assertEqual(policy.nexthop, [])
+        self.assertEqual(policy.nexthops, [])
+
+    def test_lr_policy_add_drop(self):
+        priority = 10
+        action = const.POLICY_ACTION_DROP
+        policy = self._lr_policy_add(priority, self.lr_policy_match1, action)
+        self.assertEqual(policy.nexthop, [])
+        self.assertEqual(policy.nexthops, [])
+
+    def test_lr_policy_add_reroute_nexthop(self):
+        priority = 10
+        action = const.POLICY_ACTION_REROUTE
+        nexthop = "10.3.0.2"
+        policy = self._lr_policy_add(priority, self.lr_policy_match1, action,
+                                     nexthop=nexthop)
+        self.assertEqual(policy.nexthop, [nexthop])
+
+    def test_lr_policy_add_reroute_nexthops(self):
+        priority = 10
+        action = const.POLICY_ACTION_REROUTE
+        nexthops = ["10.3.0.2", "10.3.0.3"]
+        policy = self._lr_policy_add(priority, self.lr_policy_match1, action,
+                                     nexthops=nexthops)
+        self.assertEqual(policy.nexthops, nexthops)
+
+    def test_lr_policy_add_invalid_action(self):
+        priority = 10
+        action = "allow-related"
+        self.assertRaises(TypeError, self._lr_policy_add,
+                          priority, self.lr_policy_match1, action)
+
+    def test_lr_policy_add_invalid_priority(self):
+        priority = -1
+        action = "allow"
+        self.assertRaises(ValueError, self._lr_policy_add,
+                          priority, self.lr_policy_match1, action)
+
+    def test_lr_policy_add_reroute_no_nexthop(self):
+        priority = 10
+        action = const.POLICY_ACTION_REROUTE
+        self.assertRaises(ValueError, self._lr_policy_add,
+                          priority, self.lr_policy_match1, action)
+
+    def test_lr_policy_add_nexthop_not_reroute(self):
+        priority = 10
+        action = const.POLICY_ACTION_ALLOW
+        nexthop = "10.3.0.2"
+        self.assertRaises(ValueError, self._lr_policy_add, priority,
+                          self.lr_policy_match1, action, nexthop=nexthop)
+
+    def test_lr_policy_add_nexthops_not_reroute(self):
+        priority = 10
+        action = const.POLICY_ACTION_ALLOW
+        nexthops = ["10.3.0.2", "10.3.0.3"]
+        self.assertRaises(ValueError, self._lr_policy_add, priority,
+                          self.lr_policy_match1, action, nexthops=nexthops)
+
+    def test_lr_policy_may_exist(self):
+        priority = 10
+        action = const.POLICY_ACTION_ALLOW
+        policy_init = self._lr_policy_add(priority, self.lr_policy_match1,
+                                          action)
+        self.assertEqual(policy_init.nexthop, [])
+
+        # Update the policy
+        action = const.POLICY_ACTION_REROUTE
+        nexthop = "10.3.0.2"
+        policy_new = self._lr_policy_add(priority, self.lr_policy_match1,
+                                         action, nexthop=nexthop,
+                                         may_exist=True,
+                                         router=policy_init.router)
+        self.assertEqual(policy_init, policy_new)
+        self.assertEqual(policy_new.nexthop, [nexthop])
+
+    def _three_policies(self):
+        lr = self._lr_add(utils.get_rand_device_name())
+        pr1 = 10
+        pr2 = 9
+        self._lr_policy_add(pr1, self.lr_policy_match1,
+                            const.POLICY_ACTION_ALLOW, router=lr)
+        self._lr_policy_add(pr2, self.lr_policy_match2,
+                            const.POLICY_ACTION_DROP, router=lr)
+        self._lr_policy_add(pr1, self.lr_policy_match2,
+                            const.POLICY_ACTION_REROUTE,
+                            nexthops=['31.1.1.2', '31.1.1.3'], router=lr)
+        return lr
+
+    def _lr_policy_del(self, *args, **kwargs):
+        lr = self._three_policies()
+        self.api.lr_policy_del(lr.name,
+                               *args,
+                               **kwargs).execute(check_error=True)
+        return lr
+
+    def test_lr_policy_del_all(self):
+        lr = self._lr_policy_del()
+        self.assertEqual(lr.policies, [])
+
+    def test_lr_policy_del_priority(self):
+        priority = 10
+        lr = self._lr_policy_del(priority=priority)
+        self.assertEqual(len(lr.policies), 1)
+        self.assertEqual(lr.policies[0].action, const.POLICY_ACTION_DROP)
+
+    def test_lr_policy_del_match_without_priority(self):
+        self.assertRaises(TypeError, self._lr_policy_del,
+                          match='ip4.dst==40.1.1.0/24')
+
+    def test_lr_policy_del_specific(self):
+        priority = 10
+        lr = self._lr_policy_del(match=self.lr_policy_match2,
+                                 priority=priority)
+        for policy in lr.policies:
+            self.assertNotEqual(policy.action, const.POLICY_ACTION_REROUTE)
+            self.assertEqual(policy.nexthops, [])
+
+    def test_lr_policy_del_not_found(self):
+        self.assertRaises(RuntimeError, self._lr_policy_del,
+                          priority=100, match='ip4.dst==40.1.1.0/24')
+
+    def test_lr_policy_del_if_exists(self):
+        lr = self._lr_policy_del(priority=100, match='ip4.dst==40.1.1.0/24',
+                                 if_exists=True)
+        self.assertEqual(len(lr.policies), 3)
+
+    def test_lr_policy_list(self):
+        lr = self._three_policies()
+        policies = self.api.lr_policy_list(lr.uuid).execute(check_error=True)
+        self.assertEqual(lr.policies, policies)
 
 
 class TestLogicalRouterPortOps(OvnNorthboundTest):
