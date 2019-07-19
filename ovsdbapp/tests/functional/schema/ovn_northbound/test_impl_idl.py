@@ -1032,6 +1032,14 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertTrue(self.api.lrp_get_enabled(lrp.name).execute(
             check_error=True))
 
+    def test_lrp_get_set_options(self):
+        options = {'one': 'two', 'three': 'four'}
+        lrp = self._lrp_add(None)
+        self.api.lrp_set_options(lrp.uuid, **options).execute(
+            check_error=True)
+        self.assertEqual(options, self.api.lrp_get_options(lrp.uuid).execute(
+            check_error=True))
+
 
 class TestLoadBalancerOps(OvnNorthboundTest):
 

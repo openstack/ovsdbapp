@@ -542,23 +542,27 @@ class LspGetTypeCommand(cmd.ReadOnlyCommand):
 
 
 class LspSetOptionsCommand(cmd.BaseCommand):
+    table = 'Logical_Switch_Port'
+
     def __init__(self, api, port, **options):
         super(LspSetOptionsCommand, self).__init__(api)
         self.port = port
         self.options = options
 
     def run_idl(self, txn):
-        lsp = self.api.lookup('Logical_Switch_Port', self.port)
+        lsp = self.api.lookup(self.table, self.port)
         lsp.options = self.options
 
 
 class LspGetOptionsCommand(cmd.ReadOnlyCommand):
+    table = 'Logical_Switch_Port'
+
     def __init__(self, api, port):
         super(LspGetOptionsCommand, self).__init__(api)
         self.port = port
 
     def run_idl(self, txn):
-        lsp = self.api.lookup('Logical_Switch_Port', self.port)
+        lsp = self.api.lookup(self.table, self.port)
         self.result = lsp.options
 
 
@@ -793,6 +797,14 @@ class LrpGetEnabledCommand(cmd.ReadOnlyCommand):
         lrp = self.api.lookup('Logical_Router_Port', self.port)
         # enabled is optional, but if not disabled then enabled
         self.result = next(iter(lrp.enabled), True)
+
+
+class LrpSetOptionsCommand(LspSetOptionsCommand):
+    table = 'Logical_Router_Port'
+
+
+class LrpGetOptionsCommand(LspGetOptionsCommand):
+    table = 'Logical_Router_Port'
 
 
 class LrRouteAddCommand(cmd.BaseCommand):
