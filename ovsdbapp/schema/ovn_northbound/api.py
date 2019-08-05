@@ -543,6 +543,26 @@ class API(api.API):
         """
 
     @abc.abstractmethod
+    def lrp_set_options(self, port, **options):
+        """Set options related to the type of 'port'
+
+        :param port:    The name or uuid of the port
+        :type port:     string or uuid.UUID
+        :param options: keys and values for the port 'options' dict
+        :type options:  key: string, value: string
+        :returns:       :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lrp_get_options(self, port):
+        """Get the type-specific options for 'port'
+
+        :param port: The name or uuid of the port
+        :type port:  string or uuid.UUID
+        :returns:    :class:`Command` with dict result
+        """
+
+    @abc.abstractmethod
     def lr_route_add(self, router, prefix, nexthop, port=None,
                      policy='dst-ip', may_exist=False):
         """Add a route to 'router'
