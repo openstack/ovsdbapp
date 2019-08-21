@@ -296,3 +296,22 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def pg_get(self, pg):
         return cmd.PgGetCommand(self, pg)
+
+    def ha_chassis_group_add(self, name, may_exist=False, **columns):
+        return cmd.HAChassisGroupAddCommand(
+            self, name, may_exist=may_exist, **columns)
+
+    def ha_chassis_group_del(self, name, if_exists=False):
+        return cmd.HAChassisGroupDelCommand(self, name, if_exists=if_exists)
+
+    def ha_chassis_group_get(self, name):
+        return cmd.HAChassisGroupGetCommand(self, name)
+
+    def ha_chassis_group_add_chassis(self, hcg_id, chassis, priority,
+                                     **columns):
+        return cmd.HAChassisGroupAddChassisCommand(
+            self, hcg_id, chassis, priority, **columns)
+
+    def ha_chassis_group_del_chassis(self, hcg_id, chassis, if_exists=False):
+        return cmd.HAChassisGroupDelChassisCommand(
+            self, hcg_id, chassis, if_exists=if_exists)

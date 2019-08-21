@@ -1344,3 +1344,111 @@ class GatewayChassisAddCommand(cmd.AddCommand):
         gwc.priority = self.priority
         self.set_columns(gwc, **self.columns)
         self.result = gwc
+
+
+class HAChassisGroupAddCommand(cmd.AddCommand):
+    table_name = 'HA_Chassis_Group'
+
+    def __init__(self, api, name, may_exist=False, **columns):
+        super(HAChassisGroupAddCommand, self).__init__(api)
+        self.name = name
+        self.may_exist = may_exist
+        self.columns = columns
+
+    def run_idl(self, txn):
+        if self.may_exist:
+            try:
+                hcg = self.api.lookup(self.table_name, self.name)
+                self.result = rowview.RowView(hcg)
+                return
+            except idlutils.RowNotFound:
+                pass
+
+        hcg = txn.insert(self.api._tables[self.table_name])
+        hcg.name = self.name
+        self.set_columns(hcg, **self.columns)
+        self.result = hcg.uuid
+
+
+class HAChassisGroupDelCommand(cmd.BaseCommand):
+    table_name = 'HA_Chassis_Group'
+
+    def __init__(self, api, name, if_exists=False):
+        super(HAChassisGroupDelCommand, self).__init__(api)
+        self.name = name
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        try:
+            hcg = self.api.lookup(self.table_name, self.name)
+            hcg.delete()
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+            raise RuntimeError(
+                'HA Chassis Group %s does not exist' % self.name)
+
+
+class HAChassisGroupGetCommand(cmd.BaseGetRowCommand):
+    table = 'HA_Chassis_Group'
+
+
+class HAChassisGroupAddChassisCommand(cmd.AddCommand):
+    table_name = 'HA_Chassis'
+
+    def __init__(self, api, hcg_id, chassis, priority, **columns):
+        super(HAChassisGroupAddChassisCommand, self).__init__(api)
+        self.hcg_id = hcg_id
+        self.chassis = chassis
+        self.priority = priority
+        self.columns = columns
+
+    def run_idl(self, txn):
+        hc_group = self.api.lookup('HA_Chassis_Group', self.hcg_id)
+        found = False
+        hc = None
+        for hc in hc_group.ha_chassis:
+            if hc.chassis_name != self.chassis:
+                continue
+            found = True
+            break
+        else:
+            hc = txn.insert(self.api.tables[self.table_name])
+            hc.chassis_name = self.chassis
+
+        hc.priority = self.priority
+        self.set_columns(hc, **self.columns)
+        if not found:
+            hc_group.addvalue('ha_chassis', hc)
+
+        self.result = hc.uuid
+
+
+class HAChassisGroupDelChassisCommand(cmd.BaseCommand):
+    table_name = 'HA_Chassis'
+
+    def __init__(self, api, hcg_id, chassis, if_exists=False):
+        super(HAChassisGroupDelChassisCommand, self).__init__(api)
+        self.hcg_id = hcg_id
+        self.chassis = chassis
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        try:
+            hc_group = self.api.lookup('HA_Chassis_Group', self.hcg_id)
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+
+        hc = None
+        for hc in hc_group.ha_chassis:
+            if hc.chassis_name == self.chassis:
+                break
+        else:
+            if self.if_exists:
+                return
+            raise RuntimeError(
+                'HA Chassis %s does not exist' % self.hcg_id)
+
+        hc_group.delvalue('ha_chassis', hc)
+        hc.delete()

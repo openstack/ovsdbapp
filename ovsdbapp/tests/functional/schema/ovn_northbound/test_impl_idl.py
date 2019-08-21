@@ -1448,3 +1448,101 @@ class TestPortGroup(OvnNorthboundTest):
         # Assert that if if_exists is True it won't raise an error
         self.api.pg_del_ports(self.pg_name, non_existent_res,
                               if_exists=True).execute(check_error=True)
+
+
+class TestHAChassisGroup(OvnNorthboundTest):
+
+    def setUp(self):
+        super(TestHAChassisGroup, self).setUp()
+        self.hcg_name = 'ha-group-%s' % ovsdb_utils.generate_uuid()
+        self.chassis = 'chassis-%s' % ovsdb_utils.generate_uuid()
+
+    def test_ha_chassis_group(self):
+        # Assert the HA Chassis Group was added
+        self.api.ha_chassis_group_add(self.hcg_name).execute(check_error=True)
+        hcg = self.api.ha_chassis_group_get(self.hcg_name).execute(
+            check_error=True)
+        self.assertEqual(self.hcg_name, hcg.name)
+
+        # Assert the HA Chassis Group was deleted
+        self.api.ha_chassis_group_del(self.hcg_name).execute(check_error=True)
+        cmd = self.api.ha_chassis_group_get(self.hcg_name)
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
+    def test_ha_chassis_group_add_delete_chassis(self):
+        self.api.ha_chassis_group_add(self.hcg_name).execute(check_error=True)
+        priority = 20
+        self.api.ha_chassis_group_add_chassis(
+            self.hcg_name, self.chassis, priority).execute(check_error=True)
+
+        # Assert that the HA Chassis entry was created
+        row = self.api.db_find(
+            'HA_Chassis',
+            ('chassis_name', '=', self.chassis)).execute(check_error=True)
+        self.assertEqual(priority, row[0]['priority'])
+
+        # Assert that the HA Chassis entry was associated with
+        # the HA Chassis Group
+        hcg = self.api.ha_chassis_group_get(self.hcg_name).execute(
+            check_error=True)
+        self.assertEqual(self.chassis, hcg.ha_chassis[0].chassis_name)
+
+        # Deletes the HA Chassis entry
+        self.api.ha_chassis_group_del_chassis(
+            self.hcg_name, self.chassis).execute(check_error=True)
+        row = self.api.db_find(
+            'HA_Chassis',
+            ('chassis_name', '=', self.chassis)).execute(check_error=True)
+        self.assertEqual([], row)
+
+        # Assert that the deleted HA Chassis entry was dissociated from
+        # the HA Chassis Group
+        hcg = self.api.ha_chassis_group_get(self.hcg_name).execute(
+            check_error=True)
+        self.assertEqual([], hcg.ha_chassis)
+
+    def test_ha_chassis_group_if_exists(self):
+        self.api.ha_chassis_group_add(self.hcg_name).execute(check_error=True)
+        self.api.ha_chassis_group_add_chassis(
+            self.hcg_name, self.chassis, priority=10).execute(check_error=True)
+
+        # Deletes the HA Chassis entry
+        self.api.ha_chassis_group_del_chassis(
+            self.hcg_name, self.chassis).execute(check_error=True)
+        row = self.api.db_find(
+            'HA_Chassis',
+            ('chassis_name', '=', self.chassis)).execute(check_error=True)
+        self.assertEqual([], row)
+
+        # Tries to delete it again, since if_exists=True it shouldn't raise
+        # any errors
+        self.api.ha_chassis_group_del_chassis(
+            self.hcg_name, self.chassis, if_exists=True).execute(
+            check_error=True)
+
+        # Tries to delete it again with if_exists=False, now it should raise
+        # a RuntimeError
+        cmd = self.api.ha_chassis_group_del_chassis(
+            self.hcg_name, self.chassis, if_exists=False)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+        # Deletes the HA Chassis Group entry
+        self.api.ha_chassis_group_del(self.hcg_name).execute(check_error=True)
+        cmd = self.api.ha_chassis_group_get(self.hcg_name)
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
+        # Tries to delete it again, since if_exists=True it shouldn't raise
+        # any errors
+        self.api.ha_chassis_group_del(
+            self.hcg_name, if_exists=True).execute(check_error=True)
+
+        # Tries to delete it again with if_exists=False, now it should raise
+        # a RuntimeError
+        cmd = self.api.ha_chassis_group_del(self.hcg_name)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_ha_chassis_group_may_exist(self):
+        cmd = self.api.ha_chassis_group_add(self.hcg_name, may_exist=True)
+        hcg1 = cmd.execute(check_error=True)
+        hcg2 = cmd.execute(check_error=True)
+        self.assertEqual(hcg1, hcg2)

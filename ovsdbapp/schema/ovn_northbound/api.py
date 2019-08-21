@@ -968,3 +968,70 @@ class API(api.API):
         :type pg_id:  string or uuid.UUID
         :returns:     :class:`Command` with RowView result
         """
+
+    @abc.abstractmethod
+    def ha_chassis_group_add(self, name, may_exist=False, **columns):
+        """Create a HA Chassis Group
+
+        :param name:        The name of the ha chassis group
+        :type name:         string
+        :param may_exist:   If True, don't fail if the ha chassis group
+                            already exists
+        :type may_exist:    bool
+        :param columns:     Additional columns to directly set on the ha
+                            chassis group (e.g external_ids)
+        :type columns:      dictionary
+        :returns:           :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ha_chassis_group_del(self, name, if_exists=False):
+        """Delete a HA Chassis Group
+
+        :param name:        The name of the ha chassis group
+        :type name:         string
+        :param if_exists:   If True, don't fail if the ha chassis group
+                            doesn't exist
+        :type if_exists:    boolean
+        :returns:           :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def ha_chassis_group_get(self, name):
+        """Get HA Chassis Group
+
+        :param name: The name or uuid of the ha chassis group
+        :type name:  string or uuid.UUID
+        :returns:    :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ha_chassis_group_add_chassis(self, hcg_id, chassis, priority,
+                                     **columns):
+        """Add a HA Chassis to a HA Chassis Group
+
+        :param hcg_id:   The name or uuid of the ha chassis group
+        :type hcg_id:    string or uuid.UUID
+        :param chassis:  The name of the ha chassis
+        :type chassis:   string
+        :param priority: The priority of the ha chassis
+        :type priority:  int
+        :param columns:  Additional columns to directly set on the ha
+                         chassis (e.g external_ids)
+        :type columns:   dictionary
+        :returns:        :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ha_chassis_group_del_chassis(self, hcg_id, chassis, if_exists=False):
+        """Delete a HA Chassis from a HA Chassis Group
+
+        :param hcg_id:     The name or uuid of the ha chassis group
+        :type hcg_id:      string or uuid.UUID
+        :param chassis:    The name of the ha chassis
+        :type chassis:     string
+        :param if_exists:  If True, don't fail if the ha chassis
+                           doesn't exist
+        :type if_exists:   boolean
+        :returns:          :class:`Command` with no result
+        """
