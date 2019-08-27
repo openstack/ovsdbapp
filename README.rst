@@ -10,7 +10,7 @@ wraps the Python 'ovs' and adds an event loop and friendly transactions.
 
 * Free software: Apache license
 * Source: https://opendev.org/openstack/ovsdbapp/
-* Bugs: http://bugs.launchpad.net/ovsdbapp
+* Bugs: https://bugs.launchpad.net/ovsdbapp
 
 Features
 --------
