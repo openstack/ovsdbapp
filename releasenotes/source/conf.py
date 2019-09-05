@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Glance Release Notes documentation build configuration file, created by
-# sphinx-quickstart on Tue Nov  3 17:40:50 2015.
-#
 # This file is execfile()d with the current directory set to its
 # containing dir.
 #
@@ -145,7 +142,7 @@ html_theme = 'openstackdocs'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -154,7 +151,7 @@ html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-html_last_updated_fmt = '%Y-%m-%d %H:%M'
+# html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -194,7 +191,7 @@ html_last_updated_fmt = '%Y-%m-%d %H:%M'
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'GlanceReleaseNotesdoc'
+htmlhelp_basename = 'ovsdbappReleaseNotesdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -214,8 +211,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index', 'GlanceReleaseNotes.tex', u'Glance Release Notes Documentation',
-     u'Glance Developers', 'manual'),
+    ('index', 'ovsdbappNotes.tex', u'ovsdbapp Release Notes Documentation',
+     u'ovsdbapp Developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -238,43 +235,6 @@ latex_documents = [
 # If false, no module index is generated.
 # latex_domain_indices = True
 
-
-# -- Options for manual page output ---------------------------------------
-
-# One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'glancereleasenotes', u'Glance Release Notes Documentation',
-     [u'Glance Developers'], 1)
-]
-
-# If true, show URL addresses after external links.
-# man_show_urls = False
-
-
-# -- Options for Texinfo output -------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-texinfo_documents = [
-    ('index', 'GlanceReleaseNotes', u'Glance Release Notes Documentation',
-     u'Glance Developers', 'GlanceReleaseNotes',
-     'One line description of project.',
-     'Miscellaneous'),
-]
-
-# Documents to append as an appendix to all manuals.
-# texinfo_appendices = []
-
-# If false, no module index is generated.
-# texinfo_domain_indices = True
-
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-# texinfo_show_urls = 'footnote'
-
-# If true, do not generate a @detailmenu in the "Top" node's menu.
-# texinfo_no_detailmenu = False
 
 # -- Options for Internationalization output ------------------------------
 locale_dirs = ['locale/']
