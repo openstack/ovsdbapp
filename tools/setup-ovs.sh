@@ -9,3 +9,9 @@ if [ "$OVS_SRCDIR" -a ! -d "$OVS_SRCDIR" ]; then
     git clone git://github.com/openvswitch/ovs.git $OVS_SRCDIR
     (cd $OVS_SRCDIR && ./boot.sh && PYTHON=/usr/bin/python ./configure && make -j$(($(nproc) + 1)))
 fi
+if [ "$OVN_SRCDIR" -a ! -d "$OVN_SRCDIR" ]; then
+    echo "Building OVN in $OVN_SRCDIR"
+    mkdir -p $OVN_SRCDIR
+    git clone git://github.com/ovn-org/ovn.git $OVN_SRCDIR
+    (cd $OVN_SRCDIR && ./boot.sh && PYTHON=/usr/bin/python ./configure --with-ovs-source=$OVS_SRCDIR && make -j$(($(nproc) + 1)))
+fi
