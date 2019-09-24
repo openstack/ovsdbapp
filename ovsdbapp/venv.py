@@ -129,26 +129,29 @@ class OvsVenvFixture(fixtures.Fixture):
 
 
 class OvsOvnVenvFixture(OvsVenvFixture):
-    PATH_VAR_TEMPLATE = OvsVenvFixture.PATH_VAR_TEMPLATE + (
-        ":{0}/ovn/controller:{0}/ovn/northd:{0}/ovn/utilities")
 
     def __init__(self, *args, **kwargs):
         self.add_chassis = kwargs.pop('add_chassis', False)
+        self.ovndir = kwargs.pop('ovndir')
+        self.PATH_VAR_TEMPLATE += (
+            ":{0}/controller:{0}/northd:{0}/utilities".format(
+                self.ovndir))
         super(OvsOvnVenvFixture, self).__init__(*args, **kwargs)
+        self.env.update({'OVN_RUNDIR': self.venv})
 
     @property
     def ovnsb_schema(self):
         path = os.path.join(self.ovsdir, 'ovn', 'ovn-sb.ovsschema')
         if os.path.isfile(path):
             return path
-        return os.path.join(self.ovsdir, 'ovn-sb.ovsschema')
+        return os.path.join(self.ovndir, 'ovn-sb.ovsschema')
 
     @property
     def ovnnb_schema(self):
         path = os.path.join(self.ovsdir, 'ovn', 'ovn-nb.ovsschema')
         if os.path.isfile(path):
             return path
-        return os.path.join(self.ovsdir, 'ovn-nb.ovsschema')
+        return os.path.join(self.ovndir, 'ovn-nb.ovsschema')
 
     @property
     def ovnnb_connection(self):

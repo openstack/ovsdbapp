@@ -24,6 +24,7 @@ class FunctionalTestCase(base.TestCase):
     _connections = None
     ovsvenv = venv.OvsOvnVenvFixture(tempfile.mkdtemp(),
                                      ovsdir=os.getenv('OVS_SRCDIR'),
+                                     ovndir=os.getenv('OVN_SRCDIR'),
                                      remove=not bool(os.getenv('KEEP_VENV')))
     atexit.register(ovsvenv.cleanUp)
     ovsvenv.setUp()
