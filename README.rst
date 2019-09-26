@@ -12,8 +12,7 @@ wraps the Python 'ovs' and adds an event loop and friendly transactions.
 * Source: https://opendev.org/openstack/ovsdbapp/
 * Bugs: https://bugs.launchpad.net/ovsdbapp
 
-Features
---------
+Features:
 
 * An thread-based event loop for using ovs.db.Idl
 * Transaction support
