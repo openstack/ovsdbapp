@@ -8,10 +8,8 @@
     check:
       jobs:
         - openstack-tox-functional
-        - openstack-tox-functional-py36
         - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
     gate:
       jobs:
         - openstack-tox-functional
-        - openstack-tox-functional-py36
         - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
