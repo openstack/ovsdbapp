@@ -107,9 +107,9 @@ class API(object):
         nested = nested and self._nested_txns
         cur_thread_id = thread.get_ident() if nested else object()
 
-        try:
+        if cur_thread_id in self._nested_txns_map:
             yield self._nested_txns_map[cur_thread_id]
-        except KeyError:
+        else:
             with self.create_transaction(
                     check_error, log_errors, **kwargs) as txn:
                 self._nested_txns_map[cur_thread_id] = txn
