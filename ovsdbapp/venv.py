@@ -113,7 +113,8 @@ class OvsVenvFixture(fixtures.Fixture):
     def call(self, cmd, *args, **kwargs):
         cwd = kwargs.pop('cwd', self.venv)
         return subprocess.check_call(
-            cmd, *args, env=self.env, cwd=cwd, **kwargs)
+            cmd, *args, env=self.env, stderr=subprocess.STDOUT,
+            cwd=cwd, **kwargs)
 
     def get_pids(self):
         files = glob.glob(os.path.join(self.venv, "*.pid"))
