@@ -70,7 +70,7 @@ class LsDelCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
-class LsListCommand(cmd.BaseCommand):
+class LsListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
         table = self.api.tables['Logical_Switch']
         self.result = [rowview.RowView(r) for r in table.rows.values()]
@@ -190,7 +190,7 @@ class PgAclDelCommand(_AclDelHelper):
     lookup_table = 'Port_Group'
 
 
-class _AclListHelper(cmd.BaseCommand):
+class _AclListHelper(cmd.ReadOnlyCommand):
     def __init__(self, api, entity):
         super(_AclListHelper, self).__init__(api)
         self.entity = entity
@@ -294,7 +294,7 @@ class QoSDelCommand(cmd.BaseCommand):
                 row.delete()
 
 
-class QoSListCommand(cmd.BaseCommand):
+class QoSListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, switch):
         super(QoSListCommand, self).__init__(api)
         self.switch = switch
@@ -398,7 +398,7 @@ class LspDelCommand(PortDelCommand):
             if_exists)
 
 
-class LspListCommand(cmd.BaseCommand):
+class LspListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, switch=None):
         super(LspListCommand, self).__init__(api)
         self.switch = switch
