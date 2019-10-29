@@ -18,6 +18,7 @@ import subprocess
 import time
 
 import fixtures
+from ovsdbapp import constants as const
 
 # These are the valid dummy values for ovs-vswitchd process. They are here just
 # to get user enumeration. See man ovs-vswitchd(8) for more information.
@@ -48,7 +49,7 @@ class OvsVenvFixture(fixtures.Fixture):
                                 ":%s" % os.getenv('PATH'))
         else:
             self.env['PATH'] = os.getenv('PATH')
-            self.ovsdir = os.path.join('/usr', 'local', 'share', 'openvswitch')
+            self.ovsdir = const.OVS_INSTALL_SHARE_PATH
             if not os.path.isdir(self.ovsdir):
                 self.ovsdir = os.path.join('/usr', 'share', 'openvswitch')
         if not os.path.isdir(self.ovsdir):
@@ -133,7 +134,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
 
     def __init__(self, *args, **kwargs):
         self.add_chassis = kwargs.pop('add_chassis', False)
-        self.ovndir = kwargs.pop('ovndir') or '/usr/local/share/ovn'
+        self.ovndir = kwargs.pop('ovndir') or const.OVN_INSTALL_SHARE_PATH
         self.PATH_VAR_TEMPLATE += (
             ":{0}/controller:{0}/northd:{0}/utilities".format(
                 self.ovndir))
