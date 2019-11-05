@@ -22,8 +22,8 @@ from fixtures import fixture
 
 from ovsdbapp import venv
 
-if len(sys.argv) != 3:
-    print("Requires two arguments: venvdir ovsdir", file=sys.stderr)
+if len(sys.argv) != 4:
+    print("Requires three arguments: venvdir ovsdir ovndir", file=sys.stderr)
     sys.exit(1)
 
 for d in sys.argv[1:]:
@@ -33,8 +33,9 @@ for d in sys.argv[1:]:
 
 venvdir = os.path.abspath(sys.argv[1])
 ovsdir = os.path.abspath(sys.argv[2])
+ovndir = os.path.abspath(sys.argv[3])
 
-v = venv.OvsOvnVenvFixture(venvdir, ovsdir)
+v = venv.OvsOvnVenvFixture(venvdir, ovsdir, ovndir=ovndir)
 try:
     atexit.register(v.cleanUp)
     v.setUp()

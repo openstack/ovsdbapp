@@ -60,4 +60,4 @@ if [ -n "$regex" -a -z "$ovsvenv" ]; then
     ovsvenv=$(head -1 $test_file)
 fi
 echo "Debugging OVS virtual environment: $ovsvenv$test_match"
-tools/debug_venv.py $ovsvenv $VIRTUAL_ENV/src/ovs
+tools/debug_venv.py $ovsvenv $VIRTUAL_ENV/src/ovs $VIRTUAL_ENV/src/ovn

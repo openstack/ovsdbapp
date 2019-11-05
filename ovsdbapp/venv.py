@@ -134,7 +134,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
 
     def __init__(self, *args, **kwargs):
         self.add_chassis = kwargs.pop('add_chassis', False)
-        self.ovndir = kwargs.pop('ovndir') or const.OVN_INSTALL_SHARE_PATH
+        self.ovndir = kwargs.pop('ovndir', const.OVN_INSTALL_SHARE_PATH)
         self.PATH_VAR_TEMPLATE += (
             ":{0}/controller:{0}/northd:{0}/utilities".format(
                 self.ovndir))
