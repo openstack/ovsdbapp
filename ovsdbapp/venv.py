@@ -133,13 +133,22 @@ class OvsVenvFixture(fixtures.Fixture):
 class OvsOvnVenvFixture(OvsVenvFixture):
 
     def __init__(self, *args, **kwargs):
+        install_share_path = self._get_install_share_path()
         self.add_chassis = kwargs.pop('add_chassis', False)
-        self.ovndir = kwargs.pop('ovndir', const.OVN_INSTALL_SHARE_PATH)
+        self.ovndir = kwargs.pop('ovndir',
+                                 install_share_path) or install_share_path
         self.PATH_VAR_TEMPLATE += (
             ":{0}/controller:{0}/northd:{0}/utilities".format(
                 self.ovndir))
         super(OvsOvnVenvFixture, self).__init__(*args, **kwargs)
         self.env.update({'OVN_RUNDIR': self.venv})
+
+    @staticmethod
+    def _get_install_share_path():
+        path = os.path.join(const.OVN_INSTALL_SHARE_PATH, 'ovn-nb.ovsschema')
+        if os.path.isfile(path):
+            return const.OVN_INSTALL_SHARE_PATH
+        return const.OVS_INSTALL_SHARE_PATH
 
     @property
     def ovnsb_schema(self):
