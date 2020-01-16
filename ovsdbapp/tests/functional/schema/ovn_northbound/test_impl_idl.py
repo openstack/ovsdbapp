@@ -1546,3 +1546,44 @@ class TestHAChassisGroup(OvnNorthboundTest):
         hcg1 = cmd.execute(check_error=True)
         hcg2 = cmd.execute(check_error=True)
         self.assertEqual(hcg1, hcg2)
+
+
+class TestReferencedObjects(OvnNorthboundTest):
+    """Exercise adding a ls, lsp and lsp_address in a single transaction.
+
+    The main goal of this test is to make sure a transaction can use either
+    a name or an object notation in order to create an ls+lsp while in a
+    transaction context.
+    """
+    def setUp(self):
+        super(TestReferencedObjects, self).setUp()
+        self.ls_name = utils.get_rand_device_name()
+        self.lsp_name = utils.get_rand_device_name()
+        self.lsp_test_addresses = ['de:ad:be:ef:4d:ad 192.0.2.1']
+
+    def _check_values(self):
+        # Check: Make sure ls_get and lsp_get work (no RowNotFound exception)
+        self.api.ls_get(self.ls_name).execute(check_error=True)
+        self.api.lsp_get(self.lsp_name).execute(check_error=True)
+        self.assertEqual(self.lsp_test_addresses,
+                         self.api.lsp_get_addresses(self.lsp_name).execute(
+                             check_error=True))
+
+    def test_lsp_add_by_name(self):
+        with self.api.transaction(check_error=True) as txn:
+            txn.add(self.api.ls_add(self.ls_name))
+            txn.add(self.api.lsp_add(self.ls_name, self.lsp_name))
+            txn.add(self.api.lsp_set_addresses(self.lsp_name,
+                                               self.lsp_test_addresses))
+        self._check_values()
+
+    def test_lsp_add_by_object_via_db_create(self):
+        with self.api.transaction(check_error=True) as txn:
+            sw = txn.add(self.api.db_create_row('Logical_Switch',
+                                                name=self.ls_name))
+            prt = txn.add(self.api.db_create_row('Logical_Switch_Port',
+                                                 name=self.lsp_name))
+            txn.add(self.api.db_add('Logical_Switch', sw, "ports", prt))
+            txn.add(self.api.db_add('Logical_Switch_Port', prt,
+                                    "addresses", self.lsp_test_addresses[0]))
+        self._check_values()

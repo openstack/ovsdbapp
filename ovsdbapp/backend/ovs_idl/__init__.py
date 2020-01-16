@@ -114,6 +114,10 @@ class Backend(object):
         if record == "":
             raise TypeError("Cannot look up record by empty string")
 
+        # Handle commands by simply returning its result
+        if isinstance(record, cmd.BaseCommand):
+            return record.result
+
         t = self.tables[table]
         try:
             if isinstance(record, uuid.UUID):
