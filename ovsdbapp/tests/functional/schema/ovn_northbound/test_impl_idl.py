@@ -489,7 +489,7 @@ class TestLspOps(OvnNorthboundTest):
     def test_lsp_set_addresses_invalid(self):
         self.assertRaises(
             TypeError,
-            self.api.lsp_set_addresses, 'fake', 'invalidaddress')
+            self.api.lsp_set_addresses, 'fake', ['invalidaddress'])
 
     def test_lsp_get_addresses(self):
         addresses = [

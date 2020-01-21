@@ -443,8 +443,8 @@ class LspSetAddressesCommand(cmd.BaseCommand):
         for addr in addresses:
             if not self.addr_re.match(addr):
                 raise TypeError(
-                    "address must be router/unknown/dynamic/"
-                    "ethaddr[ ipaddr...]")
+                    "address (%s) must be router/unknown/dynamic/"
+                    "ethaddr[ ipaddr...]" % (addr,))
         super(LspSetAddressesCommand, self).__init__(api)
         self.port = port
         self.addresses = addresses
