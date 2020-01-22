@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-
 
 DEFAULT_OVSDB_CONNECTION = 'tcp:127.0.0.1:6640'
 DEFAULT_OVNNB_CONNECTION = 'tcp:127.0.0.1:6641'
@@ -32,8 +30,3 @@ NAT_TYPES = (NAT_SNAT, NAT_DNAT, NAT_BOTH)
 
 PROTO_TCP = 'tcp'
 PROTO_UDP = 'udp'
-
-OVS_INSTALL_SHARE_PATH = os.path.join(os.path.sep, 'usr', 'local', 'share',
-                                      'openvswitch')
-OVN_INSTALL_SHARE_PATH = os.path.join(os.path.sep, 'usr', 'local', 'share',
-                                      'ovn')
