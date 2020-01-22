@@ -28,8 +28,12 @@ DUMMY_OVERRIDE_NONE = ''
 
 class OvsVenvFixture(fixtures.Fixture):
     PATH_VAR_TEMPLATE = "{0}/ovsdb:{0}/vswitchd:{0}/utilities"
+    OVS_PATHS = (
+        os.path.join(os.path.sep, 'usr', 'local', 'share', 'openvswitch'),
+        os.path.join(os.path.sep, 'usr', 'share', 'openvswitch'))
 
-    def __init__(self, venv, ovsdir, dummy=DUMMY_OVERRIDE_ALL, remove=False):
+    def __init__(self, venv, ovsdir=None, dummy=DUMMY_OVERRIDE_ALL,
+                 remove=False):
         """Initialize fixture
 
         :param venv: Path to venv directory.
@@ -42,20 +46,33 @@ class OvsVenvFixture(fixtures.Fixture):
         self.venv = venv
         self.env = {'OVS_RUNDIR': self.venv, 'OVS_LOGDIR': self.venv,
                     'OVS_DBDIR': self.venv, 'OVS_SYSCONFDIR': self.venv}
-        if ovsdir:
-            self.ovsdir = ovsdir
-            self.env['PATH'] = (self.PATH_VAR_TEMPLATE.format(self.ovsdir) +
+        if ovsdir and os.path.isdir(ovsdir):
+            # From source directory
+            self.env['PATH'] = (self.PATH_VAR_TEMPLATE.format(ovsdir) +
                                 ":%s" % os.getenv('PATH'))
         else:
+            # Use installed OVS
             self.env['PATH'] = os.getenv('PATH')
-            self.ovsdir = os.path.join('/usr', 'local', 'share', 'openvswitch')
-            if not os.path.isdir(self.ovsdir):
-                self.ovsdir = os.path.join('/usr', 'share', 'openvswitch')
-        if not os.path.isdir(self.ovsdir):
-            raise Exception("%s is not a directory" % self.ovsdir)
+
+        self.ovsdir = self._share_path(self.OVS_PATHS, ovsdir)
         self._dummy = dummy
         self.remove = remove
         self.ovsdb_server_dbs = []
+
+    @staticmethod
+    def _share_path(paths, override=None, files=tuple()):
+        if not override:
+            try:
+                return next(
+                    p for p in paths if os.path.isdir(p) and
+                    all(os.path.isfile(os.path.join(p, f)) for f in files))
+            except StopIteration:
+                pass
+        elif os.path.isdir(override):
+            return override
+
+        raise Exception("Invalid directories: %s" %
+                        ", ".join(paths + (str(override),)))
 
     @property
     def ovs_schema(self):
@@ -129,29 +146,31 @@ class OvsVenvFixture(fixtures.Fixture):
 
 
 class OvsOvnVenvFixture(OvsVenvFixture):
+    OVN_PATHS = (
+        os.path.join(os.path.sep, 'usr', 'local', 'share', 'ovn'),
+        os.path.join(os.path.sep, 'usr', 'share', 'ovn')) + (
+            OvsVenvFixture.OVS_PATHS)
+    NBSCHEMA = 'ovn-nb.ovsschema'
+    SBSCHEMA = 'ovn-sb.ovsschema'
 
-    def __init__(self, *args, **kwargs):
-        self.add_chassis = kwargs.pop('add_chassis', False)
-        self.ovndir = kwargs.pop('ovndir') or '/usr/local/share/ovn'
-        self.PATH_VAR_TEMPLATE += (
-            ":{0}/controller:{0}/northd:{0}/utilities".format(
-                self.ovndir))
-        super(OvsOvnVenvFixture, self).__init__(*args, **kwargs)
+    def __init__(self, venv, ovndir=None, add_chassis=False, **kwargs):
+        self.add_chassis = add_chassis
+        if ovndir and os.path.isdir(ovndir):
+            # Use OVN source dir
+            self.PATH_VAR_TEMPLATE += (
+                ":{0}/controller:{0}/northd:{0}/utilities".format(ovndir))
+        super(OvsOvnVenvFixture, self).__init__(venv, **kwargs)
+        self.ovndir = self._share_path(self.OVN_PATHS, ovndir,
+                                       [self.SBSCHEMA, self.NBSCHEMA])
         self.env.update({'OVN_RUNDIR': self.venv})
 
     @property
     def ovnsb_schema(self):
-        path = os.path.join(self.ovsdir, 'ovn', 'ovn-sb.ovsschema')
-        if os.path.isfile(path):
-            return path
-        return os.path.join(self.ovndir, 'ovn-sb.ovsschema')
+        return os.path.join(self.ovndir, self.SBSCHEMA)
 
     @property
     def ovnnb_schema(self):
-        path = os.path.join(self.ovsdir, 'ovn', 'ovn-nb.ovsschema')
-        if os.path.isfile(path):
-            return path
-        return os.path.join(self.ovndir, 'ovn-nb.ovsschema')
+        return os.path.join(self.ovndir, self.NBSCHEMA)
 
     @property
     def ovnnb_connection(self):
