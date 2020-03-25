@@ -72,6 +72,9 @@ class Transaction(api.Transaction):
     def do_commit(self):
         self.start_time = time.time()
         attempts = 0
+        if not self.commands:
+            LOG.debug("There are no commands to commit")
+            return []
         while True:
             if attempts > 0 and self.timeout_exceeded():
                 raise RuntimeError("OVS transaction timed out")
