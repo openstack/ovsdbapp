@@ -13,9 +13,9 @@
 #    under the License.
 
 import sys
+from unittest import mock
 
 import fixtures
-import mock
 import testtools
 
 from ovsdbapp import api
