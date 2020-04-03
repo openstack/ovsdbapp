@@ -15,8 +15,6 @@
 import collections
 import logging
 
-import six
-
 from ovsdbapp import api
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.backend.ovs_idl import rowview
@@ -162,7 +160,7 @@ class DbAddCommand(BaseCommand):
                 # Since this operation depends on the previous value, verify()
                 # must be called.
                 field = getattr(record, self.column, {})
-                for k, v in six.iteritems(value):
+                for k, v in value.items():
                     if k in field:
                         continue
                     field[k] = v

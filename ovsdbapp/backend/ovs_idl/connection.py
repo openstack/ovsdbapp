@@ -14,12 +14,12 @@
 
 import logging
 import os
+import queue
 import threading
 import traceback
 
 from ovs.db import idl
 from ovs import poller
-from six.moves import queue as Queue
 
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import exceptions
@@ -32,7 +32,7 @@ else:
 LOG = logging.getLogger(__name__)
 
 
-class TransactionQueue(Queue.Queue, object):
+class TransactionQueue(queue.Queue, object):
     def __init__(self, *args, **kwargs):
         super(TransactionQueue, self).__init__(*args, **kwargs)
         self._wait_queue = connection_utils.WaitQueue(
@@ -41,7 +41,7 @@ class TransactionQueue(Queue.Queue, object):
     def get_nowait(self, *args, **kwargs):
         try:
             result = super(TransactionQueue, self).get_nowait(*args, **kwargs)
-        except Queue.Empty:
+        except queue.Empty:
             return None
         self._wait_queue.alert_notification_consume()
         return result
@@ -142,7 +142,7 @@ class Connection(object):
         # run when we are started
         try:
             self.txns.put(txn, timeout=self.timeout)
-        except Queue.Full:
+        except queue.Full:
             raise exceptions.TimeoutException(commands=txn.commands,
                                               timeout=self.timeout)
 

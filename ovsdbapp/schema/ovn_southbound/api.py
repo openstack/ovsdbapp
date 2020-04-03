@@ -12,13 +12,10 @@
 
 import abc
 
-import six
-
 from ovsdbapp import api
 
 
-@six.add_metaclass(abc.ABCMeta)
-class API(api.API):
+class API(api.API, metaclass=abc.ABCMeta):
     """An API based off of the ovn-sbctl CLI interface
 
     This API basically mirrors the ovn-nbctl operations with these changes:

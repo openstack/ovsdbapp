@@ -13,10 +13,10 @@
 #    under the License.
 
 import logging
+import queue
 import time
 
 from ovs.db import idl
-from six.moves import queue as Queue
 
 from ovsdbapp import api
 from ovsdbapp.backend.ovs_idl import idlutils
@@ -32,7 +32,7 @@ class Transaction(api.Transaction):
         self.check_error = check_error
         self.log_errors = log_errors
         self.commands = []
-        self.results = Queue.Queue(1)
+        self.results = queue.Queue(1)
         self.ovsdb_connection = ovsdb_connection
         self.timeout = timeout or ovsdb_connection.timeout
 
@@ -52,7 +52,7 @@ class Transaction(api.Transaction):
         self.ovsdb_connection.queue_txn(self)
         try:
             result = self.results.get(timeout=self.timeout)
-        except Queue.Empty:
+        except queue.Empty:
             raise exceptions.TimeoutException(commands=self.commands,
                                               timeout=self.timeout)
         if isinstance(result, idlutils.ExceptionResult):

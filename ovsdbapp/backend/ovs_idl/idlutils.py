@@ -23,7 +23,6 @@ from ovs.db import idl
 from ovs import jsonrpc
 from ovs import poller
 from ovs import stream
-import six
 
 from ovsdbapp import api
 from ovsdbapp import exceptions
@@ -210,7 +209,7 @@ def condition_match(row, condition):
     #                I haven't investigated the reason for the patch that
     #                added this code, but for now I check string_types
     if type(match) is not type(val) and not all(
-            isinstance(x, six.string_types) for x in (match, val)):
+            isinstance(x, str) for x in (match, val)):
         # Types of 'val' and 'match' arguments MUST match in all cases with 2
         # exceptions:
         # - 'match' is an empty list and column's type is optional;
@@ -294,11 +293,11 @@ def db_replace_record(obj):
     api.Command object.
     """
     if isinstance(obj, collections.Mapping):
-        for k, v in six.iteritems(obj):
+        for k, v in obj.items():
             if isinstance(v, api.Command):
                 obj[k] = v.result
     elif (isinstance(obj, collections.Sequence) and
-          not isinstance(obj, six.string_types)):
+          not isinstance(obj, str)):
         for i, v in enumerate(obj):
             if isinstance(v, api.Command):
                 try:

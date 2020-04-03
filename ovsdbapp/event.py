@@ -13,17 +13,14 @@
 import abc
 import atexit
 import logging
+import queue
 import threading
-
-import six
-from six.moves import queue as Queue
 
 LOG = logging.getLogger(__name__)
 STOP_EVENT = ("STOP", None, None, None)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class RowEvent(object):
+class RowEvent(object, metaclass=abc.ABCMeta):
     ROW_CREATE = "create"
     ROW_UPDATE = "update"
     ROW_DELETE = "delete"
@@ -98,7 +95,7 @@ class RowEventHandler(object):
     def __init__(self):
         self.__watched_events = set()
         self.__lock = threading.Lock()
-        self.notifications = Queue.Queue()
+        self.notifications = queue.Queue()
         self.notify_thread = threading.Thread(target=self.notify_loop)
         self.notify_thread.daemon = True
         atexit.register(self.shutdown)
