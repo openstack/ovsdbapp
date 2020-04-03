@@ -10,7 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import mock
+from unittest import mock
 
 from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import idlutils
