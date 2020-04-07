@@ -15,6 +15,8 @@
 import collections
 import logging
 
+import ovs.db.idl
+
 from ovsdbapp import api
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.backend.ovs_idl import rowview
@@ -73,8 +75,17 @@ class AddCommand(BaseCommand):
     def post_commit(self, txn):
         # If get_insert_uuid fails, self.result was not a result of a
         # recent insert. Most likely we are post_commit after a lookup()
-        real_uuid = txn.get_insert_uuid(self.result) or self.result
-        row = self.api.tables[self.table_name].rows[real_uuid]
+        if isinstance(self.result, rowview.RowView):
+            return
+        if isinstance(self.result, ovs.db.idl.Row):
+            row = self.result
+        else:
+            real_uuid = txn.get_insert_uuid(self.result) or self.result
+            # If we have multiple commands in a transation, post_commit can
+            # be called even if *this* command caused no change. Theoretically
+            # the subclass should have set a UUID/RowView result in that case
+            # which is handled above, so raise exception if real_uuid not found
+            row = self.api.tables[self.table_name].rows[real_uuid]
         self.result = rowview.RowView(row)
 
 
