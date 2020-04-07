@@ -247,10 +247,9 @@ class QoSAddCommand(cmd.AddCommand):
 
     def run_idl(self, txn):
         ls = self.api.lookup('Logical_Switch', self.switch)
-        qos_rules = [row for row in ls.qos_rules if self.qos_match(row)]
-        if qos_rules:
+        for qos_rule in iter(r for r in ls.qos_rules if self.qos_match(r)):
             if self.may_exist:
-                self.result = rowview.RowView(qos_rules[0])
+                self.result = rowview.RowView(qos_rule)
                 return
             raise RuntimeError("QoS (%s, %s, %s) already exists" % (
                 self.direction, self.priority, self.match))
