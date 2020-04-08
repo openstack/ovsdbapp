@@ -20,3 +20,11 @@ class WaitForPortBindingEvent(event.WaitEvent):
         super(WaitForPortBindingEvent, self).__init__(
             (self.ROW_CREATE,), 'Port_Binding', (('logical_port', '=', port),),
             timeout=timeout)
+
+
+class ExceptionalMatchFnEvent(WaitForPortBindingEvent):
+    def __init__(self, port, timeout=1):
+        super(ExceptionalMatchFnEvent, self).__init__(port, timeout)
+
+    def match_fn(self, event, row, old):
+        raise Exception()

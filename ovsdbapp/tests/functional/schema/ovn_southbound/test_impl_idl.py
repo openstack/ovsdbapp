@@ -88,12 +88,15 @@ class OvnSouthboundTest(base.FunctionalTestCase):
                                for p in ("chassis", "switch", "port"))
         chassis = self._chassis_add(['vxlan'], '192.0.2.1', chassis=cname)
         row_event = event.WaitForPortBindingEvent(pname)
+        bogus_event = event.ExceptionalMatchFnEvent(pname)
         # We have to wait for ovn-northd to actually create the port binding
+        self.handler.watch_event(bogus_event)
         self.handler.watch_event(row_event)
         with self.nbapi.transaction(check_error=True) as txn:
             switch = txn.add(self.nbapi.ls_add(sname))
             port = txn.add(self.nbapi.lsp_add(sname, pname))
         self.assertTrue(row_event.wait())
+        self.assertFalse(bogus_event.wait())
         return chassis, switch.result, port.result
 
     def test_lsp_bind(self):
