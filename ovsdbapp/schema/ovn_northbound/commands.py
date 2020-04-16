@@ -414,7 +414,7 @@ class LspGetCommand(cmd.BaseGetRowCommand):
     table = 'Logical_Switch_Port'
 
 
-class LspGetParentCommand(cmd.BaseCommand):
+class LspGetParentCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetParentCommand, self).__init__(api)
         self.port = port
@@ -424,7 +424,7 @@ class LspGetParentCommand(cmd.BaseCommand):
         self.result = next(iter(lsp.parent_name), "")
 
 
-class LspGetTagCommand(cmd.BaseCommand):
+class LspGetTagCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetTagCommand, self).__init__(api)
         self.port = port
@@ -453,7 +453,7 @@ class LspSetAddressesCommand(cmd.BaseCommand):
         lsp.addresses = self.addresses
 
 
-class LspGetAddressesCommand(cmd.BaseCommand):
+class LspGetAddressesCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetAddressesCommand, self).__init__(api)
         self.port = port
@@ -476,7 +476,7 @@ class LspSetPortSecurityCommand(cmd.BaseCommand):
         lsp.port_security = self.addresses
 
 
-class LspGetPortSecurityCommand(cmd.BaseCommand):
+class LspGetPortSecurityCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
         super(LspGetPortSecurityCommand, self).__init__(api)
         self.port = port
