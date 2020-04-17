@@ -29,13 +29,17 @@ def _connection_to_manager_uri(conn_uri):
 # TODO(jlibosva): Get rid of this runtime configuration and raise a message to
 #                 set Manager outside of ovsdbapp.
 def enable_connection_uri(conn_uri, execute=None, **kwargs):
-    timeout = kwargs.get('timeout', 5)
-    probe = timeout if kwargs.get('set_timeout') else None
+    timeout = kwargs.pop('timeout', 5)
+    # NOTE(ralonsoh): the command timeout , "timeout", is defined in seconds;
+    # the probe timeout is defined in milliseconds. If "timeout" is used, must
+    # be converted to ms.
+    probe = (timeout * 1000 if kwargs.pop('set_timeout', None) else
+             kwargs.pop('inactivity_probe', None))
     man_uri = _connection_to_manager_uri(conn_uri)
     cmd = ['ovs-vsctl', '--timeout=%d' % timeout, '--id=@manager',
            '--', 'create', 'Manager', 'target="%s"' % man_uri,
            '--', 'add', 'Open_vSwitch', '.', 'manager_options', '@manager']
-    if probe:
+    if probe is not None:
         cmd += ['--', 'set', 'Manager', man_uri, 'inactivity_probe=%s' % probe]
     if execute:
         return execute(cmd, **kwargs).rstrip()
