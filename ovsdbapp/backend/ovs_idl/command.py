@@ -133,17 +133,25 @@ class DbSetCommand(BaseCommand):
     def run_idl(self, txn):
         record = self.api.lookup(self.table, self.record)
         for col, val in self.col_values:
-            # TODO(twilson) Ugh, the OVS library doesn't like OrderedDict
-            # We're only using it to make a unit test work, so we should fix
-            # this soon.
-            if isinstance(val, collections.OrderedDict):
-                val = dict(val)
-            if isinstance(val, dict):
-                # NOTE(twilson) OVS 2.6's Python IDL has mutate methods that
-                # would make this cleaner, but it's too early to rely on them.
+            if isinstance(val, collections.Mapping):
+                # TODO(twilson) This is to make a unit/functional test that
+                # used OrderedDict work. In Python 3.7, insertion order is
+                # guaranteed to not change, but I need to verify this is is
+                # still even needed
+                if isinstance(val, collections.OrderedDict):
+                    val = dict(val)
                 existing = getattr(record, col, {})
                 existing.update(val)
                 val = existing
+                # Since we are updating certain keys and leaving existing keys
+                # but rewriting the whole external_ids column, we must verify()
+                record.verify(col)
+                # After https://patchwork.ozlabs.org/patch/1254735/ is merged,
+                # and common, we should handle dicts with setkey like this:
+                # for k, v in val.items():
+                #     record.setkey(col, k, v)
+            # For non-map columns, we unconditionally overwrite the values that
+            # exist, so prior state doesn't matter and we don't need verify()
             self.set_column(record, col, val)
 
 
