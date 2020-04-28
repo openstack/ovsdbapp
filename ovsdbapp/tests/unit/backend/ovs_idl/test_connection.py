@@ -39,8 +39,7 @@ class TestOVSNativeConnection(base.TestCase):
         self.idl.has_ever_connected.return_value = False
         self.conn.start()
         self.idl.has_ever_connected.assert_called_once()
-        mock_wait_for_change.assert_called_once_with(self.conn.idl,
-                                                     self.conn.timeout)
+        mock_wait_for_change.assert_any_call(self.conn.idl, self.conn.timeout)
         mock_poller.assert_called_once_with()
         mock_thread.assert_called_once_with(target=self.conn.run)
         mock_thread.return_value.setDaemon.assert_called_once_with(True)
