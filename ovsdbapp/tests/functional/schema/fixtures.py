@@ -16,19 +16,19 @@ import fixtures
 
 
 class ImplIdlFixture(fixtures.Fixture):
-    api, create, delete = (None, None, None)
+    create, delete = (None, None)
     delete_args = {'if_exists': True}
     delete_id = 'uuid'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, api, *args, **kwargs):
         super(ImplIdlFixture, self).__init__()
+        self.api = api
         self.args = args
         self.kwargs = kwargs
 
     def _setUp(self):
-        api = self.api(None)
-        create_fn = getattr(api, self.create)
-        delete_fn = getattr(api, self.delete)
+        create_fn = getattr(self.api, self.create)
+        delete_fn = getattr(self.api, self.delete)
         self.obj = create_fn(*self.args, **self.kwargs).execute(
             check_error=True)
         del_value = getattr(self.obj, self.delete_id)

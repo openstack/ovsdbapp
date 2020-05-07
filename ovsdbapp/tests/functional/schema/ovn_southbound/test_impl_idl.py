@@ -36,8 +36,8 @@ class OvnSouthboundTest(base.FunctionalTestCase):
     def _chassis_add(self, encap_types, encap_ip, *args, **kwargs):
         chassis = kwargs.pop('chassis', utils.get_rand_device_name())
         c = self.useFixture(fixtures.ChassisFixture(
-            chassis=chassis, encap_types=encap_types, encap_ip=encap_ip,
-            *args, **kwargs)).obj
+            self.api, chassis=chassis, encap_types=encap_types,
+            encap_ip=encap_ip, *args, **kwargs)).obj
         self.assertIn(c, self.api.chassis_list().execute(check_error=True))
         self.assertEqual(c.name, chassis)
         self.assertEqual(set(encap_types), {e.type for e in c.encaps})

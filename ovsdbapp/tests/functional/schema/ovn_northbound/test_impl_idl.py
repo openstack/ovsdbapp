@@ -36,7 +36,8 @@ class TestLogicalSwitchOps(OvnNorthboundTest):
         self.table = self.api.tables['Logical_Switch']
 
     def _ls_add(self, *args, **kwargs):
-        fix = self.useFixture(fixtures.LogicalSwitchFixture(*args, **kwargs))
+        fix = self.useFixture(fixtures.LogicalSwitchFixture(self.api, *args,
+                                                            **kwargs))
         self.assertIn(fix.obj.uuid, self.table.rows)
         return fix.obj
 
@@ -97,8 +98,7 @@ class TestLogicalSwitchOps(OvnNorthboundTest):
         self.api.ls_del(name, if_exists=True).execute(check_error=True)
 
     def test_ls_list(self):
-        with self.api.transaction(check_error=True):
-            switches = {self._ls_add() for _ in range(3)}
+        switches = {self._ls_add() for _ in range(3)}
         switch_set = set(self.api.ls_list().execute(check_error=True))
         self.assertTrue(switches.issubset(switch_set))
 
@@ -106,8 +106,10 @@ class TestLogicalSwitchOps(OvnNorthboundTest):
 class TestAclOps(OvnNorthboundTest):
     def setUp(self):
         super(TestAclOps, self).setUp()
-        self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
-        self.port_group = self.useFixture(fixtures.PortGroupFixture()).obj
+        self.switch = self.useFixture(
+            fixtures.LogicalSwitchFixture(self.api)).obj
+        self.port_group = self.useFixture(
+            fixtures.PortGroupFixture(self.api)).obj
 
     def _acl_add(self, entity, *args, **kwargs):
         self.assertIn(entity, ['lswitch', 'port_group'])
@@ -219,7 +221,8 @@ class TestAclOps(OvnNorthboundTest):
 class TestQoSOps(OvnNorthboundTest):
     def setUp(self):
         super(TestQoSOps, self).setUp()
-        self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        self.switch = self.useFixture(
+            fixtures.LogicalSwitchFixture(self.api)).obj
 
     def _qos_add(self, *args, **kwargs):
         cmd = self.api.qos_add(self.switch.uuid, *args, **kwargs)
@@ -321,7 +324,7 @@ class TestLspOps(OvnNorthboundTest):
         super(TestLspOps, self).setUp()
         name = utils.get_rand_device_name()
         self.switch = self.useFixture(
-            fixtures.LogicalSwitchFixture(name)).obj
+            fixtures.LogicalSwitchFixture(self.api, name)).obj
 
     def _lsp_add(self, switch, name, *args, **kwargs):
         name = utils.get_rand_device_name() if name is None else name
@@ -356,7 +359,7 @@ class TestLspOps(OvnNorthboundTest):
         self.assertEqual(lsp1, lsp2)
 
     def test_lsp_add_may_exist_wrong_switch(self):
-        sw = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        sw = self.useFixture(fixtures.LogicalSwitchFixture(self.api)).obj
         lsp = self._lsp_add(self.switch, None)
         self.assertRaises(RuntimeError, self._lsp_add, sw, lsp.name,
                           may_exist=True)
@@ -435,7 +438,7 @@ class TestLspOps(OvnNorthboundTest):
 
     def test_lsp_del_wrong_switch(self):
         lsp = self._lsp_add(self.switch, None)
-        sw = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        sw = self.useFixture(fixtures.LogicalSwitchFixture(self.api)).obj
         cmd = self.api.lsp_del(lsp.uuid, sw.uuid)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
@@ -460,7 +463,7 @@ class TestLspOps(OvnNorthboundTest):
     def test_lsp_list_no_switch(self):
         ports = {self._lsp_add(self.switch, None) for _ in range(3)}
         other_switch = self.useFixture(fixtures.LogicalSwitchFixture(
-            name=utils.get_rand_device_name())).obj
+            self.api, name=utils.get_rand_device_name())).obj
         other_port = self._lsp_add(other_switch, None)
         all_ports = set(self.api.lsp_list().execute(check_error=True))
         self.assertTrue((ports.union(set([other_port]))).issubset(all_ports))
@@ -547,7 +550,7 @@ class TestLspOps(OvnNorthboundTest):
     def test_lsp_set_get_dhcpv4_options(self):
         lsp = self._lsp_add(self.switch, None)
         dhcpopt = self.useFixture(
-            fixtures.DhcpOptionsFixture('192.0.2.1/24')).obj
+            fixtures.DhcpOptionsFixture(self.api, '192.0.2.1/24')).obj
         self.api.lsp_set_dhcpv4_options(
             lsp.name, dhcpopt.uuid).execute(check_error=True)
         options = self.api.lsp_get_dhcpv4_options(
@@ -558,7 +561,7 @@ class TestLspOps(OvnNorthboundTest):
 class TestDhcpOptionsOps(OvnNorthboundTest):
     def _dhcpopt_add(self, cidr, *args, **kwargs):
         dhcpopt = self.useFixture(fixtures.DhcpOptionsFixture(
-            cidr, *args, **kwargs)).obj
+            self.api, cidr, *args, **kwargs)).obj
         self.assertEqual(cidr, dhcpopt.cidr)
         return dhcpopt
 
@@ -605,7 +608,7 @@ class TestDhcpOptionsOps(OvnNorthboundTest):
 class TestLogicalRouterOps(OvnNorthboundTest):
     def _lr_add(self, *args, **kwargs):
         lr = self.useFixture(
-            fixtures.LogicalRouterFixture(*args, **kwargs)).obj
+            fixtures.LogicalRouterFixture(self.api, *args, **kwargs)).obj
         self.assertIn(lr.uuid, self.api.tables['Logical_Router'].rows)
         return lr
 
@@ -733,7 +736,7 @@ class TestLogicalRouterOps(OvnNorthboundTest):
 
     def test_lr_nat_add_port(self):
         sw = self.useFixture(
-            fixtures.LogicalSwitchFixture()).obj
+            fixtures.LogicalSwitchFixture(self.api)).obj
         lsp = self.api.lsp_add(sw.uuid, utils.get_rand_device_name()).execute(
             check_error=True)
         lport, mac = (lsp.name, 'de:ad:be:ef:4d:ad')
@@ -761,7 +764,7 @@ class TestLogicalRouterOps(OvnNorthboundTest):
 
     def test_lr_nat_add_may_exist(self):
         sw = self.useFixture(
-            fixtures.LogicalSwitchFixture()).obj
+            fixtures.LogicalSwitchFixture(self.api)).obj
         lsp = self.api.lsp_add(sw.uuid, utils.get_rand_device_name()).execute(
             check_error=True)
         args = (const.NAT_BOTH, '10.17.4.1', '192.0.2.1')
@@ -776,7 +779,7 @@ class TestLogicalRouterOps(OvnNorthboundTest):
 
     def test_lr_nat_add_may_exist_remove_port(self):
         sw = self.useFixture(
-            fixtures.LogicalSwitchFixture()).obj
+            fixtures.LogicalSwitchFixture(self.api)).obj
         lsp = self.api.lsp_add(sw.uuid, utils.get_rand_device_name()).execute(
             check_error=True)
         args = (const.NAT_BOTH, '10.17.4.1', '192.0.2.1')
@@ -878,7 +881,7 @@ class TestLogicalRouterOps(OvnNorthboundTest):
 class TestLogicalRouterPortOps(OvnNorthboundTest):
     def setUp(self):
         super(TestLogicalRouterPortOps, self).setUp()
-        self.lr = self.useFixture(fixtures.LogicalRouterFixture()).obj
+        self.lr = self.useFixture(fixtures.LogicalRouterFixture(self.api)).obj
 
     def _lrp_add(self, port, mac='de:ad:be:ef:4d:ad',
                  networks=None, *args, **kwargs):
@@ -932,7 +935,7 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
     def test_lrp_add_may_exist_different_router(self):
         name = utils.get_rand_device_name()
         args = (name, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'])
-        lr2 = self.useFixture(fixtures.LogicalRouterFixture()).obj
+        lr2 = self.useFixture(fixtures.LogicalRouterFixture(self.api)).obj
         self._lrp_add(*args)
         cmd = self.api.lrp_add(lr2.uuid, *args, may_exist=True)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
@@ -998,7 +1001,7 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
 
     def test_lrp_del_wrong_router(self):
         lrp = self._lrp_add(None)
-        sw = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        sw = self.useFixture(fixtures.LogicalSwitchFixture(self.api)).obj
         cmd = self.api.lrp_del(lrp.uuid, sw.uuid)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
@@ -1046,7 +1049,7 @@ class TestLoadBalancerOps(OvnNorthboundTest):
     def _lb_add(self, lb, vip, ips, protocol=const.PROTO_TCP, may_exist=False,
                 **columns):
         lbal = self.useFixture(fixtures.LoadBalancerFixture(
-            lb, vip, ips, protocol, may_exist, **columns)).obj
+            self.api, lb, vip, ips, protocol, may_exist, **columns)).obj
         self.assertEqual(lb, lbal.name)
         norm_vip = ovsdb_utils.normalize_ip_port(vip)
         self.assertIn(norm_vip, lbal.vips)
@@ -1151,13 +1154,13 @@ class TestObLbOps(testscenarios.TestWithScenarios, OvnNorthboundTest):
         # They must be in this order because the load balancer
         # can't be deleted when there is a reference in the router
         self.lb = self.useFixture(fixtures.LoadBalancerFixture(
-            utils.get_rand_device_name(), '192.0.2.1',
+            self.api, utils.get_rand_device_name(), '192.0.2.1',
             ['10.0.0.1', '10.0.0.2'])).obj
         self.lb2 = self.useFixture(fixtures.LoadBalancerFixture(
-            utils.get_rand_device_name(), '192.0.2.2',
+            self.api, utils.get_rand_device_name(), '192.0.2.2',
             ['10.1.0.1', '10.1.0.2'])).obj
         self.lr = self.useFixture(self.fixture(
-            utils.get_rand_device_name())).obj
+            self.api, utils.get_rand_device_name())).obj
 
     def test_ob_lb_add(self):
         self.add_fn(self.lr.name, self.lb.name).execute(
@@ -1214,7 +1217,8 @@ class TestCommonDbOps(OvnNorthboundTest):
     def setUp(self):
         super(TestCommonDbOps, self).setUp()
         name = utils.get_rand_device_name()
-        self.switch = self.useFixture(fixtures.LogicalSwitchFixture(name)).obj
+        self.switch = self.useFixture(
+            fixtures.LogicalSwitchFixture(self.api, name)).obj
         self.lsps = [
             self.api.lsp_add(
                 self.switch.uuid,
@@ -1272,7 +1276,8 @@ class TestCommonDbOps(OvnNorthboundTest):
 
 class TestDnsOps(OvnNorthboundTest):
     def _dns_add(self, *args, **kwargs):
-        dns = self.useFixture(fixtures.DnsFixture(*args, **kwargs)).obj
+        dns = self.useFixture(
+            fixtures.DnsFixture(self.api, *args, **kwargs)).obj
         return dns
 
     def test_dns_get(self):
@@ -1340,11 +1345,13 @@ class TestDnsOps(OvnNorthboundTest):
 
 class TestLsDnsOps(OvnNorthboundTest):
     def _dns_add(self, *args, **kwargs):
-        dns = self.useFixture(fixtures.DnsFixture(*args, **kwargs)).obj
+        dns = self.useFixture(
+            fixtures.DnsFixture(self.api, *args, **kwargs)).obj
         return dns
 
     def _ls_add(self, *args, **kwargs):
-        fix = self.useFixture(fixtures.LogicalSwitchFixture(*args, **kwargs))
+        fix = self.useFixture(
+            fixtures.LogicalSwitchFixture(self.api, *args, **kwargs))
         return fix.obj
 
     def test_ls_dns_set_clear_records(self):
@@ -1384,7 +1391,8 @@ class TestPortGroup(OvnNorthboundTest):
 
     def setUp(self):
         super(TestPortGroup, self).setUp()
-        self.switch = self.useFixture(fixtures.LogicalSwitchFixture()).obj
+        self.switch = self.useFixture(
+            fixtures.LogicalSwitchFixture(self.api)).obj
         self.pg_name = 'testpg-%s' % ovsdb_utils.generate_uuid()
 
     def test_port_group(self):

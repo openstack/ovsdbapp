@@ -10,12 +10,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests.functional.schema import fixtures
 
 
 class BridgeFixture(fixtures.ImplIdlFixture):
-    api = impl_idl.OvsdbIdl
     create = 'add_br'
     delete = 'del_br'
     delete_id = 'name'

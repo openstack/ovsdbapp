@@ -10,11 +10,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ovsdbapp.schema.ovn_southbound import impl_idl
 from ovsdbapp.tests.functional.schema import fixtures
 
 
 class ChassisFixture(fixtures.ImplIdlFixture):
-    api = impl_idl.OvnSbApiIdlImpl
     create = 'chassis_add'
     delete = 'chassis_del'

@@ -38,7 +38,7 @@ class TestBackendDb(base.FunctionalTestCase):
         super(TestBackendDb, self).setUp()
         self.api = impl_idl.OvsdbIdl(self.connection)
         for bridge in self.bridges:
-            self.useFixture(fixtures.BridgeFixture(bridge['name']))
+            self.useFixture(fixtures.BridgeFixture(self.api, bridge['name']))
             for col, val in bridge.items():
                 if col == 'name':
                     continue
