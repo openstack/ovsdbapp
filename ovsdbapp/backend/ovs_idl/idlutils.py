@@ -53,12 +53,42 @@ class RowNotFound(exceptions.OvsdbAppException):
     message = "Cannot find %(table)s with %(col)s=%(match)s"
 
 
+def index_name(*columns):
+    assert columns
+    return "_".join(sorted(columns))
+
+
+def index_lookup(table, **matches):
+    """Find a value in Table by index
+
+    :param table:   The table to search in
+    :type table:    ovs.db.schema.TableSchema
+    :param matches: The column/value pairs of the index to search
+    :type matches:  The types of the columns being matched
+    :returns:       A Row object
+    """
+    idx = table.rows.indexes[index_name(*matches.keys())]
+    search = table.rows.IndexEntry(**matches)
+    return next(idx.irange(search, search))
+
+
+def table_lookup(table, column, match):
+    return next(r for r in table.rows.values() if getattr(r, column) == match)
+
+
 def row_by_value(idl_, table, column, match, default=_NO_DEFAULT):
     """Lookup an IDL row in a table by column/value"""
     tab = idl_.tables[table]
-    for r in tab.rows.values():
-        if getattr(r, column) == match:
-            return r
+    try:
+        return index_lookup(tab, **{column: match})
+    except KeyError:  # no index column
+        try:
+            return table_lookup(tab, column, match)
+        except StopIteration:
+            pass
+    except StopIteration:  # match not found via index
+        pass
+
     if default is not _NO_DEFAULT:
         return default
     raise RowNotFound(table=table, col=column, match=match)

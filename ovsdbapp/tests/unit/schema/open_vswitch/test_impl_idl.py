@@ -48,5 +48,5 @@ class TestOvsdbIdl(base.TestCase):
 
     def test_init_session(self):
         conn = mock.MagicMock()
-        backend = impl_idl.OvsdbIdl(conn, start=False)
-        self.assertIsNone(backend.ovsdb_connection)
+        impl_idl.OvsdbIdl(conn, start=False)
+        conn.start_connection.assert_not_called()
