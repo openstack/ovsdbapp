@@ -1126,6 +1126,32 @@ class TestLoadBalancerOps(OvnNorthboundTest):
         self.api.lb_del(utils.get_rand_device_name(), if_exists=True).execute(
             check_error=True)
 
+    def test_lb_del_vip_if_exists(self):
+        name = utils.get_rand_device_name()
+        lb = self._lb_add(name, '192.0.2.1', ['10.0.0.1'])
+        lb2 = self._lb_add(name, '192.0.2.2', ['10.1.0.1'])
+        self.assertEqual(lb, lb2)
+        # Remove vip that does not exist.
+        self.api.lb_del(lb.name, '9.9.9.9', if_exists=True
+                        ).execute(check_error=True)
+        self.assertIn('192.0.2.1', lb.vips)
+        self.assertIn('192.0.2.2', lb.vips)
+        # Remove one vip.
+        self.api.lb_del(lb.name, '192.0.2.1', if_exists=True
+                        ).execute(check_error=True)
+        self.assertNotIn('192.0.2.1', lb.vips)
+        # Attempt to remove same vip a second time with if_exists=True.
+        self.api.lb_del(lb.name, '192.0.2.1', if_exists=True).execute(
+            check_error=True)
+        # Attempt to remove same vip a third time with if_exists=False.
+        cmd = self.api.lb_del(lb.name, '192.0.2.1', if_exists=False)
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+        # Remove last vip and make sure that lb is also removed.
+        self.assertIn('192.0.2.2', lb.vips)
+        self.api.lb_del(lb.name, '192.0.2.2').execute(check_error=True)
+        cmd = self.api.lb_del(lb.name)
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
     def test_lb_list(self):
         lbs = {self._lb_add(utils.get_rand_device_name(), '192.0.2.1',
                             ['10.0.0.1', '10.0.0.2']) for _ in range(3)}
