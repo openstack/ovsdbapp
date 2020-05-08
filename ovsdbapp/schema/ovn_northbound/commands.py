@@ -1047,16 +1047,19 @@ class LbDelCommand(cmd.BaseCommand):
     def run_idl(self, txn):
         try:
             lb = self.api.lookup('Load_Balancer', self.lb)
-            if self.vip:
-                if self.vip in lb.vips:
-                    if self.if_exists:
-                        return
-                    lb.delkey('vips', self.vip)
-            else:
-                lb.delete()
         except idlutils.RowNotFound:
             if not self.if_exists:
                 raise
+            return
+        if self.vip:
+            if self.vip in lb.vips:
+                lb.delkey('vips', self.vip)
+            elif not self.if_exists:
+                raise idlutils.RowNotFound(table='Load_Balancer', col=self.vip,
+                                           match=self.lb)
+        # Remove load balancer if vips were not provided or no vips are left.
+        if not self.vip or not lb.vips:
+            lb.delete()
 
 
 class LbListCommand(cmd.ReadOnlyCommand):
