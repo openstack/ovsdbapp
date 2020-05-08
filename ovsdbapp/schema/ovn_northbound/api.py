@@ -686,11 +686,15 @@ class API(api.API):
     def lb_del(self, lb, vip=None, if_exists=False):
         """Remove a load balancer or just the VIP from a load balancer
 
+        If all vips of the load balancer are removed, the load balancer
+        instance will be removed as well. If vip parameter is 'None'
+        this will cause all vips (and load balancer) to be removed.
+
         :param lb:        The name or uuid of a load balancer
         :type lb:         string or uuid.UUID
-        :param vip:       The VIP on the load balancer to match
+        :param vip:       The VIP to match. If None, match all vips
         :type:            string
-        :param if_exists: If True, don't fail if the port doesn't exist
+        :param if_exists: If True, don't fail if the lb/vip doesn't exist
         :type if_exists:  boolean
         """
 
