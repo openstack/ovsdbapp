@@ -303,6 +303,31 @@ class QoSListCommand(cmd.ReadOnlyCommand):
         self.result = [rowview.RowView(row) for row in ls.qos_rules]
 
 
+class QoSDelExtIdCommand(cmd.BaseCommand):
+    def __init__(self, api, lswitch, external_ids, if_exists=False):
+        if not external_ids:
+            raise TypeError('external_ids dictionary cannot be empty')
+        super(QoSDelExtIdCommand, self).__init__(api)
+        self.lswitch = lswitch
+        self.external_ids = external_ids
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        try:
+            lswitch = idlutils.row_by_value(self.api.idl, 'Logical_Switch',
+                                            'name', self.lswitch)
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+            msg = 'Logical Switch %s does not exist' % self.lswitch
+            raise RuntimeError(msg)
+
+        for qos in lswitch.qos_rules:
+            if self.external_ids.items() <= qos.external_ids.items():
+                lswitch.delvalue('qos_rules', qos)
+                qos.delete()
+
+
 class LspAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch_Port'
 

@@ -250,6 +250,19 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def qos_del_ext_ids(self, lswitch_name, external_ids, if_exists=True):
+        """Delete all QoS rules related to a floating IP.
+
+        :param lswitch_name: The unique name of the logical switch
+        :type lswitch_name: string
+        :param external_ids: Pairs of key/value to find in the "external_ids"
+        :type external_ids: dict
+        :param if_exists: Do not fail if the Logical_Switch row does not exist
+        :type if_exists: bool
+        :returns: :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
     def lsp_add(self, switch, port, parent_name=None, tag=None,
                 may_exist=False, **columns):
         """Add logical port 'port' on 'switch'

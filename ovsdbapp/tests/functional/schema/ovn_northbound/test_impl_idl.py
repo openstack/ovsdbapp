@@ -318,6 +318,69 @@ class TestQoSOps(OvnNorthboundTest):
         self.assertIn(r1, qos_rules)
         self.assertIn(r2, qos_rules)
 
+    def _create_fip_qoses(self):
+        ext_ids_1 = {'key1': 'value1', 'key2': 'value2'}
+        self.qos_1 = self._qos_add('from-lport', 0, 'output == "fake_port1"',
+                                   dscp=11, external_ids=ext_ids_1)
+        ext_ids_2 = {'key3': 'value3', 'key4': 'value4'}
+        self.qos_2 = self._qos_add('from-lport', 1, 'output == "fake_port2"',
+                                   dscp=11, external_ids=ext_ids_2)
+        self.qos_3 = self._qos_add('from-lport', 2, 'output == "fake_port3"',
+                                   dscp=10)
+
+    def test_qos_delete_external_ids(self):
+        self._create_fip_qoses()
+        self.api.qos_del_ext_ids(self.switch.name,
+                                 {'key1': 'value1'}).execute(check_error=True)
+        qos_rules = self.api.qos_list(
+            self.switch.uuid).execute(check_error=True)
+        self.assertCountEqual([self.qos_2, self.qos_3], qos_rules)
+
+        self.api.qos_del_ext_ids(
+            self.switch.name,
+            {'key3': 'value3', 'key4': 'value4'}).execute(check_error=True)
+        qos_rules = self.api.qos_list(
+            self.switch.uuid).execute(check_error=True)
+        self.assertCountEqual([self.qos_3], qos_rules)
+
+    def test_qos_delete_external_ids_wrong_keys_or_values(self):
+        self._create_fip_qoses()
+        self.api.qos_del_ext_ids(self.switch.name,
+                                 {'key_z': 'value1'}).execute(check_error=True)
+        qos_rules = self.api.qos_list(
+            self.switch.uuid).execute(check_error=True)
+        self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
+
+        self.api.qos_del_ext_ids(self.switch.name,
+                                 {'key1': 'value_z'}).execute(check_error=True)
+        qos_rules = self.api.qos_list(
+            self.switch.uuid).execute(check_error=True)
+        self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
+
+        self.api.qos_del_ext_ids(
+            self.switch.name,
+            {'key3': 'value3', 'key4': 'value_z'}).execute(check_error=True)
+        qos_rules = self.api.qos_list(
+            self.switch.uuid).execute(check_error=True)
+        self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
+
+    def test_qos_delete_external_ids_empty_dict(self):
+        self.assertRaises(TypeError, self.api.qos_del_ext_ids,
+                          self.switch.name, {})
+
+    def test_qos_delete_external_ids_if_exists(self):
+        self._create_fip_qoses()
+        cmd = self.api.qos_del_ext_ids('wrong_ls_name',
+                                       {'key1': 'value1'}, if_exists=False)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+        self.api.qos_del_ext_ids('wrong_ls_name',
+                                 {'key1': 'value1'}).execute(check_error=True)
+        # No qos rule has been deleted from the correct logical switch.
+        qos_rules = self.api.qos_list(
+            self.switch.uuid).execute(check_error=True)
+        self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
+
 
 class TestLspOps(OvnNorthboundTest):
     def setUp(self):
