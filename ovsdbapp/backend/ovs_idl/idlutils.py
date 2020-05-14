@@ -13,6 +13,7 @@
 #    under the License.
 
 import collections
+from collections import abc
 import logging
 import os
 import sys
@@ -292,11 +293,11 @@ def db_replace_record(obj):
     This method should leave obj untouched unless the object contains an
     api.Command object.
     """
-    if isinstance(obj, collections.Mapping):
+    if isinstance(obj, abc.Mapping):
         for k, v in obj.items():
             if isinstance(v, api.Command):
                 obj[k] = v.result
-    elif (isinstance(obj, collections.Sequence) and
+    elif (isinstance(obj, abc.Sequence) and
           not isinstance(obj, str)):
         for i, v in enumerate(obj):
             if isinstance(v, api.Command):
