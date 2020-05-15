@@ -13,6 +13,7 @@
 #    under the License.
 
 import collections
+from collections import abc
 import logging
 
 import ovs.db.idl
@@ -132,7 +133,7 @@ class DbSetCommand(BaseCommand):
     def run_idl(self, txn):
         record = self.api.lookup(self.table, self.record)
         for col, val in self.col_values:
-            if isinstance(val, collections.Mapping):
+            if isinstance(val, abc.Mapping):
                 # TODO(twilson) This is to make a unit/functional test that
                 # used OrderedDict work. In Python 3.7, insertion order is
                 # guaranteed to not change, but I need to verify this is is
@@ -165,7 +166,7 @@ class DbAddCommand(BaseCommand):
     def run_idl(self, txn):
         record = self.api.lookup(self.table, self.record)
         for value in self.values:
-            if isinstance(value, collections.Mapping):
+            if isinstance(value, abc.Mapping):
                 # We should be doing an add on a 'map' column. If the key is
                 # already set, do nothing, otherwise set the key to the value
                 # Since this operation depends on the previous value, verify()
