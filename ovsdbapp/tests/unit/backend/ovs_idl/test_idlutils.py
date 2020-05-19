@@ -169,3 +169,15 @@ class TestIdlUtils(base.TestCase):
                                      mock.sentinel.table_name,
                                      FAKE_RECORD_GUID)
         self.assertEqual(mock.sentinel.row_value, res)
+
+    def test_index_name(self):
+        expected = {
+            ('one',): 'one',
+            ('abc', 'def'): 'abc_def',
+            ('def', 'abc'): 'abc_def',
+            ('one', 'two', 'three'): 'one_three_two',
+        }
+        for args, result in expected.items():
+            self.assertEqual(result, idlutils.index_name(*args))
+
+        self.assertRaises(AssertionError, idlutils.index_name)

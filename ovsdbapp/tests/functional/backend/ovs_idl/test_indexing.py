@@ -1,0 +1,77 @@
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+from unittest import mock
+
+from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp.schema.ovn_northbound import impl_idl
+from ovsdbapp.tests.functional import base
+from ovsdbapp.tests import utils
+
+
+class TestOvnNbIndex(base.FunctionalTestCase):
+    schemas = ['OVN_Northbound']
+
+    def setUp(self):
+        super(TestOvnNbIndex, self).setUp()
+        self.api = impl_idl.OvnNbApiIdlImpl(self.connection)
+
+    def test_find(self):
+        # This test will easily time out if indexing isn't used
+        length = 2000
+        basename = utils.get_rand_device_name('testswitch')
+        with self.api.transaction(check_error=True) as txn:
+            for i in range(length):
+                txn.add(self.api.ls_add("%s%d" % (basename, i)))
+        match = "%s%d" % (basename, length / 2)
+        sw = self.api.lookup('Logical_Switch', match)
+        self.assertEqual(sw.name, match)
+
+    def test_default_indices(self):
+        self.assertTrue(self.api.lookup_table)
+        for key, (table, col, _) in self.api.lookup_table.items():
+            idl_table = self.api.tables[table]
+            self.assertIn(col, idl_table.rows.indexes)
+
+
+class TestOvnNbWithoutIndex(base.FunctionalTestCase):
+    schemas = ['OVN_Northbound']
+
+    # Due to ovsdbapp by default creating singleton connections, it's possible
+    # that a test is run where we already have a connection/idl set up that
+    # already has indexing set up on it.
+    class NewNbApiIdlImpl(impl_idl.OvnNbApiIdlImpl):
+        @property
+        def ovsdb_connection(self):
+            return self._ovsdb_connection
+
+        @ovsdb_connection.setter
+        def ovsdb_connection(self, connection):
+            self._ovsdb_connection = connection
+
+    def setUp(self):
+        super(TestOvnNbWithoutIndex, self).setUp()
+        self.api = self.NewNbApiIdlImpl(self.connection, start=False,
+                                        auto_index=False)
+
+    @mock.patch.object(idlutils, 'table_lookup')
+    def test_create_index(self, table_lookup):
+        self.assertFalse(self.api.tables['Logical_Switch'].rows.indexes)
+        self.api.create_index("Logical_Switch", "name")
+        self.api.start_connection(self.connection)
+        name = utils.get_rand_device_name("testswitch")
+        self.api.ls_add(name).execute(check_error=True)
+        sw = self.api.lookup('Logical_Switch', name)
+        self.assertEqual(sw.name, name)
+        self.assertRaises(idlutils.RowNotFound, self.api.lookup,
+                          'Logical_Switch', 'nothere')
+        table_lookup.assert_not_called()

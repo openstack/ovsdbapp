@@ -24,33 +24,97 @@ _NO_DEFAULT = object()
 
 class Backend(object):
     lookup_table = {}
-    ovsdb_connection = None
+    _ovsdb_connection = None
 
-    def __init__(self, connection, start=True, **kwargs):
+    def __init__(self, connection, start=True, auto_index=True, **kwargs):
         super(Backend, self).__init__(**kwargs)
+        self.ovsdb_connection = connection
+        if auto_index:
+            self.autocreate_indices()
         if start:
             self.start_connection(connection)
 
-    @classmethod
-    def start_connection(cls, connection):
+    @property
+    def ovsdb_connection(self):
+        return self.__class__._ovsdb_connection
+
+    @ovsdb_connection.setter
+    def ovsdb_connection(self, connection):
+        if self.__class__._ovsdb_connection is None:
+            self.__class__._ovsdb_connection = connection
+
+    def create_index(self, table, *columns):
+        """Create a multi-column index on a table
+
+        :param table:   The table on which to create an index
+        :type table:    string
+        :param columns: The columns in the index
+        :type columns:  string
+        """
+
+        index_name = idlutils.index_name(*columns)
+        idx = self.tables[table].rows.index_create(index_name)
+        idx.add_columns(*columns)
+
+    def autocreate_indices(self):
+        """Create simple one-column indexes
+
+        This creates indexes for all lookup_table entries and for all defined
+        indexes columns in the OVSDB schema, as long as they are simple
+        one-column indexes (e.g. 'name') fields.
+        """
+
+        tables = set(self.idl.tables.keys())
+        # lookup table indices
+        for table, (lt, col, uuid_col) in self.lookup_table.items():
+            if table != lt or not col or uuid_col or table not in tables:
+                # Just handle simple cases where we are looking up a single
+                # column on a single table
+                continue
+            index_name = idlutils.index_name(col)
+            try:
+                idx = self.idl.tables[table].rows.index_create(index_name)
+            except ValueError:
+                # index already exists
+                pass
+            else:
+                idx.add_column(col)
+                LOG.debug("Created index %s", index_name)
+            tables.remove(table)
+
+        # Simple ovsdb-schema indices
+        for table in self.idl.tables.values():
+            if table.name not in tables:
+                continue
+            col = idlutils.get_index_column(table)
+            if not col:
+                continue
+            index_name = idlutils.index_name(col)
+            try:
+                idx = table.rows.index_create(index_name)
+            except ValueError:
+                pass  # index already exists
+            else:
+                idx.add_column(col)
+                LOG.debug("Created index %s", index_name)
+            tables.remove(table.name)
+
+    def start_connection(self, connection):
         try:
-            if cls.ovsdb_connection is None:
-                cls.ovsdb_connection = connection
-                cls.ovsdb_connection.start()
+            self.ovsdb_connection.start()
         except Exception as e:
             connection_exception = exceptions.OvsdbConnectionUnavailable(
-                db_schema=cls.schema, error=e)
+                db_schema=self.schema, error=e)
             LOG.exception(connection_exception)
             raise connection_exception
 
-    @classmethod
-    def restart_connection(cls):
-        cls.ovsdb_connection.stop()
-        cls.ovsdb_connection.start()
+    def restart_connection(self):
+        self.ovsdb_connection.stop()
+        self.ovsdb_connection.start()
 
     @property
     def idl(self):
-        return self.__class__.ovsdb_connection.idl
+        return self.ovsdb_connection.idl
 
     @property
     def tables(self):
@@ -60,8 +124,8 @@ class Backend(object):
 
     def create_transaction(self, check_error=False, log_errors=True, **kwargs):
         return transaction.Transaction(
-            self, self.__class__.ovsdb_connection,
-            self.__class__.ovsdb_connection.timeout,
+            self, self.ovsdb_connection,
+            self.ovsdb_connection.timeout,
             check_error, log_errors)
 
     def db_create(self, table, **col_values):
@@ -119,15 +183,18 @@ class Backend(object):
             return record.result
 
         t = self.tables[table]
-        try:
-            if isinstance(record, uuid.UUID):
-                return t.rows[record]
+        if isinstance(record, uuid.UUID):
             try:
-                uuid_ = uuid.UUID(record)
-                return t.rows[uuid_]
-            except ValueError:
-                # Not a UUID string, continue lookup by other means
-                pass
+                return t.rows[record]
+            except KeyError:
+                raise idlutils.RowNotFound(table=table, col='uuid',
+                                           match=record)
+        try:
+            uuid_ = uuid.UUID(record)
+            return t.rows[uuid_]
+        except ValueError:
+            # Not a UUID string, continue lookup by other means
+            pass
         except KeyError:
             # If record isn't found by UUID , go ahead and look up by the table
             pass

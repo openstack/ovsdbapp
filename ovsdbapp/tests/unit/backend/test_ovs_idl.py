@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 from unittest import mock
 
 from ovsdbapp.backend import ovs_idl
@@ -23,7 +24,9 @@ class FakeRow(object):
 
 
 class FakeTable(object):
-    rows = {'fake-id-1': FakeRow(uuid='fake-id-1', name='Fake1')}
+    rows = collections.UserDict({'fake-id-1':
+                                 FakeRow(uuid='fake-id-1', name='Fake1')})
+    rows.indexes = {}
     indexes = []
 
 
@@ -33,6 +36,9 @@ class FakeBackend(ovs_idl.Backend):
     lookup_table = {'Faketable': idlutils.RowLookup('Faketable', 'name', None)}
 
     def start_connection(self, connection):
+        pass
+
+    def autocreate_indices(self):
         pass
 
 

@@ -22,9 +22,6 @@ class OvnSbApiIdlImpl(ovs_idl.Backend, api.API):
         'Chassis': idlutils.RowLookup('Chassis', 'name', None),
     }
 
-    def __init__(self, connection):
-        super(OvnSbApiIdlImpl, self).__init__(connection)
-
     def chassis_add(self, chassis, encap_types, encap_ip, may_exist=False,
                     **columns):
         return cmd.ChassisAddCommand(self, chassis, encap_types, encap_ip,
