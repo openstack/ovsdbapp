@@ -20,6 +20,7 @@ class OvnSbApiIdlImpl(ovs_idl.Backend, api.API):
     schema = 'OVN_Southbound'
     lookup_table = {
         'Chassis': idlutils.RowLookup('Chassis', 'name', None),
+        'MAC_Binding': idlutils.RowLookup('MAC_Binding', 'ip', None),
     }
 
     def chassis_add(self, chassis, encap_types, encap_ip, may_exist=False,
