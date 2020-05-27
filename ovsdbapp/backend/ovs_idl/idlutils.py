@@ -59,39 +59,55 @@ def index_name(*columns):
     return "_".join(sorted(columns))
 
 
-def index_lookup(table, **matches):
+def index_lookup_all(table, **matches):
     """Find a value in Table by index
 
     :param table:   The table to search in
     :type table:    ovs.db.schema.TableSchema
     :param matches: The column/value pairs of the index to search
     :type matches:  The types of the columns being matched
-    :returns:       A Row object
+    :returns:       An iterator of Row objects
     """
     idx = table.rows.indexes[index_name(*matches.keys())]
     search = table.rows.IndexEntry(**matches)
-    return next(idx.irange(search, search))
+    return idx.irange(search, search)
+
+
+def _index_lookup_internal(table, **matches):
+    """Returns matching underlying index objects"""
+
+    idx = table.rows.indexes[index_name(*matches.keys())]
+    search = table.rows.IndexEntry(**matches)
+    return idx.values.irange(search, search)
+
+
+def index_lookup(table, **matches):
+    return next(index_lookup_all(table, **matches))
+
+
+def table_lookup_all(table, column, match):
+    return (r for r in table.rows.values() if getattr(r, column) == match)
 
 
 def table_lookup(table, column, match):
-    return next(r for r in table.rows.values() if getattr(r, column) == match)
+    return next(table_lookup_all(table, column, match))
 
 
-def row_by_value(idl_, table, column, match, default=_NO_DEFAULT):
+def rows_by_value(idl_, table, column, match):
     """Lookup an IDL row in a table by column/value"""
     tab = idl_.tables[table]
     try:
-        return index_lookup(tab, **{column: match})
+        return index_lookup_all(tab, **{column: match})
     except KeyError:  # no index column
-        try:
-            return table_lookup(tab, column, match)
-        except StopIteration:
-            pass
-    except StopIteration:  # match not found via index
-        pass
+        return table_lookup_all(tab, column, match)
 
-    if default is not _NO_DEFAULT:
-        return default
+
+def row_by_value(idl_, table, column, match, default=_NO_DEFAULT):
+    try:
+        return next(rows_by_value(idl_, table, column, match))
+    except StopIteration:
+        if default is not _NO_DEFAULT:
+            return default
     raise RowNotFound(table=table, col=column, match=match)
 
 
@@ -223,6 +239,67 @@ def get_column_value(row, col):
         if col_type.is_optional():
             val = val[0]
     return val
+
+
+def circular(*items):
+    """Circularly iterate over the list of arguments"""
+    if not items:
+        return
+    while True:
+        for x in items:
+            yield x
+
+
+def merge_intersection(*sorted_gens):
+    """Yield non-duplicate entries in the intersection of pre-sorted generators
+
+    Each sorted iterator will be iterated over in parallel, with values that
+    cannot be in all iterators or duplicate values being skipped. Values that
+    are in each passed sorted_gen will be yielded. There are never any
+    intermediate lists/sets etc. which would require storing everything in
+    memory.
+
+    :param sorted_gens pre-sorted iterators
+    """
+    len_sorted_gens = len(sorted_gens)
+    sorted_gens = circular(*sorted_gens)
+    try:
+        first = next(sorted_gens)
+        val = cut_off = next(first)
+        matches = 1
+    except (StopIteration, IndexError):
+        return  # The can't all match if one is empty
+    for gen in sorted_gens:
+        while True:
+            if matches == len_sorted_gens:
+                yield val
+            try:
+                val = next(gen)
+            except StopIteration:
+                return
+            if val >= cut_off:
+                break
+        if val != cut_off:
+            cut_off = val
+            matches = 1
+        else:
+            matches += 1
+
+
+def condition_index_columns(table, *conditions):
+    return [(col, op, match) for col, op, match in conditions
+            if op == '=' and col in table.rows.indexes]
+
+
+def index_condition_match(table, *conditions):
+    index_columns = condition_index_columns(table, *conditions)
+    if not index_columns:
+        return
+    # We have to access the underlying index objects and not the results from
+    # index_lookup_all() because they are the ones with the proper ordering
+    return (table.rows[r.uuid] for r in merge_intersection(
+        *[_index_lookup_internal(table, **{col: match})
+          for col, op, match in index_columns]))
 
 
 def condition_match(row, condition):

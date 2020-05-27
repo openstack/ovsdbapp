@@ -304,13 +304,15 @@ class DbFindCommand(ReadOnlyCommand):
                         list(self.table.columns.keys()) + ['_uuid'])
 
     def run_idl(self, txn):
+        # reduce search space if we have any indexed column and '=' match
+        rows = (idlutils.index_condition_match(self.table, *self.conditions) or
+                self.table.rows.values())
         self.result = [
             rowview.RowView(r) if self.row else {
                 c: idlutils.get_column_value(r, c)
                 for c in self.columns
             }
-            for r in self.table.rows.values()
-            if idlutils.row_match(r, self.conditions)
+            for r in rows if idlutils.row_match(r, self.conditions)
         ]
 
 
