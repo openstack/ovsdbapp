@@ -68,7 +68,7 @@ class Connection(object):
         self.lock = threading.Lock()
         self.idl = idl
         self.thread = None
-        self._is_running = None
+        self.is_running = None
 
     def start(self):
         """Start the connection."""
@@ -83,14 +83,14 @@ class Connection(object):
                     # An ovs.db.Idl class has no post_connect
                     pass
             self.poller = poller.Poller()
-            self._is_running = True
+            self.is_running = True
             self.thread = threading.Thread(target=self.run)
             self.thread.setDaemon(True)
             self.thread.start()
 
     def run(self):
         errors = 0
-        while self._is_running:
+        while self.is_running:
             # If we fail in an Idl call, we could have missed an update
             # from the server, leaving us out of sync with ovsdb-server.
             # It is not safe to continue without restarting the connection,
@@ -113,7 +113,7 @@ class Connection(object):
                     self.idl.force_reconnect()
                     idlutils.wait_for_change(self.idl, self.timeout)
                     continue
-                self._is_running = False
+                self.is_running = False
                 break
             errors = 0
             txn = self.txns.get_nowait()
@@ -127,9 +127,9 @@ class Connection(object):
                 self.txns.task_done()
 
     def stop(self, timeout=None):
-        if not self._is_running:
+        if not self.is_running:
             return True
-        self._is_running = False
+        self.is_running = False
         self.txns.put(None)
         self.thread.join(timeout)
         if self.thread.is_alive():
