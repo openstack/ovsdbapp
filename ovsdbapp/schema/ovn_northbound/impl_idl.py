@@ -89,6 +89,10 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def qos_list(self, switch):
         return cmd.QoSListCommand(self, switch)
 
+    def qos_del_ext_ids(self, lswitch_name, external_ids, if_exists=True):
+        return cmd.QoSDelExtIdCommand(self, lswitch_name, external_ids,
+                                      if_exists=if_exists)
+
     def lsp_add(self, switch, port, parent_name=None, tag=None,
                 may_exist=False, **columns):
         return cmd.LspAddCommand(self, switch, port, parent_name, tag,
