@@ -42,7 +42,8 @@ class BaseCommand(api.Command):
             return self.result
         except Exception:
             if log_errors:
-                LOG.exception("Error executing command")
+                ignoring = "" if check_error else ": IGNORING"
+                LOG.exception("Error executing command%s", ignoring)
             if check_error:
                 raise
 
