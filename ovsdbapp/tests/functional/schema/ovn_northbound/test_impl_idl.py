@@ -1449,7 +1449,7 @@ class TestLsDnsOps(OvnNorthboundTest):
 
         ls1 = self._ls_add('ls1')
         self.api.ls_set_dns_records(ls1.uuid, [dns1.uuid, dns2.uuid]).execute()
-        self.assertItemsEqual([dns1.uuid, dns2.uuid],
+        self.assertCountEqual([dns1.uuid, dns2.uuid],
                               [dns.uuid for dns in ls1.dns_records])
 
         self.api.ls_clear_dns_records(ls1.uuid).execute()
@@ -1462,15 +1462,15 @@ class TestLsDnsOps(OvnNorthboundTest):
         ls1 = self._ls_add('ls1')
 
         self.api.ls_add_dns_record(ls1.uuid, dns1.uuid).execute()
-        self.assertItemsEqual([dns1.uuid],
+        self.assertCountEqual([dns1.uuid],
                               [dns.uuid for dns in ls1.dns_records])
 
         self.api.ls_add_dns_record(ls1.uuid, dns2.uuid).execute()
-        self.assertItemsEqual([dns1.uuid, dns2.uuid],
+        self.assertCountEqual([dns1.uuid, dns2.uuid],
                               [dns.uuid for dns in ls1.dns_records])
 
         self.api.ls_remove_dns_record(ls1.uuid, dns2.uuid).execute()
-        self.assertItemsEqual([dns1.uuid],
+        self.assertCountEqual([dns1.uuid],
                               [dns.uuid for dns in ls1.dns_records])
         self.api.ls_remove_dns_record(ls1.uuid, dns1.uuid).execute()
         self.assertEqual([], ls1.dns_records)
