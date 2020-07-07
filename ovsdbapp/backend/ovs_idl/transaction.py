@@ -54,7 +54,8 @@ class Transaction(api.Transaction):
             result = self.results.get(timeout=self.timeout)
         except queue.Empty:
             raise exceptions.TimeoutException(commands=self.commands,
-                                              timeout=self.timeout)
+                                              timeout=self.timeout,
+                                              cause='Result queue is empty')
         if isinstance(result, idlutils.ExceptionResult):
             if self.log_errors:
                 LOG.error(result.tb)

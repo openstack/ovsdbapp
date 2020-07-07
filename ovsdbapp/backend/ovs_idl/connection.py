@@ -144,7 +144,8 @@ class Connection(object):
             self.txns.put(txn, timeout=self.timeout)
         except queue.Full:
             raise exceptions.TimeoutException(commands=txn.commands,
-                                              timeout=self.timeout)
+                                              timeout=self.timeout,
+                                              cause='TXN queue is full')
 
 
 class OvsdbIdl(idl.Idl):

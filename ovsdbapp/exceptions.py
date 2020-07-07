@@ -44,7 +44,8 @@ class OvsdbAppException(RuntimeError):
 
 
 class TimeoutException(OvsdbAppException):
-    message = "Commands %(commands)s exceeded timeout %(timeout)d seconds"
+    message = ("Commands %(commands)s exceeded timeout %(timeout)d seconds, "
+               "cause: %(cause)s")
 
 
 class OvsdbConnectionUnavailable(OvsdbAppException):
