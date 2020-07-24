@@ -44,12 +44,12 @@ except ImportError:
 class GreenThreadingFixture(fixtures.Fixture):
     def _setUp(self):
         if 'eventlet' in sys.modules:
-            self._orig = api.thread.get_ident
-            api.thread.get_ident = thread.get_ident
+            self._orig = api.threading.get_ident
+            api.threading.get_ident = thread.get_ident
             self.addCleanup(self.cleanup)
 
     def cleanup(self):
-        api.thread.get_ident = self._orig
+        api.threading.get_ident = self._orig
 
 
 class FakeTransaction(object):
