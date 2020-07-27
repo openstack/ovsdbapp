@@ -31,9 +31,9 @@ class TestOvnNbIndex(base.FunctionalTestCase):
         basename = utils.get_rand_device_name('testswitch')
         with self.api.transaction(check_error=True) as txn:
             for i in range(length):
-                txn.add(self.api.ls_add("%s%d" % (basename, i)))
+                txn.add(self.api.pg_add("%s%d" % (basename, i)))
         match = "%s%d" % (basename, length / 2)
-        sw = self.api.lookup('Logical_Switch', match)
+        sw = self.api.lookup('Port_Group', match)
         self.assertEqual(sw.name, match)
 
     def test_default_indices(self):
