@@ -83,8 +83,10 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.QoSAddCommand(self, switch, direction, priority, match,
                                  rate, burst, dscp, may_exist, **columns)
 
-    def qos_del(self, switch, direction=None, priority=None, match=None):
-        return cmd.QoSDelCommand(self, switch, direction, priority, match)
+    def qos_del(self, switch, direction=None, priority=None, match=None,
+                if_exists=True):
+        return cmd.QoSDelCommand(self, switch, direction, priority, match,
+                                 if_exists)
 
     def qos_list(self, switch):
         return cmd.QoSListCommand(self, switch)

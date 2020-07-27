@@ -220,7 +220,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def qos_del(self, switch, direction=None, priority=None, match=None):
+    def qos_del(self, switch, direction=None, priority=None, match=None,
+                if_exists=True):
         """Remove Qos rules from 'switch'
 
         If only switch is supplied, all the QoS rules from the logical switch
@@ -237,6 +238,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type priority:   int
         :param match:     The match rule
         :type match:      string
+        :param if_exists: Do not fail if the Logical_Switch row does not exist
+        :type if_exists:  bool
         :returns:         :class:`Command` with no result
         """
 
