@@ -28,13 +28,13 @@ class TestOvnNbIndex(base.FunctionalTestCase):
     def test_find(self):
         # This test will easily time out if indexing isn't used
         length = 2000
-        basename = utils.get_rand_device_name('testswitch')
+        basename = utils.get_rand_device_name('testpg')
         with self.api.transaction(check_error=True) as txn:
             for i in range(length):
                 txn.add(self.api.pg_add("%s%d" % (basename, i)))
         match = "%s%d" % (basename, length / 2)
-        sw = self.api.lookup('Port_Group', match)
-        self.assertEqual(sw.name, match)
+        pg = self.api.lookup('Port_Group', match)
+        self.assertEqual(pg.name, match)
 
     def test_default_indices(self):
         self.assertTrue(self.api.lookup_table)
