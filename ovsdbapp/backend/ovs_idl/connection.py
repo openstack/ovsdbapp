@@ -65,7 +65,7 @@ class Connection(object):
         """
         self.timeout = timeout
         self.txns = TransactionQueue(1)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.idl = idl
         self.thread = None
         self._is_running = None
@@ -99,19 +99,18 @@ class Connection(object):
             try:
                 self.idl.wait(self.poller)
                 self.poller.fd_wait(self.txns.alert_fileno, poller.POLLIN)
-                # TODO(jlibosva): Remove next line once losing connection to
-                #                 ovsdb is solved.
-                self.poller.timer_wait(self.timeout * 1000)
                 self.poller.block()
-                self.idl.run()
+                with self.lock:
+                    self.idl.run()
             except Exception as e:
                 # This shouldn't happen, but is possible if there is a bug
                 # in python-ovs
                 errors += 1
                 LOG.exception(e)
                 if errors <= 3:
-                    self.idl.force_reconnect()
-                    idlutils.wait_for_change(self.idl, self.timeout)
+                    with self.lock:
+                        self.idl.force_reconnect()
+                        idlutils.wait_for_change(self.idl, self.timeout)
                     continue
                 self._is_running = False
                 break
@@ -119,7 +118,8 @@ class Connection(object):
             txn = self.txns.get_nowait()
             if txn is not None:
                 try:
-                    txn.results.put(txn.do_commit())
+                    with self.lock:
+                        txn.results.put(txn.do_commit())
                 except Exception as ex:
                     er = idlutils.ExceptionResult(ex=ex,
                                                   tb=traceback.format_exc())
