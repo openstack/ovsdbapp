@@ -35,8 +35,9 @@ class BaseCommand(api.Command):
     def execute(self, check_error=False, log_errors=True, **kwargs):
         try:
             if self.READ_ONLY:
-                self.run_idl(None)
-                return self.result
+                with self.api.ovsdb_connection.lock:
+                    self.run_idl(None)
+                    return self.result
             with self.api.transaction(check_error, log_errors, **kwargs) as t:
                 t.add(self)
             return self.result
