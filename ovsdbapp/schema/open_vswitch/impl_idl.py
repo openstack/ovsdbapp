@@ -56,8 +56,9 @@ class OvsVsctlTransaction(transaction.Transaction):
             self.api.idl.wait(self.ovsdb_connection.poller)
             self.ovsdb_connection.poller.block()
         else:
-            raise exceptions.TimeoutException(commands=self.commands,
-                                              timeout=self.timeout)
+            raise exceptions.TimeoutException(
+                commands=self.commands, timeout=self.timeout,
+                cause='vsctl transaction did not end')
 
     def post_commit_failed_interfaces(self, txn):
         failed = []
