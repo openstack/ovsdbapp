@@ -127,10 +127,10 @@ class TestOvsdbIdl(base.FunctionalTestCase):
         self.assertEqual(result, [False])
 
     def test_connection_disconnect_timeout(self):
-        _is_running_mock = mock.PropertyMock(return_value=True)
+        is_running_mock = mock.PropertyMock(return_value=True)
         connection = self.api.ovsdb_connection
-        type(connection)._is_running = _is_running_mock
-        self.addCleanup(delattr, type(connection), '_is_running')
+        type(connection).is_running = is_running_mock
+        self.addCleanup(delattr, type(connection), 'is_running')
         self.assertFalse(connection.stop(1))
 
     def test_br_external_id(self):

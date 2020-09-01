@@ -30,7 +30,10 @@ class Backend(object):
         super(Backend, self).__init__(**kwargs)
         self.ovsdb_connection = connection
         if auto_index:
-            self.autocreate_indices()
+            if connection.is_running:
+                LOG.debug("Connection already started, not creating indices")
+            else:
+                self.autocreate_indices()
         if start:
             self.start_connection(connection)
 
@@ -75,11 +78,12 @@ class Backend(object):
             try:
                 idx = self.idl.tables[table].rows.index_create(index_name)
             except ValueError:
-                # index already exists
-                pass
+                LOG.debug("lookup_table index %s.%s already exists", table,
+                          index_name)
             else:
                 idx.add_column(col)
-                LOG.debug("Created index %s", index_name)
+                LOG.debug("Created lookup_table index %s.%s", table,
+                          index_name)
             tables.remove(table)
 
         # Simple ovsdb-schema indices
@@ -93,10 +97,11 @@ class Backend(object):
             try:
                 idx = table.rows.index_create(index_name)
             except ValueError:
-                pass  # index already exists
+                LOG.debug("schema index %s.%s already exists", table,
+                          index_name)
             else:
                 idx.add_column(col)
-                LOG.debug("Created index %s", index_name)
+                LOG.debug("Created schema index %s.%s", table.name, index_name)
             tables.remove(table.name)
 
     def start_connection(self, connection):
