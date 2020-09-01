@@ -270,7 +270,7 @@ class QoSAddCommand(cmd.AddCommand):
 
 class QoSDelCommand(cmd.BaseCommand):
     def __init__(self, api, switch, direction=None,
-                 priority=None, match=None):
+                 priority=None, match=None, if_exists=True):
         if (priority is None) != (match is None):
             raise TypeError("Must specify priority and match together")
         if priority is not None and not direction:
@@ -278,6 +278,7 @@ class QoSDelCommand(cmd.BaseCommand):
         super(QoSDelCommand, self).__init__(api)
         self.switch = switch
         self.conditions = []
+        self.if_exists = if_exists
         if direction:
             self.conditions.append(('direction', '=', direction))
             # priority can be 0
@@ -286,7 +287,14 @@ class QoSDelCommand(cmd.BaseCommand):
                                     ('match', '=', match)]
 
     def run_idl(self, txn):
-        ls = self.api.lookup('Logical_Switch', self.switch)
+        try:
+            ls = self.api.lookup('Logical_Switch', self.switch)
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+            msg = 'Logical Switch %s does not exist' % self.switch
+            raise RuntimeError(msg)
+
         for row in ls.qos_rules:
             if idlutils.row_match(row, self.conditions):
                 ls.delvalue('qos_rules', row)

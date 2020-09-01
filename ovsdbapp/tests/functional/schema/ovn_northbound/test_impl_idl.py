@@ -310,6 +310,13 @@ class TestQoSOps(OvnNorthboundTest):
         self.assertRaises(TypeError, self.api.qos_del, self.switch.uuid,
                           priority=0)
 
+    def test_qos_del_ls_not_present_if_exists_true(self):
+        self.api.qos_del('some_other_ls').execute(check_error=True)
+
+    def test_qos_del_ls_not_present_if_exists_false(self):
+        cmd = self.api.qos_del('some_other_ls', if_exists=False)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
     def test_qos_list(self):
         r1 = self._qos_add('from-lport', 0, 'output == "fake_port"', 1000)
         r2 = self._qos_add('from-lport', 1, 'output == "fake_port2"', 1000)
