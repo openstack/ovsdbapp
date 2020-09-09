@@ -51,7 +51,7 @@ class TestBackendDb(base.FunctionalTestCase):
             'Bridge',
             ('datapath_type', '=', 'fake1'),
             columns=['name', 'datapath_type']).execute(check_error=True)
-        self.assertItemsEqual(self.bridges[:2], res)
+        self.assertCountEqual(self.bridges[:2], res)
 
     def test_db_find_no_exist(self):
         res = self.api.db_find(
@@ -62,7 +62,7 @@ class TestBackendDb(base.FunctionalTestCase):
         res = self.api.db_find_rows(
             'Bridge',
             ('datapath_type', '=', 'fake1')).execute(check_error=True)
-        self.assertItemsEqual(
+        self.assertCountEqual(
             self.bridges[:2],
             [{'name': r.name, 'datapath_type': r.datapath_type} for r in res])
 
