@@ -15,6 +15,7 @@
 import logging
 import os
 import threading
+import time
 import traceback
 
 from ovs.db import idl
@@ -93,9 +94,9 @@ class Connection(object):
         while self._is_running:
             # If we fail in an Idl call, we could have missed an update
             # from the server, leaving us out of sync with ovsdb-server.
-            # It is not safe to continue without restarting the connection,
-            # though it is likely that the error is unrecoverable, so only try
-            # a few times before bailing completely.
+            # It is not safe to continue without restarting the connection.
+            # Though it is likely that the error is unrecoverable, keep trying
+            # indefinitely just in case.
             try:
                 self.idl.wait(self.poller)
                 self.poller.fd_wait(self.txns.alert_fileno, poller.POLLIN)
@@ -107,13 +108,18 @@ class Connection(object):
                 # in python-ovs
                 errors += 1
                 LOG.exception(e)
-                if errors <= 3:
-                    with self.lock:
-                        self.idl.force_reconnect()
+                with self.lock:
+                    self.idl.force_reconnect()
+                    try:
                         idlutils.wait_for_change(self.idl, self.timeout)
-                    continue
-                self._is_running = False
-                break
+                    except Exception as e:
+                        # This could throw the same exception as idl.run()
+                        # or Exception("timeout"), either way continue
+                        LOG.exception(e)
+                sleep = min(2 ** errors, 60)
+                LOG.info("Trying to recover, sleeping %s seconds", sleep)
+                time.sleep(sleep)
+                continue
             errors = 0
             txn = self.txns.get_nowait()
             if txn is not None:
