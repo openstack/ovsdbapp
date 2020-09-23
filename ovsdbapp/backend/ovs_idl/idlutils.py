@@ -428,3 +428,22 @@ def row2str(row):
     return "%s(%s)" % (row._table.name, ", ".join(
         "%s=%s" % (col, idl._row_to_uuid(getattr(row, col)))
         for col in row._table.columns if hasattr(row, col)))
+
+
+def frozen_row(row):
+    """Return a namedtuple representation of a idl.Row object
+
+    Row objects are inherently tied to the transaction processing of the Idl.
+    This means that if you have a reference to a Row in one thread, and
+    another thread starts a transaction that modifies that row, the Row can
+    change w/o you knowing it. This is especially noticeable when using the
+    RowEventHandler. It is possible for a Row that is passed to notify() by
+    the Idl class to change between being matched and the RowEvent.run()
+    method being called. This returns an immutable representation of the row
+    by using the same class that custom indexes use for searching. This
+    should be safe to pass to other threads.
+    """
+    return row._table.rows.IndexEntry(
+        uuid=row.uuid,
+        **{col: getattr(row, col)
+           for col in row._table.columns if hasattr(row, col)})

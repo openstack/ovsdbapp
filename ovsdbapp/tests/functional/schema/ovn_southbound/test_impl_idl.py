@@ -10,8 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from ovsdbapp.backend.ovs_idl import event as ovsdb_event
 from ovsdbapp.backend.ovs_idl import idlutils
-from ovsdbapp import event as ovsdb_event
 from ovsdbapp.schema.ovn_northbound import impl_idl as nbidl
 from ovsdbapp.schema.ovn_southbound import impl_idl
 from ovsdbapp.tests.functional import base
