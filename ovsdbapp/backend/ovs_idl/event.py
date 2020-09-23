@@ -47,3 +47,9 @@ class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
 
 class WaitEvent(RowEvent, ovsdb_event.WaitEvent):
     pass
+
+
+class RowEventHandler(ovsdb_event.RowEventHandler):
+    def notify(self, event, row, updates=None):
+        row = idlutils.frozen_row(row)
+        super(RowEventHandler, self).notify(event, row, updates)
