@@ -19,6 +19,25 @@ import sys
 import time
 import uuid
 
+# custom_index.py added in ovs 2.10. We just need the IndexEntryClass function
+# which is copied from OVS below since the current lower constraint is < 2.10
+try:
+    from ovs.db.custom_index import IndexEntryClass
+except ImportError:
+    from ovs.db import data
+
+    def IndexEntryClass(table):
+        def defaults_uuid_to_row(atom, base):
+            return atom.value
+
+        columns = ['uuid'] + list(table.columns.keys())
+        cls = collections.namedtuple(table.name, columns)
+        cls._table = table
+        cls.__new__.__defaults__ = (None,) + tuple(
+            data.Datum.default(c.type).to_python(defaults_uuid_to_row)
+            for c in table.columns.values())
+        return cls
+
 from ovs.db import idl
 from ovs import jsonrpc
 from ovs import poller
@@ -321,3 +340,23 @@ def row2str(row):
     return "%s(%s)" % (row._table.name, ", ".join(
         "%s=%s" % (col, idl._row_to_uuid(getattr(row, col)))
         for col in row._table.columns if hasattr(row, col)))
+
+
+def frozen_row(row):
+    """Return a namedtuple representation of a idl.Row object
+
+    Row objects are inherently tied to the transaction processing of the Idl.
+    This means that if you have a reference to a Row in one thread, and
+    another thread starts a transaction that modifies that row, the Row can
+    change w/o you knowing it. This is especially noticeable when using the
+    RowEventHandler. It is possible for a Row that is passed to notify() by
+    the Idl class to change between being matched and the RowEvent.run()
+    method being called. This returns an immutable representation of the row
+    by using the same class that custom indexes use for searching. This
+    should be safe to pass to other threads.
+    """
+    IndexEntry = IndexEntryClass(row._table)
+    return IndexEntry(
+        uuid=row.uuid,
+        **{col: getattr(row, col)
+           for col in row._table.columns if hasattr(row, col)})

@@ -150,6 +150,17 @@ class RowEventHandler(object):
                 LOG.exception('Unexpected exception in notify_loop')
 
     def notify(self, event, row, updates=None):
+        """Method for calling backend to call for each DB update
+
+        :param event:   Backend representation of event type, e.g.
+                        create, update, delete
+        :param row:     Backend representation of a Row object. If it is not
+                        immutable, it should be converted or guaranteed not to
+                        be changed in other threads.
+        :param updates: Backend representation of updates to a Row. e.g.
+                        a Row object with just changed attributes, a
+                        dictionary of changes, etc.
+        """
         matching = self.matching_events(
             event, row, updates)
         for match in matching:
