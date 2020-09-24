@@ -95,8 +95,8 @@ class WaitEvent(RowEvent):
 
 class RowEventHandler(object):
     def __init__(self):
-        self.__watched_events = set()
-        self.__lock = threading.Lock()
+        self._watched_events = set()
+        self._lock = threading.Lock()
         self.notifications = queue.Queue()
         self.notify_thread = threading.Thread(target=self.notify_loop)
         self.notify_thread.daemon = True
@@ -124,27 +124,27 @@ class RowEventHandler(object):
             return False
 
     def matching_events(self, event, row, updates):
-        with self.__lock:
-            return tuple(t for t in self.__watched_events
+        with self._lock:
+            return tuple(t for t in self._watched_events
                          if self.match(t, event, row, updates))
 
     def watch_event(self, event):
-        with self.__lock:
-            self.__watched_events.add(event)
+        with self._lock:
+            self._watched_events.add(event)
 
     def watch_events(self, events):
-        with self.__lock:
+        with self._lock:
             for event in events:
-                self.__watched_events.add(event)
+                self._watched_events.add(event)
 
     def unwatch_event(self, event):
-        with self.__lock:
-            self.__watched_events.discard(event)
+        with self._lock:
+            self._watched_events.discard(event)
 
     def unwatch_events(self, events):
-        with self.__lock:
+        with self._lock:
             for event in events:
-                self.__watched_events.discard(event)
+                self._watched_events.discard(event)
 
     def shutdown(self):
         self.notifications.put(STOP_EVENT)
