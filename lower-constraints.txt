@@ -22,7 +22,6 @@ mccabe==0.2.1
 mox3==0.20.0
 netaddr==0.7.18
 os-client-config==1.28.0
-os-testr==1.0.0
 oslo.utils==3.33.0
 oslotest==3.2.0
 ovs==2.10.0
