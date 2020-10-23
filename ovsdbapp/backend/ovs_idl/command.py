@@ -67,6 +67,8 @@ class BaseCommand(api.Command):
             ", ".join("%s=%s" % (k, v) for k, v in command_info.items()
                       if k not in ['api', 'result']))
 
+    __repr__ = __str__
+
 
 class ReadOnlyCommand(BaseCommand):
     READ_ONLY = True
