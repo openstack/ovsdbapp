@@ -104,7 +104,8 @@ class Backend(object):
 
     def lookup(self, table, record, default=_NO_DEFAULT):
         try:
-            return self._lookup(table, record)
+            with self.ovsdb_connection.lock:
+                return self._lookup(table, record)
         except idlutils.RowNotFound:
             if default is not _NO_DEFAULT:
                 return default

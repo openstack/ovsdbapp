@@ -33,13 +33,13 @@ class FakeBackend(ovs_idl.Backend):
     lookup_table = {'Faketable': idlutils.RowLookup('Faketable', 'name', None)}
 
     def start_connection(self, connection):
-        pass
+        self.ovsdb_connection = connection
 
 
 class TestBackendOvsIdl(base.TestCase):
     def setUp(self):
         super(TestBackendOvsIdl, self).setUp()
-        self.backend = FakeBackend(mock.Mock())
+        self.backend = FakeBackend(mock.MagicMock())
 
     def test_lookup_found(self):
         row = self.backend.lookup('Faketable', 'Fake1')
