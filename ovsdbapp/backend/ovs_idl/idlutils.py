@@ -14,6 +14,9 @@
 
 import collections
 from collections import abc
+# json is not deprecated
+# pylint: disable=deprecated-module
+import json
 import logging
 import os
 import sys
@@ -154,6 +157,17 @@ class ExceptionResult(object):
         self.tb = tb
 
 
+def create_schema_helper(schema):
+    """Create a schema helper object based on the provided schema.
+
+    :param schema: The description of the schema
+    :type schema: dict or string
+    """
+    if isinstance(schema, str):
+        schema = json.loads(schema)
+    return idl.SchemaHelper(None, schema)
+
+
 def get_schema_helper(connection, schema_name):
     """Create a schema helper object by querying an ovsdb-server
 
@@ -186,7 +200,7 @@ def get_schema_helper(connection, schema_name):
                       "%(err)s", {'conn': c,
                                   'err': resp.error})
             continue
-        return idl.SchemaHelper(None, resp.result)
+        return create_schema_helper(resp.result)
     raise Exception("Could not retrieve schema from %s" % connection)
 
 

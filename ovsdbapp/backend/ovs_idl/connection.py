@@ -19,6 +19,7 @@ import threading
 import time
 import traceback
 
+from ovs.db import custom_index
 from ovs.db import idl
 from ovs import poller
 
@@ -168,3 +169,33 @@ class OvsdbIdl(idl.Idl):
         An example would be to set up Idl notification handling for watching
         and unwatching certain OVSDB change events
         """
+
+    def update_tables(self, tables, schema):
+        """Add the tables to the current Idl if they are present in the schema
+
+        :param tables: List of tables to be registered
+        :type tables: List
+        :param schema: Schema description
+        :type schema: dict or string
+        """
+
+        schema_helper = idlutils.create_schema_helper(schema)
+
+        # Register only available registered tables - DB downgrade, and the
+        # newly added tables - DB upgrade
+        for table in self.tables.keys() | tables:
+            if table in schema_helper.schema_json['tables']:
+                schema_helper.register_table(table)
+
+        schema = schema_helper.get_idl_schema()
+        self._db = schema
+        self.tables = schema.tables
+        for table in schema.tables.values():
+            for column in table.columns.values():
+                if not hasattr(column, 'alert'):
+                    column.alert = True
+            table.need_table = False
+            table.rows = custom_index.IndexedRows(table)
+            table.idl = self
+            table.condition = [True]
+            table.cond_changed = False
