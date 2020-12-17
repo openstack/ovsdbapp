@@ -85,7 +85,7 @@ class _AclAddHelper(cmd.AddCommand):
 
     def __init__(self, api, entity, direction, priority, match, action,
                  log=False, may_exist=False, severity=None, name=None,
-                 **external_ids):
+                 meter=None, **external_ids):
         if direction not in ('from-lport', 'to-lport'):
             raise TypeError("direction must be either from-lport or to-lport")
         if not 0 <= priority <= const.ACL_PRIORITY_MAX:
@@ -103,6 +103,7 @@ class _AclAddHelper(cmd.AddCommand):
         self.may_exist = may_exist
         self.severity = severity
         self.name = name
+        self.meter = meter
         self.external_ids = external_ids
 
     def acl_match(self, row):
@@ -127,6 +128,7 @@ class _AclAddHelper(cmd.AddCommand):
         acl.log = self.log
         acl.severity = self.severity
         acl.name = self.name
+        acl.meter = self.meter
         entity.addvalue('acls', acl)
         for col, value in self.external_ids.items():
             acl.setkey('external_ids', col, value)
@@ -1487,3 +1489,71 @@ class HAChassisGroupDelChassisCommand(cmd.BaseCommand):
 
         hc_group.delvalue('ha_chassis', hc)
         hc.delete()
+
+
+class MeterAddCommand(cmd.AddCommand):
+    table_name = 'Meter'
+
+    def __init__(self, api, name, unit, rate, fair, burst_size, action,
+                 may_exist=False, **columns):
+        super().__init__(api)
+        self.name = name
+        self.unit = unit
+        self.rate = rate
+        self.fair = fair
+        self.burst_size = burst_size
+        self.action = action or 'drop'
+        self.may_exist = may_exist
+        self.columns = columns
+
+    def run_idl(self, txn):
+        try:
+            meter = self.api.lookup(self.table_name, self.name)
+            self.result = rowview.RowView(meter)
+            if self.may_exist:
+                return
+            raise RuntimeError("Meter %s exists" % self.name)
+        except idlutils.RowNotFound:
+            pass
+
+        meter_band = txn.insert(self.api._tables['Meter_Band'])
+        meter_band.action = self.action
+        meter_band.rate = self.rate
+        meter_band.burst_size = self.burst_size
+
+        meter = txn.insert(self.api._tables[self.table_name])
+        meter.name = self.name
+        meter.unit = self.unit
+        meter.bands = [meter_band.uuid]
+        # Remain backwards compatible with schemas that do not have fair column
+        if 'fair' in self.api.tables['Meter'].columns:
+            meter.fair = self.fair
+        self.set_columns(meter, **self.columns)
+        self.result = meter.uuid
+
+
+class MeterDelCommand(cmd.BaseCommand):
+    def __init__(self, api, meter, if_exists=False):
+        super().__init__(api)
+        self.meter = meter
+        self.if_exists = if_exists
+
+    def run_idl(self, _txn):
+        try:
+            meter = self.api.lookup('Meter', self.meter)
+            meter.delete()
+        except idlutils.RowNotFound as e:
+            if self.if_exists:
+                return
+            msg = "Meter %s does not exist" % self.meter
+            raise RuntimeError(msg) from e
+
+
+class MeterListCommand(cmd.ReadOnlyCommand):
+    def run_idl(self, _txn):
+        table = self.api.tables['Meter']
+        self.result = [rowview.RowView(r) for r in table.rows.values()]
+
+
+class MeterGetCommand(cmd.BaseGetRowCommand):
+    table = 'Meter'

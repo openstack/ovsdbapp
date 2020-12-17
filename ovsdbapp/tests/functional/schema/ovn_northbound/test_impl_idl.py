@@ -200,6 +200,24 @@ class TestAclOps(OvnNorthboundTest):
         self._acl_add('port_group', 'from-lport', 0,
                       'output == "fake_port" && ip', 'drop')
 
+    def test_pg_acl_add_logging(self):
+        r1 = self._acl_add('port_group', 'from-lport', 0,
+                           'output == "fake_port" && ip', 'drop',
+                           log=True, severity="warning", name="test1",
+                           meter="meter1", extkey1="extval1")
+        self.assertTrue(r1.log)
+        self.assertEqual(["meter1"], r1.meter)
+        self.assertEqual(["warning"], r1.severity)
+        self.assertEqual(["test1"], r1.name)
+        self.assertEqual({"extkey1": "extval1"}, r1.external_ids)
+
+    def test_pg_acl_add_logging_weird_severity(self):
+        r1 = self._acl_add('port_group', 'from-lport', 0,
+                           'output == "fake_port" && ip', 'drop',
+                           severity="weird")
+        self.assertNotEqual(["weird"], r1.severity)
+        self.assertEqual([], r1.severity)
+
     def test_pg_acl_del_all(self):
         r1 = self._acl_add('port_group', 'from-lport', 0,
                            'output == "fake_port"', 'drop')
@@ -1691,3 +1709,89 @@ class TestReferencedObjects(OvnNorthboundTest):
             txn.add(self.api.db_add('Logical_Switch_Port', prt,
                                     "addresses", self.lsp_test_addresses[0]))
         self._check_values()
+
+
+class TestMeterOps(OvnNorthboundTest):
+
+    def setUp(self):
+        super(TestMeterOps, self).setUp()
+        self.table = self.api.tables['Meter']
+
+    def _meter_add(self, name=None, unit=None, rate=1, fair=False,
+                   burst_size=0, action=None, may_exist=False, **columns):
+        if name is None:
+            name = utils.get_rand_name()
+        if unit is None:
+            unit = 'pktps'
+        # NOTE(flaviof): action drop is the only one option in the schema when
+        #                this test was implemented. That is expected to be
+        #                properly handled by api.
+        exp_action = 'drop' if action is None else action
+        meter = self.useFixture(fixtures.MeterFixture(
+            self.api, name, unit, rate, fair, burst_size, action, may_exist,
+            **columns)).obj
+        meter_band = meter.bands[0]
+        self.assertEqual(name, meter.name)
+        self.assertEqual(unit, meter.unit)
+        self.assertEqual([fair], meter.fair)
+        self.assertEqual(exp_action, meter_band.action)
+        self.assertEqual(rate, meter_band.rate)
+        self.assertEqual(burst_size, meter_band.burst_size)
+        return meter
+
+    def _meter_del(self, row, col):
+        name404 = utils.get_rand_name()
+        self.api.meter_del(name404, if_exists=True).execute(check_error=True)
+        self.assertIn(row.uuid, self.table.rows)
+        self.api.meter_del(row.uuid).execute(check_error=True)
+        self.assertNotIn(row.uuid, self.table.rows)
+        self.api.meter_del(col, if_exists=True).execute(check_error=True)
+        cmd = self.api.meter_del(col)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def _meter_get(self, col):
+        meter = self._meter_add()
+        val = getattr(meter, col)
+        found = self.api.meter_get(val).execute(check_error=True)
+        self.assertEqual(meter, found)
+
+    def test_meter_add_non_defaults(self):
+        self._meter_add(utils.get_rand_name(), "kbps", 321, True, 500, None)
+
+    def test_meter_add_ext_ids(self):
+        ext_ids = {
+            utils.get_rand_name(prefix="random_"): utils.get_random_string(10)
+            for _ in range(3)}
+        meter = self._meter_add(external_ids=ext_ids)
+        self.assertEqual(ext_ids, meter.external_ids)
+
+    def test_meter_add_may_exist(self):
+        cmd = self.api.meter_add("same_name", "kbps", may_exist=True)
+        m1 = cmd.execute(check_error=True)
+        m2 = cmd.execute(check_error=True)
+        self.assertEqual(m1, m2)
+
+    def test_meter_add_duplicate(self):
+        cmd = self.api.meter_add("same_name", "kbps", may_exist=False)
+        cmd.execute(check_error=True)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_meter_del_by_uuid(self):
+        meter = self._meter_add()
+        self._meter_del(meter, meter.uuid)
+
+    def test_meter_del_by_name(self):
+        name = utils.get_rand_name()
+        meter = self._meter_add(name)
+        self._meter_del(meter, name)
+
+    def test_meter_list(self):
+        meters = {self._meter_add() for _ in range(3)}
+        meter_set = set(self.api.meter_list().execute(check_error=True))
+        self.assertTrue(meters.issubset(meter_set))
+
+    def test_meter_get_uuid(self):
+        self._meter_get('uuid')
+
+    def test_meter_get_name(self):
+        self._meter_get('name')
