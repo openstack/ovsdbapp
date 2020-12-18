@@ -27,7 +27,7 @@ class Backend(object):
     _ovsdb_connection = None
 
     def __init__(self, connection, start=True, auto_index=True, **kwargs):
-        super(Backend, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.ovsdb_connection = connection
         if auto_index:
             if connection.is_running:
@@ -111,7 +111,7 @@ class Backend(object):
             connection_exception = exceptions.OvsdbConnectionUnavailable(
                 db_schema=self.schema, error=e)
             LOG.exception(connection_exception)
-            raise connection_exception
+            raise connection_exception from e
 
     def restart_connection(self):
         self.ovsdb_connection.stop()
@@ -194,7 +194,7 @@ class Backend(object):
                 return t.rows[record]
             except KeyError:
                 raise idlutils.RowNotFound(table=table, col='uuid',
-                                           match=record)
+                                           match=record) from None
         try:
             uuid_ = uuid.UUID(record)
             return t.rows[uuid_]

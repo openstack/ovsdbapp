@@ -124,7 +124,7 @@ def row_by_record(idl_, table, record):
     except ValueError:
         # Not a UUID string, continue lookup by other means
         pass
-    except KeyError:
+    except KeyError as e:
         if sys.platform != 'win32':
             # On Windows the name of the ports is described by the OVS schema:
             # https://tinyurl.com/zk8skhx
@@ -134,7 +134,7 @@ def row_by_record(idl_, table, record):
             # as it happens on Linux and will try to fetch the directly
             # the column instead of using the lookup table. This will raise
             # a KeyError exception on Windows.
-            raise RowNotFound(table=table, col='uuid', match=record)
+            raise RowNotFound(table=table, col='uuid', match=record) from e
 
     rl = _LOOKUP_TABLE.get(table, RowLookup(table, get_index_column(t), None))
     # no table means uuid only, no column means lookup table only has one row
@@ -195,7 +195,7 @@ def get_schema_helper(connection, schema_name):
                      "%(err)s", {'conn': c,
                                  'err': os.strerror(err)})
             continue
-        elif resp.error:
+        if resp.error:
             LOG.error("TRXN error, failed to retrieve schema from %(conn)s: "
                       "%(err)s", {'conn': c,
                                   'err': resp.error})

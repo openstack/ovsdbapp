@@ -34,7 +34,7 @@ class OvsVsctlTransaction(transaction.Transaction):
         txn.expected_ifaces = set()
 
     def post_commit(self, txn):
-        super(OvsVsctlTransaction, self).post_commit(txn)
+        super().post_commit(txn)
         # ovs-vsctl only logs these failures and does not return nonzero
         try:
             self.do_post_commit(txn)

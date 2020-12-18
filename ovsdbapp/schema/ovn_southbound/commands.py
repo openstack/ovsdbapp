@@ -20,7 +20,7 @@ class ChassisAddCommand(cmd.AddCommand):
 
     def __init__(self, api, chassis, encap_types, encap_ip, may_exist=False,
                  **columns):
-        super(ChassisAddCommand, self).__init__(api)
+        super().__init__(api)
         self.chassis = chassis
         self.encap_types = encap_types
         self.encap_ip = encap_ip
@@ -57,7 +57,7 @@ class ChassisAddCommand(cmd.AddCommand):
 
 class ChassisDelCommand(cmd.BaseCommand):
     def __init__(self, api, chassis, if_exists=False):
-        super(ChassisDelCommand, self).__init__(api)
+        super().__init__(api)
         self.chassis = chassis
         self.if_exists = if_exists
 
@@ -83,7 +83,7 @@ class ChassisListCommand(cmd.ReadOnlyCommand):
 
 class LspBindCommand(cmd.BaseCommand):
     def __init__(self, api, port, chassis, may_exist=False):
-        super(LspBindCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.chassis = chassis
         self.may_exist = may_exist
@@ -102,7 +102,7 @@ class LspBindCommand(cmd.BaseCommand):
 
 class LspUnbindCommand(cmd.BaseCommand):
     def __init__(self, api, port, if_exists=False):
-        super(LspUnbindCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.if_exists = if_exists
 

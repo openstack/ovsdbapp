@@ -24,7 +24,7 @@ class LsAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch'
 
     def __init__(self, api, switch=None, may_exist=False, **columns):
-        super(LsAddCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.columns = columns
         self.may_exist = may_exist
@@ -55,7 +55,7 @@ class LsAddCommand(cmd.AddCommand):
 
 class LsDelCommand(cmd.BaseCommand):
     def __init__(self, api, switch, if_exists=False):
-        super(LsDelCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.if_exists = if_exists
 
@@ -63,11 +63,11 @@ class LsDelCommand(cmd.BaseCommand):
         try:
             lswitch = self.api.lookup('Logical_Switch', self.switch)
             lswitch.delete()
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             msg = "Logical Switch %s does not exist" % self.switch
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
 
 class LsListCommand(cmd.ReadOnlyCommand):
@@ -93,7 +93,7 @@ class _AclAddHelper(cmd.AddCommand):
                              const.ACL_PRIORITY_MAX))
         if action not in ('allow', 'allow-related', 'drop', 'reject'):
             raise TypeError("action must be allow/allow-related/drop/reject")
-        super(_AclAddHelper, self).__init__(api)
+        super().__init__(api)
         self.entity = entity
         self.direction = direction
         self.priority = priority
@@ -141,9 +141,9 @@ class AclAddCommand(_AclAddHelper):
                  **external_ids):
         # NOTE: we're overriding the constructor here to not break any
         # existing callers before we introduced Port Groups.
-        super(AclAddCommand, self).__init__(api, switch, direction, priority,
-                                            match, action, log, may_exist,
-                                            severity, name, **external_ids)
+        super().__init__(api, switch, direction, priority,
+                         match, action, log, may_exist,
+                         severity, name, **external_ids)
 
 
 class PgAclAddCommand(_AclAddHelper):
@@ -157,7 +157,7 @@ class _AclDelHelper(cmd.BaseCommand):
             raise TypeError("Must specify priority and match together")
         if priority is not None and not direction:
             raise TypeError("Cannot specify priority/match without direction")
-        super(_AclDelHelper, self).__init__(api)
+        super().__init__(api)
         self.entity = entity
         self.conditions = []
         if direction:
@@ -182,8 +182,7 @@ class AclDelCommand(_AclDelHelper):
                  priority=None, match=None):
         # NOTE: we're overriding the constructor here to not break any
         # existing callers before we introduced Port Groups.
-        super(AclDelCommand, self).__init__(api, switch, direction, priority,
-                                            match)
+        super().__init__(api, switch, direction, priority, match)
 
 
 class PgAclDelCommand(_AclDelHelper):
@@ -192,7 +191,7 @@ class PgAclDelCommand(_AclDelHelper):
 
 class _AclListHelper(cmd.ReadOnlyCommand):
     def __init__(self, api, entity):
-        super(_AclListHelper, self).__init__(api)
+        super().__init__(api)
         self.entity = entity
 
     def run_idl(self, txn):
@@ -229,7 +228,7 @@ class QoSAddCommand(cmd.AddCommand):
                              dscp, const.QOS_DSCP_MAX)
         if rate is None and dscp is None:
             raise ValueError("One of the rate or dscp must be configured")
-        super(QoSAddCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.direction = direction
         self.priority = priority
@@ -275,7 +274,7 @@ class QoSDelCommand(cmd.BaseCommand):
             raise TypeError("Must specify priority and match together")
         if priority is not None and not direction:
             raise TypeError("Cannot specify priority/match without direction")
-        super(QoSDelCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.conditions = []
         self.if_exists = if_exists
@@ -289,11 +288,11 @@ class QoSDelCommand(cmd.BaseCommand):
     def run_idl(self, txn):
         try:
             ls = self.api.lookup('Logical_Switch', self.switch)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             msg = 'Logical Switch %s does not exist' % self.switch
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
         for row in ls.qos_rules:
             if idlutils.row_match(row, self.conditions):
@@ -303,7 +302,7 @@ class QoSDelCommand(cmd.BaseCommand):
 
 class QoSListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, switch):
-        super(QoSListCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
 
     def run_idl(self, txn):
@@ -315,7 +314,7 @@ class QoSDelExtIdCommand(cmd.BaseCommand):
     def __init__(self, api, lswitch, external_ids, if_exists=False):
         if not external_ids:
             raise TypeError('external_ids dictionary cannot be empty')
-        super(QoSDelExtIdCommand, self).__init__(api)
+        super().__init__(api)
         self.lswitch = lswitch
         self.external_ids = external_ids
         self.if_exists = if_exists
@@ -324,11 +323,11 @@ class QoSDelExtIdCommand(cmd.BaseCommand):
         try:
             lswitch = idlutils.row_by_value(self.api.idl, 'Logical_Switch',
                                             'name', self.lswitch)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             msg = 'Logical Switch %s does not exist' % self.lswitch
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
         for qos in lswitch.qos_rules:
             if self.external_ids.items() <= qos.external_ids.items():
@@ -345,7 +344,7 @@ class LspAddCommand(cmd.AddCommand):
             raise TypeError("tag must be 0 to 4095, inclusive")
         if (parent_name is None) != (tag is None):
             raise TypeError("parent_name and tag must be passed together")
-        super(LspAddCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.port = port
         self.parent = parent_name
@@ -394,7 +393,7 @@ class LspAddCommand(cmd.AddCommand):
 class PortDelCommand(cmd.BaseCommand):
     def __init__(self, api, table, port, parent_table, parent=None,
                  if_exists=False):
-        super(PortDelCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.port = port
         self.parent_table = parent_table
@@ -404,10 +403,10 @@ class PortDelCommand(cmd.BaseCommand):
     def run_idl(self, txn):
         try:
             row = self.api.lookup(self.table, self.port)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
-            raise RuntimeError("%s does not exist" % self.port)
+            raise RuntimeError("%s does not exist" % self.port) from e
 
         # We need to delete the port from its parent
         if self.parent:
@@ -425,14 +424,14 @@ class PortDelCommand(cmd.BaseCommand):
 
 class LspDelCommand(PortDelCommand):
     def __init__(self, api, port, switch=None, if_exists=False):
-        super(LspDelCommand, self).__init__(
+        super().__init__(
             api, 'Logical_Switch_Port', port, 'Logical_Switch', switch,
             if_exists)
 
 
 class LspListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, switch=None):
-        super(LspListCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
 
     def run_idl(self, txn):
@@ -449,7 +448,7 @@ class LspGetCommand(cmd.BaseGetRowCommand):
 
 class LspGetParentCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetParentCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -459,7 +458,7 @@ class LspGetParentCommand(cmd.ReadOnlyCommand):
 
 class LspGetTagCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetTagCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -477,7 +476,7 @@ class LspSetAddressesCommand(cmd.BaseCommand):
                 raise TypeError(
                     "address (%s) must be router/unknown/dynamic/"
                     "ethaddr[ ipaddr...]" % (addr,))
-        super(LspSetAddressesCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.addresses = addresses
 
@@ -488,7 +487,7 @@ class LspSetAddressesCommand(cmd.BaseCommand):
 
 class LspGetAddressesCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetAddressesCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -500,7 +499,7 @@ class LspSetPortSecurityCommand(cmd.BaseCommand):
     def __init__(self, api, port, addresses):
         # NOTE(twilson) ovn-nbctl.c does not do any checking of addresses
         # so neither do we
-        super(LspSetPortSecurityCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.addresses = addresses
 
@@ -511,7 +510,7 @@ class LspSetPortSecurityCommand(cmd.BaseCommand):
 
 class LspGetPortSecurityCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetPortSecurityCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -521,7 +520,7 @@ class LspGetPortSecurityCommand(cmd.ReadOnlyCommand):
 
 class LspGetUpCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetUpCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -532,7 +531,7 @@ class LspGetUpCommand(cmd.ReadOnlyCommand):
 
 class LspSetEnabledCommand(cmd.BaseCommand):
     def __init__(self, api, port, is_enabled):
-        super(LspSetEnabledCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.is_enabled = is_enabled
 
@@ -543,7 +542,7 @@ class LspSetEnabledCommand(cmd.BaseCommand):
 
 class LspGetEnabledCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetEnabledCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -554,7 +553,7 @@ class LspGetEnabledCommand(cmd.ReadOnlyCommand):
 
 class LspSetTypeCommand(cmd.BaseCommand):
     def __init__(self, api, port, port_type):
-        super(LspSetTypeCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.port_type = port_type
 
@@ -565,7 +564,7 @@ class LspSetTypeCommand(cmd.BaseCommand):
 
 class LspGetTypeCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetTypeCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -577,7 +576,7 @@ class LspSetOptionsCommand(cmd.BaseCommand):
     table = 'Logical_Switch_Port'
 
     def __init__(self, api, port, **options):
-        super(LspSetOptionsCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.options = options
 
@@ -590,7 +589,7 @@ class LspGetOptionsCommand(cmd.ReadOnlyCommand):
     table = 'Logical_Switch_Port'
 
     def __init__(self, api, port):
-        super(LspGetOptionsCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -600,7 +599,7 @@ class LspGetOptionsCommand(cmd.ReadOnlyCommand):
 
 class LspSetDhcpV4OptionsCommand(cmd.BaseCommand):
     def __init__(self, api, port, dhcpopt_uuid):
-        super(LspSetDhcpV4OptionsCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.dhcpopt_uuid = dhcpopt_uuid
 
@@ -611,7 +610,7 @@ class LspSetDhcpV4OptionsCommand(cmd.BaseCommand):
 
 class LspGetDhcpV4OptionsCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LspGetDhcpV4OptionsCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -625,7 +624,7 @@ class DhcpOptionsAddCommand(cmd.AddCommand):
 
     def __init__(self, api, cidr, **external_ids):
         cidr = netaddr.IPNetwork(cidr)
-        super(DhcpOptionsAddCommand, self).__init__(api)
+        super().__init__(api)
         self.cidr = str(cidr)
         self.external_ids = external_ids
 
@@ -638,7 +637,7 @@ class DhcpOptionsAddCommand(cmd.AddCommand):
 
 class DhcpOptionsDelCommand(cmd.BaseCommand):
     def __init__(self, api, dhcpopt_uuid):
-        super(DhcpOptionsDelCommand, self).__init__(api)
+        super().__init__(api)
         self.dhcpopt_uuid = dhcpopt_uuid
 
     def run_idl(self, txn):
@@ -658,7 +657,7 @@ class DhcpOptionsGetCommand(cmd.BaseGetRowCommand):
 
 class DhcpOptionsSetOptionsCommand(cmd.BaseCommand):
     def __init__(self, api, dhcpopt_uuid, **options):
-        super(DhcpOptionsSetOptionsCommand, self).__init__(api)
+        super().__init__(api)
         self.dhcpopt_uuid = dhcpopt_uuid
         self.options = options
 
@@ -669,7 +668,7 @@ class DhcpOptionsSetOptionsCommand(cmd.BaseCommand):
 
 class DhcpOptionsGetOptionsCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, dhcpopt_uuid):
-        super(DhcpOptionsGetOptionsCommand, self).__init__(api)
+        super().__init__(api)
         self.dhcpopt_uuid = dhcpopt_uuid
 
     def run_idl(self, txn):
@@ -679,7 +678,7 @@ class DhcpOptionsGetOptionsCommand(cmd.ReadOnlyCommand):
 
 class LrAddCommand(cmd.BaseCommand):
     def __init__(self, api, router=None, may_exist=False, **columns):
-        super(LrAddCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.may_exist = may_exist
         self.columns = columns
@@ -707,7 +706,7 @@ class LrAddCommand(cmd.BaseCommand):
 
 class LrDelCommand(cmd.BaseCommand):
     def __init__(self, api, router, if_exists=False):
-        super(LrDelCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.if_exists = if_exists
 
@@ -715,11 +714,11 @@ class LrDelCommand(cmd.BaseCommand):
         try:
             lr = self.api.lookup('Logical_Router', self.router)
             lr.delete()
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             msg = "Logical Router %s does not exist" % self.router
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
 
 class LrListCommand(cmd.ReadOnlyCommand):
@@ -742,7 +741,7 @@ class LrpAddCommand(cmd.BaseCommand):
         self.peer = peer
         self.may_exist = may_exist
         self.columns = columns
-        super(LrpAddCommand, self).__init__(api)
+        super().__init__(api)
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
@@ -794,14 +793,14 @@ class LrpAddCommand(cmd.BaseCommand):
 
 class LrpDelCommand(PortDelCommand):
     def __init__(self, api, port, router=None, if_exists=False):
-        super(LrpDelCommand, self).__init__(
+        super().__init__(
             api, 'Logical_Router_Port', port, 'Logical_Router', router,
             if_exists)
 
 
 class LrpListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
-        super(LrpListCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
 
     def run_idl(self, txn):
@@ -811,7 +810,7 @@ class LrpListCommand(cmd.ReadOnlyCommand):
 
 class LrpSetEnabledCommand(cmd.BaseCommand):
     def __init__(self, api, port, is_enabled):
-        super(LrpSetEnabledCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.is_enabled = is_enabled
 
@@ -822,7 +821,7 @@ class LrpSetEnabledCommand(cmd.BaseCommand):
 
 class LrpGetEnabledCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, port):
-        super(LrpGetEnabledCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
 
     def run_idl(self, txn):
@@ -844,7 +843,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
                  policy='dst-ip', may_exist=False):
         prefix = str(netaddr.IPNetwork(prefix))
         nexthop = str(netaddr.IPAddress(nexthop))
-        super(LrRouteAddCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.prefix = prefix
         self.nexthop = nexthop
@@ -887,7 +886,7 @@ class LrRouteDelCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix=None, if_exists=False):
         if prefix is not None:
             prefix = str(netaddr.IPNetwork(prefix))
-        super(LrRouteDelCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.prefix = prefix
         self.if_exists = if_exists
@@ -911,7 +910,7 @@ class LrRouteDelCommand(cmd.BaseCommand):
 
 class LrRouteListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
-        super(LrRouteListCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
 
     def run_idl(self, txn):
@@ -940,7 +939,7 @@ class LrNatAddCommand(cmd.BaseCommand):
         if external_mac:
             external_mac = str(
                 netaddr.EUI(external_mac, dialect=netaddr.mac_unix_expanded))
-        super(LrNatAddCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.nat_type = nat_type
         self.external_ip = external_ip
@@ -985,7 +984,7 @@ class LrNatAddCommand(cmd.BaseCommand):
 class LrNatDelCommand(cmd.BaseCommand):
     def __init__(self, api, router, nat_type=None, match_ip=None,
                  if_exists=False):
-        super(LrNatDelCommand, self).__init__(api)
+        super().__init__(api)
         self.conditions = []
         if nat_type:
             if nat_type not in const.NAT_TYPES:
@@ -1027,7 +1026,7 @@ class LrNatDelCommand(cmd.BaseCommand):
 
 class LrNatListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
-        super(LrNatListCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
 
     def run_idl(self, txn):
@@ -1038,7 +1037,7 @@ class LrNatListCommand(cmd.ReadOnlyCommand):
 class LbAddCommand(cmd.BaseCommand):
     def __init__(self, api, lb, vip, ips, protocol=const.PROTO_TCP,
                  may_exist=False, **columns):
-        super(LbAddCommand, self).__init__(api)
+        super().__init__(api)
         self.lb = lb
         self.vip = utils.normalize_ip_port(vip)
         self.ips = ",".join(utils.normalize_ip_port(ip) for ip in ips)
@@ -1072,7 +1071,7 @@ class LbAddCommand(cmd.BaseCommand):
 
 class LbDelCommand(cmd.BaseCommand):
     def __init__(self, api, lb, vip=None, if_exists=False):
-        super(LbDelCommand, self).__init__(api)
+        super().__init__(api)
         self.lb = lb
         self.vip = utils.normalize_ip_port(vip) if vip else vip
         self.if_exists = if_exists
@@ -1103,7 +1102,7 @@ class LbListCommand(cmd.ReadOnlyCommand):
 
 class LrLbAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, lb, may_exist=False):
-        super(LrLbAddCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.lb = lb
         self.may_exist = may_exist
@@ -1121,7 +1120,7 @@ class LrLbAddCommand(cmd.BaseCommand):
 
 class LrLbDelCommand(cmd.BaseCommand):
     def __init__(self, api, router, lb=None, if_exists=False):
-        super(LrLbDelCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
         self.lb = lb
         self.if_exists = if_exists
@@ -1142,7 +1141,7 @@ class LrLbDelCommand(cmd.BaseCommand):
 
 class LrLbListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, router):
-        super(LrLbListCommand, self).__init__(api)
+        super().__init__(api)
         self.router = router
 
     def run_idl(self, txn):
@@ -1152,7 +1151,7 @@ class LrLbListCommand(cmd.ReadOnlyCommand):
 
 class LsLbAddCommand(cmd.BaseCommand):
     def __init__(self, api, switch, lb, may_exist=False):
-        super(LsLbAddCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.lb = lb
         self.may_exist = may_exist
@@ -1170,7 +1169,7 @@ class LsLbAddCommand(cmd.BaseCommand):
 
 class LsLbDelCommand(cmd.BaseCommand):
     def __init__(self, api, switch, lb=None, if_exists=False):
-        super(LsLbDelCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
         self.lb = lb
         self.if_exists = if_exists
@@ -1191,7 +1190,7 @@ class LsLbDelCommand(cmd.BaseCommand):
 
 class LsLbListCommand(cmd.ReadOnlyCommand):
     def __init__(self, api, switch):
-        super(LsLbListCommand, self).__init__(api)
+        super().__init__(api)
         self.switch = switch
 
     def run_idl(self, txn):
@@ -1203,7 +1202,7 @@ class DnsAddCommand(cmd.AddCommand):
     table_name = 'DNS'
 
     def __init__(self, api, **columns):
-        super(DnsAddCommand, self).__init__(api)
+        super().__init__(api)
         self.columns = columns
 
     def run_idl(self, txn):
@@ -1217,7 +1216,7 @@ class DnsAddCommand(cmd.AddCommand):
 
 class DnsDelCommand(cmd.DbDestroyCommand):
     def __init__(self, api, uuid):
-        super(DnsDelCommand, self).__init__(api, 'DNS', uuid)
+        super().__init__(api, 'DNS', uuid)
 
 
 class DnsGetCommand(cmd.BaseGetRowCommand):
@@ -1232,7 +1231,7 @@ class DnsListCommand(cmd.ReadOnlyCommand):
 
 class DnsSetRecordsCommand(cmd.BaseCommand):
     def __init__(self, api, row_uuid, **records):
-        super(DnsSetRecordsCommand, self).__init__(api)
+        super().__init__(api)
         self.row_uuid = row_uuid
         self.records = records
 
@@ -1240,14 +1239,14 @@ class DnsSetRecordsCommand(cmd.BaseCommand):
         try:
             dns = self.api.lookup('DNS', self.row_uuid)
             dns.records = self.records
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             msg = "DNS %s does not exist" % self.row_uuid
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
 
 class DnsSetExternalIdsCommand(cmd.BaseCommand):
     def __init__(self, api, row_uuid, **external_ids):
-        super(DnsSetExternalIdsCommand, self).__init__(api)
+        super().__init__(api)
         self.row_uuid = row_uuid
         self.external_ids = external_ids
 
@@ -1255,16 +1254,16 @@ class DnsSetExternalIdsCommand(cmd.BaseCommand):
         try:
             dns = self.api.lookup('DNS', self.row_uuid)
             dns.external_ids = self.external_ids
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             msg = "DNS %s does not exist" % self.row_uuid
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
 
 
 class PgAddCommand(cmd.AddCommand):
     table_name = 'Port_Group'
 
     def __init__(self, api, name, may_exist=False, **columns):
-        super(PgAddCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.may_exist = may_exist
         self.columns = columns
@@ -1288,7 +1287,7 @@ class PgDelCommand(cmd.BaseCommand):
     table_name = 'Port_Group'
 
     def __init__(self, api, name, if_exists=False):
-        super(PgDelCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.if_exists = if_exists
 
@@ -1296,17 +1295,18 @@ class PgDelCommand(cmd.BaseCommand):
         try:
             pg = self.api.lookup(self.table_name, self.name)
             pg.delete()
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
-            raise RuntimeError('Port group %s does not exist' % self.name)
+            raise RuntimeError(
+                'Port group %s does not exist' % self.name) from e
 
 
 class _PgUpdatePortsHelper(cmd.BaseCommand):
     method = None
 
     def __init__(self, api, port_group, lsp=None, if_exists=False):
-        super(_PgUpdatePortsHelper, self).__init__(api)
+        super().__init__(api)
         self.port_group = port_group
         self.lsp = [] if lsp is None else self._listify(lsp)
         self.if_exists = if_exists
@@ -1323,20 +1323,20 @@ class _PgUpdatePortsHelper(cmd.BaseCommand):
         elif utils.is_uuid_like(port):
             try:
                 port = self.api.lookup('Logical_Switch_Port', port)
-            except idlutils.RowNotFound:
+            except idlutils.RowNotFound as e:
                 if self.if_exists:
                     return
                 raise RuntimeError(
-                    'Port %s does not exist' % port)
+                    'Port %s does not exist' % port) from e
 
         getattr(pg, self.method)('ports', port)
 
     def run_idl(self, txn):
         try:
             pg = self.api.lookup('Port_Group', self.port_group)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             raise RuntimeError('Port group %s does not exist' %
-                               self.port_group)
+                               self.port_group) from e
 
         for lsp in self.lsp:
             self._run_method(pg, lsp)
@@ -1359,7 +1359,7 @@ class GatewayChassisAddCommand(cmd.AddCommand):
 
     def __init__(self, api, name, chassis_name, priority=0, may_exist=False,
                  **columns):
-        super(GatewayChassisAddCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.chassis_name = chassis_name
         self.priority = priority
@@ -1385,7 +1385,7 @@ class HAChassisGroupAddCommand(cmd.AddCommand):
     table_name = 'HA_Chassis_Group'
 
     def __init__(self, api, name, may_exist=False, **columns):
-        super(HAChassisGroupAddCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.may_exist = may_exist
         self.columns = columns
@@ -1409,7 +1409,7 @@ class HAChassisGroupDelCommand(cmd.BaseCommand):
     table_name = 'HA_Chassis_Group'
 
     def __init__(self, api, name, if_exists=False):
-        super(HAChassisGroupDelCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.if_exists = if_exists
 
@@ -1417,11 +1417,11 @@ class HAChassisGroupDelCommand(cmd.BaseCommand):
         try:
             hcg = self.api.lookup(self.table_name, self.name)
             hcg.delete()
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             raise RuntimeError(
-                'HA Chassis Group %s does not exist' % self.name)
+                'HA Chassis Group %s does not exist' % self.name) from e
 
 
 class HAChassisGroupGetCommand(cmd.BaseGetRowCommand):
@@ -1432,7 +1432,7 @@ class HAChassisGroupAddChassisCommand(cmd.AddCommand):
     table_name = 'HA_Chassis'
 
     def __init__(self, api, hcg_id, chassis, priority, **columns):
-        super(HAChassisGroupAddChassisCommand, self).__init__(api)
+        super().__init__(api)
         self.hcg_id = hcg_id
         self.chassis = chassis
         self.priority = priority
@@ -1463,7 +1463,7 @@ class HAChassisGroupDelChassisCommand(cmd.BaseCommand):
     table_name = 'HA_Chassis'
 
     def __init__(self, api, hcg_id, chassis, if_exists=False):
-        super(HAChassisGroupDelChassisCommand, self).__init__(api)
+        super().__init__(api)
         self.hcg_id = hcg_id
         self.chassis = chassis
         self.if_exists = if_exists

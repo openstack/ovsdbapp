@@ -52,10 +52,11 @@ class Transaction(api.Transaction):
         self.ovsdb_connection.queue_txn(self)
         try:
             result = self.results.get(timeout=self.timeout)
-        except queue.Empty:
-            raise exceptions.TimeoutException(commands=self.commands,
-                                              timeout=self.timeout,
-                                              cause='Result queue is empty')
+        except queue.Empty as e:
+            raise exceptions.TimeoutException(
+                commands=self.commands,
+                timeout=self.timeout,
+                cause='Result queue is empty') from e
         if isinstance(result, idlutils.ExceptionResult):
             if self.log_errors:
                 LOG.error(result.tb)
@@ -103,7 +104,7 @@ class Transaction(api.Transaction):
                 # idl.run() again. So, call idl.run() here just in case.
                 self.api.idl.run()
                 continue
-            elif status in (txn.ERROR, txn.NOT_LOCKED):
+            if status in (txn.ERROR, txn.NOT_LOCKED):
                 msg = 'OVSDB Error: '
                 if status == txn.NOT_LOCKED:
                     msg += ("The transaction failed because the IDL has "
@@ -118,10 +119,10 @@ class Transaction(api.Transaction):
                     # For now, raise similar error to vsctl/utils.execute()
                     raise RuntimeError(msg)
                 return
-            elif status == txn.ABORTED:
+            if status == txn.ABORTED:
                 LOG.debug("Transaction aborted")
                 return
-            elif status == txn.UNCHANGED:
+            if status == txn.UNCHANGED:
                 LOG.debug("Transaction caused no change")
             elif status == txn.SUCCESS:
                 self.post_commit(txn)

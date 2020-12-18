@@ -25,23 +25,23 @@ def normalize_ip(ip):
 def normalize_ip_port(ipport):
     try:
         return normalize_ip(ipport)
-    except netaddr.AddrFormatError:
+    except netaddr.AddrFormatError as e:
         # maybe we have a port
         if ipport[0] == '[':
             # Should be an IPv6 w/ port
             try:
                 ip, port = ipport[1:].split(']:')
-            except ValueError:
-                raise netaddr.AddrFormatError("Invalid Port")
+            except ValueError as e2:
+                raise netaddr.AddrFormatError("Invalid Port") from e2
             ip = "[%s]" % normalize_ip(ip)
         else:
             try:
                 ip, port = ipport.split(':')
-            except ValueError:
-                raise netaddr.AddrFormatError("Invalid Port")
+            except ValueError as e3:
+                raise netaddr.AddrFormatError("Invalid Port") from e3
             ip = normalize_ip(ip)
         if int(port) <= 0 or int(port) > 65535:
-            raise netaddr.AddrFormatError("Invalid port")
+            raise netaddr.AddrFormatError("Invalid port") from e
         return "%s:%s" % (ip, port)
 
 

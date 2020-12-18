@@ -80,7 +80,7 @@ class WaitEvent(RowEvent):
     def __init__(self, *args, **kwargs):
         self.event = threading.Event()
         self.timeout = kwargs.pop('timeout', None)
-        super(WaitEvent, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @abc.abstractmethod
     def matches(self, event, row, old=None):

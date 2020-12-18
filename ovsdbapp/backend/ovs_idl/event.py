@@ -52,4 +52,4 @@ class WaitEvent(RowEvent, ovsdb_event.WaitEvent):
 class RowEventHandler(ovsdb_event.RowEventHandler):
     def notify(self, event, row, updates=None):
         row = idlutils.frozen_row(row)
-        super(RowEventHandler, self).notify(event, row, updates)
+        super().notify(event, row, updates)

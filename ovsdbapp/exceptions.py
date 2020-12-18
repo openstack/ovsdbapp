@@ -24,13 +24,13 @@ class OvsdbAppException(RuntimeError):
 
     def __init__(self, **kwargs):
         try:
-            super(OvsdbAppException, self).__init__(self.message % kwargs)
+            super().__init__(self.message % kwargs)
             self.msg = self.message % kwargs
         except Exception:
             if self.use_fatal_exceptions():
                 raise
             # at least get the core message out if something happened
-            super(OvsdbAppException, self).__init__(self.message)
+            super().__init__(self.message)
 
     def __str__(self):
         return self.msg

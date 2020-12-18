@@ -96,7 +96,7 @@ class AddCommand(BaseCommand):
 
 class DbCreateCommand(BaseCommand):
     def __init__(self, api, table, _as_row=False, **columns):
-        super(DbCreateCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.columns = columns
         self.row = _as_row
@@ -118,7 +118,7 @@ class DbCreateCommand(BaseCommand):
 
 class DbDestroyCommand(BaseCommand):
     def __init__(self, api, table, record):
-        super(DbDestroyCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.record = record
 
@@ -129,7 +129,7 @@ class DbDestroyCommand(BaseCommand):
 
 class DbSetCommand(BaseCommand):
     def __init__(self, api, table, record, *col_values):
-        super(DbSetCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.record = record
         self.col_values = col_values
@@ -161,7 +161,7 @@ class DbSetCommand(BaseCommand):
 
 class DbAddCommand(BaseCommand):
     def __init__(self, api, table, record, column, *values):
-        super(DbAddCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.record = record
         self.column = column
@@ -195,7 +195,7 @@ class DbAddCommand(BaseCommand):
 
 class DbClearCommand(BaseCommand):
     def __init__(self, api, table, record, column):
-        super(DbClearCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.record = record
         self.column = column
@@ -209,7 +209,7 @@ class DbClearCommand(BaseCommand):
 
 class DbGetCommand(ReadOnlyCommand):
     def __init__(self, api, table, record, column):
-        super(DbGetCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.record = record
         self.column = column
@@ -229,7 +229,7 @@ class DbGetCommand(ReadOnlyCommand):
 
 class DbListCommand(ReadOnlyCommand):
     def __init__(self, api, table, records, columns, if_exists, row=False):
-        super(DbListCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.columns = columns
         self.if_exists = if_exists
@@ -299,7 +299,7 @@ class DbListCommand(ReadOnlyCommand):
 
 class DbFindCommand(ReadOnlyCommand):
     def __init__(self, api, table, *conditions, **kwargs):
-        super(DbFindCommand, self).__init__(api)
+        super().__init__(api)
         self.table = self.api._tables[table]
         self.conditions = conditions
         self.row = kwargs.get('row', False)
@@ -321,7 +321,7 @@ class DbFindCommand(ReadOnlyCommand):
 
 class BaseGetRowCommand(ReadOnlyCommand):
     def __init__(self, api, record):
-        super(BaseGetRowCommand, self).__init__(api)
+        super().__init__(api)
         self.record = record
 
     def run_idl(self, txn):
@@ -330,7 +330,7 @@ class BaseGetRowCommand(ReadOnlyCommand):
 
 class DbRemoveCommand(BaseCommand):
     def __init__(self, api, table, record, column, *values, **keyvalues):
-        super(DbRemoveCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.record = record
         self.column = column

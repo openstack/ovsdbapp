@@ -26,7 +26,7 @@ class AddManagerCommand(command.AddCommand):
     table_name = 'Manager'
 
     def __init__(self, api, target):
-        super(AddManagerCommand, self).__init__(api)
+        super().__init__(api)
         self.target = target
 
     def run_idl(self, txn):
@@ -43,7 +43,7 @@ class AddManagerCommand(command.AddCommand):
 
 class GetManagerCommand(command.ReadOnlyCommand):
     def __init__(self, api):
-        super(GetManagerCommand, self).__init__(api)
+        super().__init__(api)
 
     def run_idl(self, txn):
         self.result = [m.target for m in
@@ -52,17 +52,17 @@ class GetManagerCommand(command.ReadOnlyCommand):
 
 class RemoveManagerCommand(BaseCommand):
     def __init__(self, api, target):
-        super(RemoveManagerCommand, self).__init__(api)
+        super().__init__(api)
         self.target = target
 
     def run_idl(self, txn):
         try:
             manager = idlutils.row_by_value(self.api.idl, 'Manager', 'target',
                                             self.target)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             msg = "Manager with target %s does not exist" % self.target
             LOG.error(msg)
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
         try:
             self.api._ovs.delvalue('manager_options', manager)
         except AttributeError:  # OVS < 2.6
@@ -77,7 +77,7 @@ class AddBridgeCommand(command.AddCommand):
     table_name = 'Bridge'
 
     def __init__(self, api, name, may_exist, datapath_type):
-        super(AddBridgeCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.may_exist = may_exist
         self.datapath_type = datapath_type
@@ -113,7 +113,7 @@ class AddBridgeCommand(command.AddCommand):
 
 class DelBridgeCommand(BaseCommand):
     def __init__(self, api, name, if_exists):
-        super(DelBridgeCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
         self.if_exists = if_exists
 
@@ -121,13 +121,13 @@ class DelBridgeCommand(BaseCommand):
         try:
             br = idlutils.row_by_value(self.api.idl, 'Bridge', 'name',
                                        self.name)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             else:
                 msg = "Bridge %s does not exist" % self.name
                 LOG.error(msg)
-                raise RuntimeError(msg)
+                raise RuntimeError(msg) from e
         # Clean up cached ports/interfaces
         for port in br.ports:
             for interface in port.interfaces:
@@ -145,7 +145,7 @@ class DelBridgeCommand(BaseCommand):
 
 class BridgeExistsCommand(command.ReadOnlyCommand):
     def __init__(self, api, name):
-        super(BridgeExistsCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
 
     def run_idl(self, txn):
@@ -155,7 +155,7 @@ class BridgeExistsCommand(command.ReadOnlyCommand):
 
 class ListBridgesCommand(command.ReadOnlyCommand):
     def __init__(self, api):
-        super(ListBridgesCommand, self).__init__(api)
+        super().__init__(api)
 
     def run_idl(self, txn):
         # NOTE (twilson) [x.name for x in rows.values()] if no index
@@ -165,7 +165,7 @@ class ListBridgesCommand(command.ReadOnlyCommand):
 
 class SetControllerCommand(BaseCommand):
     def __init__(self, api, bridge, targets):
-        super(SetControllerCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
         self.targets = targets
 
@@ -182,7 +182,7 @@ class SetControllerCommand(BaseCommand):
 
 class DelControllerCommand(BaseCommand):
     def __init__(self, api, bridge):
-        super(DelControllerCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
 
     def run_idl(self, txn):
@@ -192,7 +192,7 @@ class DelControllerCommand(BaseCommand):
 
 class GetControllerCommand(command.ReadOnlyCommand):
     def __init__(self, api, bridge):
-        super(GetControllerCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
 
     def run_idl(self, txn):
@@ -202,7 +202,7 @@ class GetControllerCommand(command.ReadOnlyCommand):
 
 class SetFailModeCommand(BaseCommand):
     def __init__(self, api, bridge, mode):
-        super(SetFailModeCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
         self.mode = mode
 
@@ -215,7 +215,7 @@ class AddPortCommand(command.AddCommand):
     table_name = 'Port'
 
     def __init__(self, api, bridge, port, may_exist):
-        super(AddPortCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
         self.port = port
         self.may_exist = may_exist
@@ -248,7 +248,7 @@ class AddPortCommand(command.AddCommand):
 
 class DelPortCommand(BaseCommand):
     def __init__(self, api, port, bridge, if_exists):
-        super(DelPortCommand, self).__init__(api)
+        super().__init__(api)
         self.port = port
         self.bridge = bridge
         self.if_exists = if_exists
@@ -257,11 +257,11 @@ class DelPortCommand(BaseCommand):
         try:
             port = idlutils.row_by_value(self.api.idl, 'Port', 'name',
                                          self.port)
-        except idlutils.RowNotFound:
+        except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
             msg = "Port %s does not exist" % self.port
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
         if self.bridge:
             br = idlutils.row_by_value(self.api.idl, 'Bridge', 'name',
                                        self.bridge)
@@ -293,7 +293,7 @@ class DelPortCommand(BaseCommand):
 
 class ListPortsCommand(command.ReadOnlyCommand):
     def __init__(self, api, bridge):
-        super(ListPortsCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
 
     def run_idl(self, txn):
@@ -303,7 +303,7 @@ class ListPortsCommand(command.ReadOnlyCommand):
 
 class ListIfacesCommand(command.ReadOnlyCommand):
     def __init__(self, api, bridge):
-        super(ListIfacesCommand, self).__init__(api)
+        super().__init__(api)
         self.bridge = bridge
 
     def run_idl(self, txn):
@@ -314,7 +314,7 @@ class ListIfacesCommand(command.ReadOnlyCommand):
 
 class PortToBridgeCommand(command.ReadOnlyCommand):
     def __init__(self, api, name):
-        super(PortToBridgeCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
 
     def run_idl(self, txn):
@@ -330,7 +330,7 @@ class PortToBridgeCommand(command.ReadOnlyCommand):
 
 class InterfaceToBridgeCommand(command.ReadOnlyCommand):
     def __init__(self, api, name):
-        super(InterfaceToBridgeCommand, self).__init__(api)
+        super().__init__(api)
         self.name = name
 
     def run_idl(self, txn):
@@ -346,7 +346,7 @@ class InterfaceToBridgeCommand(command.ReadOnlyCommand):
 
 class GetExternalIdCommand(command.ReadOnlyCommand):
     def __init__(self, api, table, name, field):
-        super(GetExternalIdCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.name = name
         self.field = field
@@ -359,7 +359,7 @@ class GetExternalIdCommand(command.ReadOnlyCommand):
 
 class SetExternalIdCommand(BaseCommand):
     def __init__(self, api, table, name, field, value):
-        super(SetExternalIdCommand, self).__init__(api)
+        super().__init__(api)
         self.table = table
         self.name = name
         self.field = field
@@ -375,23 +375,23 @@ class SetExternalIdCommand(BaseCommand):
 
 class BrGetExternalIdCommand(GetExternalIdCommand):
     def __init__(self, api, name, field):
-        super(BrGetExternalIdCommand, self).__init__(
+        super().__init__(
             api, 'Bridge', name, field)
 
 
 class BrSetExternalIdCommand(SetExternalIdCommand):
     def __init__(self, api, name, field, value):
-        super(BrSetExternalIdCommand, self).__init__(
+        super().__init__(
             api, 'Bridge', name, field, value)
 
 
 class IfaceGetExternalIdCommand(GetExternalIdCommand):
     def __init__(self, api, name, field):
-        super(IfaceGetExternalIdCommand, self).__init__(
+        super().__init__(
             api, 'Interface', name, field)
 
 
 class IfaceSetExternalIdCommand(SetExternalIdCommand):
     def __init__(self, api, name, field, value):
-        super(IfaceSetExternalIdCommand, self).__init__(
+        super().__init__(
             api, 'Interface', name, field, value)

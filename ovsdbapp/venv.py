@@ -90,7 +90,7 @@ class OvsVenvFixture(fixtures.Fixture):
         return 'unix:' + os.path.join(self.venv, 'db.sock')
 
     def _setUp(self):
-        super(OvsVenvFixture, self)._setUp()
+        super()._setUp()
         self.addCleanup(self.deactivate)
         if not os.path.isdir(self.venv):
             os.mkdir(self.venv)
@@ -160,7 +160,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
             # Use OVN source dir
             self.PATH_VAR_TEMPLATE += (
                 ":{0}/controller:{0}/northd:{0}/utilities".format(ovndir))
-        super(OvsOvnVenvFixture, self).__init__(venv, **kwargs)
+        super().__init__(venv, **kwargs)
         self.ovndir = self._share_path(self.OVN_PATHS, ovndir,
                                        [self.SBSCHEMA, self.NBSCHEMA])
         self.env.update({'OVN_RUNDIR': self.venv})
@@ -182,12 +182,12 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         return 'unix:' + os.path.join(self.venv, 'ovnsb_db.sock')
 
     def setup_dbs(self):
-        super(OvsOvnVenvFixture, self).setup_dbs()
+        super().setup_dbs()
         self.create_db('ovnsb.db', self.ovnsb_schema)
         self.create_db('ovnnb.db', self.ovnnb_schema)
 
     def start_ovsdb_processes(self):
-        super(OvsOvnVenvFixture, self).start_ovsdb_processes()
+        super().start_ovsdb_processes()
         self.call(['ovsdb-server', '--detach', '--no-chdir', '-vconsole:off',
                    '--pidfile=%s' % os.path.join(self.venv, 'ovnnb_db.pid'),
                    '--log-file=%s' % os.path.join(self.venv, 'ovnnb_db.log'),
@@ -210,7 +210,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                    '--remote=p' + self.ovnsb_connection, 'ovnsb.db'])
 
     def init_processes(self):
-        super(OvsOvnVenvFixture, self).init_processes()
+        super().init_processes()
         self.call(['ovn-nbctl', 'init'])
         self.call(['ovn-sbctl', 'init'])
         if self.add_chassis:

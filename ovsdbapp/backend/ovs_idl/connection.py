@@ -36,20 +36,20 @@ LOG = logging.getLogger(__name__)
 
 class TransactionQueue(queue.Queue, object):
     def __init__(self, *args, **kwargs):
-        super(TransactionQueue, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._wait_queue = connection_utils.WaitQueue(
             max_queue_size=self.maxsize)
 
     def get_nowait(self, *args, **kwargs):
         try:
-            result = super(TransactionQueue, self).get_nowait(*args, **kwargs)
+            result = super().get_nowait(*args, **kwargs)
         except queue.Empty:
             return None
         self._wait_queue.alert_notification_consume()
         return result
 
     def put(self, *args, **kwargs):
-        super(TransactionQueue, self).put(*args, **kwargs)
+        super().put(*args, **kwargs)
         self._wait_queue.alert_notify()
 
     @property
@@ -149,10 +149,10 @@ class Connection(object):
         # run when we are started
         try:
             self.txns.put(txn, timeout=self.timeout)
-        except queue.Full:
+        except queue.Full as e:
             raise exceptions.TimeoutException(commands=txn.commands,
                                               timeout=self.timeout,
-                                              cause='TXN queue is full')
+                                              cause='TXN queue is full') from e
 
 
 class OvsdbIdl(idl.Idl):
