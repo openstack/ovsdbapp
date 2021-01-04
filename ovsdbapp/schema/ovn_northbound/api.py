@@ -678,7 +678,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def lb_add(self, vip, ips, protocol=const.PROTO_TCP, may_exist=False):
+    def lb_add(self, lb, vip, ips, protocol=const.PROTO_TCP, may_exist=False,
+               **columns):
         """Create a load-balancer or add a VIP to an existing load balancer
 
         :param lb:        The name or uuid of the load-balancer
@@ -692,6 +693,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         :param may_exist: If True, don't fail if a LB w/ `vip` exists, and
                           instead, replace the vips on the LB
         :type may_exist:  boolean
+        :param columns:   Additional columns to directly set on the load
+                          balancer
         :returns:        :class:`Command` with RowView result
         """
 
