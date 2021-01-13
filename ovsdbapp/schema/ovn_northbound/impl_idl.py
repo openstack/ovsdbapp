@@ -65,9 +65,11 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.AclListCommand(self, switch)
 
     def pg_acl_add(self, port_group, direction, priority, match, action,
-                   log=False, may_exist=False, **external_ids):
+                   log=False, may_exist=False, severity=None, name=None,
+                   meter=None, **external_ids):
         return cmd.PgAclAddCommand(self, port_group, direction, priority,
                                    match, action, log, may_exist,
+                                   severity, name, meter,
                                    **external_ids)
 
     def pg_acl_del(self, port_group, direction=None, priority=None,
@@ -321,3 +323,18 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def ha_chassis_group_del_chassis(self, hcg_id, chassis, if_exists=False):
         return cmd.HAChassisGroupDelChassisCommand(
             self, hcg_id, chassis, if_exists=if_exists)
+
+    def meter_add(self, name, unit, rate=1, fair=False, burst_size=0,
+                  action=None, may_exist=False, **columns):
+        return cmd.MeterAddCommand(
+            self, name, unit, rate=rate, fair=fair, burst_size=burst_size,
+            action=action, may_exist=may_exist, **columns)
+
+    def meter_del(self, meter, if_exists=False):
+        return cmd.MeterDelCommand(self, meter, if_exists=if_exists)
+
+    def meter_list(self):
+        return cmd.MeterListCommand(self)
+
+    def meter_get(self, meter):
+        return cmd.MeterGetCommand(self, meter)

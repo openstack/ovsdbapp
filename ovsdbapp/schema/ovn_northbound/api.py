@@ -146,22 +146,32 @@ class API(api.API, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def pg_acl_add(self, port_group, direction, priority, match, action,
-                   log=False):
+                   log=False, may_exist=False, severity=None, name=None,
+                   meter=None, **external_ids):
         """Add an ACL to 'port_group'
 
-        :param port_group: The name or uuid of the port group
-        :type port_group:  string or uuid.UUID
-        :param direction:  The traffic direction to match
-        :type direction:   'from-lport' or 'to-lport'
-        :param priority:   The priority field of the ACL
-        :type priority:    int
-        :param match:      The match rule
-        :type match:       string
-        :param action:     The action to take upon match
-        :type action:      'allow', 'allow-related', 'drop', or 'reject'
-        :param log:        If True, enable packet logging for the ACL
-        :type log:         boolean
-        :returns:          :class:`Command` with RowView result
+        :param port_group:   The name or uuid of the port group
+        :type port_group:    string or uuid.UUID
+        :param direction:    The traffic direction to match
+        :type direction:     'from-lport' or 'to-lport'
+        :param priority:     The priority field of the ACL
+        :type priority:      int
+        :param match:        The match rule
+        :type match:         string
+        :param action:       The action to take upon match
+        :type action:        'allow', 'allow-related', 'drop', or 'reject'
+        :param log:          If True, enable packet logging for the ACL
+        :type log:           boolean
+        :param may_exist:    If True, don't fail if the ACL already exists
+        :type may_exist:     boolean
+        :param severity:     Logging at alert, debug, info, notice or warning
+        :type severity:      string
+        :param name:         The name of the ACL
+        :type name:          string
+        :param meter:        The meter name to rate limit logging
+        :type meter:         string
+        :param external_ids: Values to be added as external_id pairs
+        :returns:            :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
@@ -1054,4 +1064,59 @@ class API(api.API, metaclass=abc.ABCMeta):
                            doesn't exist
         :type if_exists:   boolean
         :returns:          :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def meter_add(self, name, unit, rate=1, fair=False, burst_size=0,
+                  action=None, may_exist=False, **columns):
+        """Create a Meter
+
+        :param name:        The name of the meter
+        :type name:         string
+        :param unit:        The unit of the meter (e.g kbps, pktps)
+        :type unit:         string
+        :param rate:        The rate of the meter
+        :type rate:         int
+        :param fair:        Specify whether meter rate limits its references
+                            individually (True) or as a shared pool (False)
+        :type fair:         boolean
+        :param burst_size:  The maximum burst allowed for the band in kilobits
+                            or packets, depending on the unit used
+        :type burst_size:   int
+        :param action:      The action of the meter. 'None' can be used as an
+                            alternate for the 'drop' value.
+        :type action:       string
+        :param may_exist:   If True, don't fail if the meter already exists
+        :type may_exist:    boolean
+        :param columns:     Additional columns to directly set on the meter
+                            (e.g external_ids)
+        :type columns:      dictionary
+        :returns:           :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def meter_del(self, meter, if_exists=False):
+        """Delete a meter
+
+        :param meter:       The name or uuid of the meter
+        :type meter:        string or uuid.UUID
+        :param if_exists:   If True, don't fail if the meter doesn't exist
+        :type if_exists:    boolean
+        :returns:           :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def meter_list(self):
+        """Get all meters
+
+        :returns:      :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def meter_get(self, meter):
+        """Get the meter
+
+        :param meter:  The name or uuid of the meter
+        :type meter:   string or uuid.UUID
+        :returns:      :class:`Command` with RowView result
         """

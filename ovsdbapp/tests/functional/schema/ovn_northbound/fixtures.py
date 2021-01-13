@@ -43,3 +43,8 @@ class DnsFixture(fixtures.ImplIdlFixture):
 class PortGroupFixture(fixtures.ImplIdlFixture):
     create = 'pg_add'
     delete = 'pg_del'
+
+
+class MeterFixture(fixtures.ImplIdlFixture):
+    create = 'meter_add'
+    delete = 'meter_del'
