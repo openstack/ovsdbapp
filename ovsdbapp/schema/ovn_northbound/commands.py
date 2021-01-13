@@ -126,9 +126,12 @@ class _AclAddHelper(cmd.AddCommand):
         acl.match = self.match
         acl.action = self.action
         acl.log = self.log
-        acl.severity = self.severity
-        acl.name = self.name
-        acl.meter = self.meter
+        if self.severity:
+            acl.severity = self.severity
+        if self.name:
+            acl.name = self.name
+        if self.meter:
+            acl.meter = self.meter
         entity.addvalue('acls', acl)
         for col, value in self.external_ids.items():
             acl.setkey('external_ids', col, value)
