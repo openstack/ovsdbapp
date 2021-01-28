@@ -168,8 +168,8 @@ def create_schema_helper(schema):
     return idl.SchemaHelper(None, schema)
 
 
-def get_schema_helper(connection, schema_name):
-    """Create a schema helper object by querying an ovsdb-server
+def fetch_schema_json(connection, schema_name):
+    """Retrieve the schema json from an ovsdb-server
 
     :param connection: The ovsdb-server connection string
     :type connection: string
@@ -200,8 +200,19 @@ def get_schema_helper(connection, schema_name):
                       "%(err)s", {'conn': c,
                                   'err': resp.error})
             continue
-        return create_schema_helper(resp.result)
+        return resp.result
     raise Exception("Could not retrieve schema from %s" % connection)
+
+
+def get_schema_helper(connection, schema_name):
+    """Create a schema helper object by querying an ovsdb-server
+
+    :param connection: The ovsdb-server connection string
+    :type connection: string
+    :param schema_name: The schema on the server to pull
+    :type schema_name: string
+    """
+    return create_schema_helper(fetch_schema_json(connection, schema_name))
 
 
 def parse_connection(connection_string):
