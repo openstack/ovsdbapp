@@ -160,11 +160,28 @@ class Connection(object):
 
 class OvsdbIdl(idl.Idl):
     @classmethod
-    def from_server(cls, connection_string, schema_name):
-        """Create the Idl instance by pulling the schema from OVSDB server"""
-        helper = idlutils.get_schema_helper(connection_string, schema_name)
-        helper.register_all()
-        return cls(connection_string, helper)
+    def from_server(cls, connection_string, schema_name, *args,
+                    helper=None, helper_tables=None, **kwargs):
+        """Create the Idl instance by pulling the schema from OVSDB server
+
+        :param connection_string: Connection name
+        :type connection_string: string
+        :param schema_name: Schema name
+        :type schema: string
+        :param helper: Helper instance
+        :type helper: ``idl.SchemaHelper``
+        :param helper_tables: Tables to be registered in the helper
+        :type helper_tables: Iterator of strings
+        """
+        if not helper:
+            helper = idlutils.get_schema_helper(connection_string, schema_name)
+
+        if not helper_tables:
+            helper.register_all()
+        else:
+            for table in helper_tables:
+                helper.register_table(table)
+        return cls(connection_string, helper, **kwargs)
 
     def post_connect(self):
         """Operations to execute after the Idl has connected to the server
