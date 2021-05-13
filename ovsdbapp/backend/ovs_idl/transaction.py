@@ -23,6 +23,7 @@ from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import exceptions
 
 LOG = logging.getLogger(__name__)
+MAX_SLEEP = 8
 
 
 class Transaction(api.Transaction):
@@ -74,6 +75,7 @@ class Transaction(api.Transaction):
     def do_commit(self):
         self.start_time = time.time()
         attempts = 0
+        retries = 0
         if not self.commands:
             LOG.debug("There are no commands to commit")
             return []
@@ -103,7 +105,13 @@ class Transaction(api.Transaction):
                 # TRY_AGAIN until we time out and Connection.run() calls
                 # idl.run() again. So, call idl.run() here just in case.
                 self.api.idl.run()
+
+                # In the event that there is an issue with the txn or the db
+                # is down, don't spam new txns as fast as we can
+                time.sleep(min(2 ** retries, self.time_remaining(), MAX_SLEEP))
+                retries += 1
                 continue
+            retries = 0
             if status in (txn.ERROR, txn.NOT_LOCKED):
                 msg = 'OVSDB Error: '
                 if status == txn.NOT_LOCKED:
