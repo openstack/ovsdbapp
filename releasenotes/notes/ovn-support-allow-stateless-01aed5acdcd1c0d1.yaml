@@ -1,0 +1,3 @@
+---
+features:
+  - Support the new "allow-stateless" ACL action. It was added in OVN 21.06.

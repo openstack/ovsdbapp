@@ -91,8 +91,10 @@ class _AclAddHelper(cmd.AddCommand):
         if not 0 <= priority <= const.ACL_PRIORITY_MAX:
             raise ValueError("priority must be between 0 and %s, inclusive" % (
                              const.ACL_PRIORITY_MAX))
-        if action not in ('allow', 'allow-related', 'drop', 'reject'):
-            raise TypeError("action must be allow/allow-related/drop/reject")
+        if action not in ('allow', 'allow-related', 'allow-stateless',
+                          'drop', 'reject'):
+            raise TypeError("action must be allow/allow-related/"
+                            "allow-stateless/drop/reject")
         super().__init__(api)
         self.entity = entity
         self.direction = direction

@@ -109,7 +109,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         :param match:     The match rule
         :type match:      string
         :param action:    The action to take upon match
-        :type action:     'allow', 'allow-related', 'drop', or 'reject'
+        :type action:     'allow', 'allow-related', 'allow-stateless', 'drop',
+                          or 'reject'
         :param log:       If True, enable packet logging for the ACL
         :type log:        boolean
         :returns:         :class:`Command` with RowView result
@@ -159,7 +160,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         :param match:        The match rule
         :type match:         string
         :param action:       The action to take upon match
-        :type action:        'allow', 'allow-related', 'drop', or 'reject'
+        :type action:        'allow', 'allow-related', 'allow-stateless',
+                             'drop', or 'reject'
         :param log:          If True, enable packet logging for the ACL
         :type log:           boolean
         :param may_exist:    If True, don't fail if the ACL already exists
