@@ -76,7 +76,9 @@ class Connection(object):
         with self.lock:
             if self.thread is not None:
                 return False
-            if not self.idl.has_ever_connected():
+            if not self.idl.has_ever_connected() or self.is_running is False:
+                if self.is_running is False:  # stop() was called
+                    self.idl.force_reconnect()
                 idlutils.wait_for_change(self.idl, self.timeout)
                 try:
                     self.idl.post_connect()
@@ -131,6 +133,7 @@ class Connection(object):
                                                   tb=traceback.format_exc())
                     txn.results.put(er)
                 self.txns.task_done()
+        self.idl.close()
 
     def stop(self, timeout=None):
         if not self.is_running:
