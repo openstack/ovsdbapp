@@ -1218,6 +1218,15 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertIn(c1, lrp.gateway_chassis)
         self.assertIn(c2, lrp.gateway_chassis)
 
+    def test_gwc_add(self):
+        # NOTE: no API method to create gateway chassis directly
+        name, c1_name = [utils.get_rand_device_name() for _ in range(2)]
+        lrp = self._lrp_add(name, gateway_chassis=[c1_name])
+        c1 = self.api.lookup('Gateway_Chassis', "%s_%s" % (lrp.name, c1_name))
+        self.assertEqual(c1.name, "%s_%s" % (lrp.name, c1_name))
+        self.assertEqual(c1.chassis_name, c1_name)
+        self.assertEqual(c1.priority, 1)
+
     def test_lrp_del_uuid(self):
         lrp = self._lrp_add(None)
         self.api.lrp_del(lrp.uuid).execute(check_error=True)

@@ -1473,6 +1473,7 @@ class GatewayChassisAddCommand(cmd.AddCommand):
             # since 'name' is indexed
             gwc = txn.insert(self.api.tables[self.table_name])
             gwc.name = self.name
+        gwc.chassis_name = self.chassis_name
         gwc.priority = self.priority
         self.set_columns(gwc, **self.columns)
         self.result = gwc
