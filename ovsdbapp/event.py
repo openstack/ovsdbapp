@@ -14,9 +14,7 @@ import abc
 import atexit
 import logging
 import queue
-import sys
 import threading
-import traceback
 
 LOG = logging.getLogger(__name__)
 STOP_EVENT = ("STOP", None, None, None)
@@ -111,16 +109,7 @@ class RowEventHandler(object):
         try:
             return candidate.matches(event, row, updates)
         except Exception:
-            # It seems reasonable to treat an Exception as a match failure
-            # as for ROW_UPDATE events old is None and users often check
-            # old.external_ids etc. to see if something has changed. We
-            # definitely don't want to interupt RowEventHandler.matching_events
-            # and miss checking other events due to an exception in this event.
-            # To avoid spamming full Exceptions for expected behavior, just
-            # log the initial location of the Exception.
-            _, _, tb = sys.exc_info()
-            LOG.debug("Event not matched due to exception:\n%s",
-                      traceback.format_tb(tb)[-1])
+            LOG.exception("Event not matched due to this exception:\n")
             return False
 
     def matching_events(self, event, row, updates):
