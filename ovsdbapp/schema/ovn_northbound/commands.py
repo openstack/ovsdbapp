@@ -1139,7 +1139,8 @@ class BFDGetCommand(cmd.BaseGetRowCommand):
 
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
-                 policy='dst-ip', may_exist=False, ecmp=False):
+                 policy='dst-ip', may_exist=False, ecmp=False,
+                 route_table=const.MAIN_ROUTE_TABLE):
         prefix = str(netaddr.IPNetwork(prefix))
         if nexthop != const.ROUTE_DISCARD:
             nexthop = str(netaddr.IPAddress(nexthop))
@@ -1150,12 +1151,16 @@ class LrRouteAddCommand(cmd.BaseCommand):
         self.port = port
         self.policy = policy
         self.ecmp = ecmp
+        self.route_table = route_table
         self.may_exist = may_exist
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
         for route in lr.static_routes:
-            if self.prefix == route.ip_prefix:
+            if (
+                self.prefix == route.ip_prefix and
+                self.route_table == route.route_table
+            ):
                 if self.ecmp and self.nexthop != route.nexthop:
                     continue
                 if not self.may_exist:
@@ -1172,6 +1177,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
         route.ip_prefix = self.prefix
         route.nexthop = self.nexthop
         route.policy = self.policy
+        route.route_table = self.route_table
         if self.port:
             route.output_port = self.port
         lr.addvalue('static_routes', route)
@@ -1187,13 +1193,14 @@ class LrRouteAddCommand(cmd.BaseCommand):
 
 class LrRouteDelCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix=None, if_exists=False,
-                 nexthop=None):
+                 nexthop=None, route_table=const.MAIN_ROUTE_TABLE):
         if prefix is not None:
             prefix = str(netaddr.IPNetwork(prefix))
         super().__init__(api)
         self.router = router
         self.prefix = prefix
         self.nexthop = nexthop
+        self.route_table = route_table
         self.if_exists = if_exists
 
     def run_idl(self, txn):
@@ -1202,7 +1209,10 @@ class LrRouteDelCommand(cmd.BaseCommand):
             lr.static_routes = []
             return
         for route in lr.static_routes:
-            if self.prefix == route.ip_prefix:
+            if (
+                self.prefix == route.ip_prefix and
+                self.route_table == route.route_table
+            ):
                 if self.nexthop and route.nexthop != self.nexthop:
                     continue
 
@@ -1216,13 +1226,19 @@ class LrRouteDelCommand(cmd.BaseCommand):
 
 
 class LrRouteListCommand(cmd.ReadOnlyCommand):
-    def __init__(self, api, router):
+    def __init__(self, api, router, route_table=None):
         super().__init__(api)
         self.router = router
+        self.route_table = route_table
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
-        self.result = [rowview.RowView(r) for r in lr.static_routes]
+        if self.route_table is not None:
+            self.result = [rowview.RowView(r)
+                           for r in lr.static_routes
+                           if r.route_table == self.route_table]
+        else:
+            self.result = [rowview.RowView(r) for r in lr.static_routes]
 
 
 class LrNatAddCommand(cmd.BaseCommand):

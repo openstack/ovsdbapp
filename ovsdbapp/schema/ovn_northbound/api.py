@@ -735,7 +735,8 @@ class API(api.API, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def lr_route_add(self, router, prefix, nexthop, port=None,
-                     policy='dst-ip', may_exist=False, ecmp=False):
+                     policy='dst-ip', may_exist=False, ecmp=False,
+                     route_table=const.MAIN_ROUTE_TABLE):
         """Add a route to 'router'
 
         :param router:    The name or uuid of the router
@@ -758,11 +759,14 @@ class API(api.API, metaclass=abc.ABCMeta):
                           same IP prefix is allowed as long as the nexthop is
                           different
         :type ecmp:       boolean
+        :param route_table: The name of route table
+        :type route_table:  str
         returns:          :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
-    def lr_route_del(self, router, prefix=None, if_exists=False, nexthop=None):
+    def lr_route_del(self, router, prefix=None, if_exists=False, nexthop=None,
+                     route_table=const.MAIN_ROUTE_TABLE):
         """Remove routes from 'router'
 
         :param router:    The name or uuid of the router
@@ -775,16 +779,21 @@ class API(api.API, metaclass=abc.ABCMeta):
                           the IP address of one of `router`'s logical router
                           ports or the IP address of a logical port
         :type nexthop:    string
+        :param route_table: The name of route table
+        :type route_table:  str
         :returns:        :class:`Command` with no result
         """
 
     @abc.abstractmethod
-    def lr_route_list(self, router):
+    def lr_route_list(self, router, route_table=None):
         """Get the UUIDs of static logical routes from 'router'
 
-        :param router: The name or uuid of the router
-        :type router:  string or uuid.UUID
-        :returns:      :class:`Command` with RowView list result
+        :param router:      The name or uuid of the router
+        :type router:       string or uuid.UUID
+        :param route_table: The name of route table. Pass "" to get routes of
+                            global route table only
+        :type route_table:  str
+        :returns:           :class:`Command` with RowView list result
         """
 
     @abc.abstractmethod

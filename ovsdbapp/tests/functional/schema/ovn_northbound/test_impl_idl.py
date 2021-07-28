@@ -956,14 +956,18 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self.assertTrue(lrs.issubset(lr_set), "%s vs %s" % (lrs, lr_set))
 
     def _lr_add_route(self, router=None, prefix=None, nexthop=None, port=None,
-                      ecmp=False, **kwargs):
+                      ecmp=False, route_table=const.MAIN_ROUTE_TABLE,
+                      **kwargs):
         lr = self._lr_add(router or utils.get_rand_device_name(),
                           may_exist=True)
         prefix = prefix or '192.0.2.0/25'
         nexthop = nexthop or '192.0.2.254'
         port = port or "port_name"
-        sr = self.api.lr_route_add(lr.uuid, prefix, nexthop, port, ecmp=ecmp,
-                                   **kwargs).execute(check_error=True)
+        sr = self.api.lr_route_add(
+            lr.uuid, prefix, nexthop, port,
+            ecmp=ecmp, route_table=route_table,
+            **kwargs
+        ).execute(check_error=True)
         self.assertIn(sr, lr.static_routes)
         self.assertEqual(prefix, sr.ip_prefix)
         self.assertEqual(nexthop, sr.nexthop)
@@ -1002,6 +1006,20 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self._lr_add_route(nexthop=const.ROUTE_DISCARD)
         self.assertRaises(netaddr.AddrFormatError, self._lr_add_route,
                           prefix='not-discard')
+
+    def test_lr_route_add_route_table(self):
+        lr = self._lr_add()
+        route_table = "route-table"
+
+        # add route to 'main' route table
+        route = self._lr_add_route(lr.name)
+        self.assertEqual(route.route_table, const.MAIN_ROUTE_TABLE)
+
+        route = self._lr_add_route(lr.name, route_table=route_table)
+        self.assertEqual(route.route_table, route_table)
+
+        self.assertEqual(
+            len(self.api.tables['Logical_Router_Static_Route'].rows), 2)
 
     def test_lr_route_del(self):
         prefix = "192.0.2.0/25"
@@ -1057,6 +1075,29 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self.assertEqual(
             len(self.api.tables['Logical_Router_Static_Route'].rows), 1)
 
+    def test_lr_route_del_route_table(self):
+        lr = self._lr_add()
+        route_table = "route-table"
+
+        route_in_main = self._lr_add_route(lr.uuid, prefix="10.0.0.0/24")
+        route = self._lr_add_route(
+            lr.uuid, prefix="10.0.1.0/24", route_table=route_table)
+
+        self.assertEqual(len(lr.static_routes), 2)
+
+        # try to delete from the 'main' table implicitly
+        cmd = self.api.lr_route_del(lr.uuid, route.ip_prefix)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+        self.api.lr_route_del(
+            lr.uuid, prefix=route.ip_prefix, route_table=route_table
+        ).execute(check_error=True)
+        self.assertEqual(len(lr.static_routes), 1)
+
+        self.api.lr_route_del(
+            lr.uuid, route_in_main.ip_prefix).execute(check_error=True)
+        self.assertEqual(len(lr.static_routes), 0)
+
     def test_lr_route_list(self):
         lr = self._lr_add()
         routes = {self._lr_add_route(lr.uuid, prefix="192.0.%s.0/25" % p)
@@ -1064,6 +1105,29 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         route_set = set(self.api.lr_route_list(lr.uuid).execute(
             check_error=True))
         self.assertTrue(routes.issubset(route_set))
+
+    def test_lr_route_list_route_table(self):
+        lr = self._lr_add()
+        route_table = "route-table"
+
+        prefix1 = "10.0.0.0/24"
+        prefix2 = "10.0.1.0/24"
+
+        self._lr_add_route(lr.uuid, prefix=prefix1)
+        self._lr_add_route(lr.uuid, prefix=prefix2, route_table=route_table)
+
+        routes = self.api.lr_route_list(lr.uuid).execute(check_error=True)
+        self.assertEqual(len(routes), 2)  # all routes in logical router
+
+        for route_table, prefix in zip(
+            [const.MAIN_ROUTE_TABLE, route_table],
+            [prefix1, prefix2]
+        ):
+            routes = self.api.lr_route_list(
+                lr.uuid, route_table=route_table).execute(check_error=True)
+            self.assertEqual(len(routes), 1)
+            self.assertEqual(routes[0].ip_prefix, prefix)
+            self.assertEqual(routes[0].route_table, route_table)
 
     def _lr_nat_add(self, *args, **kwargs):
         lr = kwargs.pop('router', self._lr_add(utils.get_rand_device_name()))
