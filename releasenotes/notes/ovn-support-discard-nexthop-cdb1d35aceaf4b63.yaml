@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Support the new "discard" static route nexthop type. It was added in OVN 21.06.
