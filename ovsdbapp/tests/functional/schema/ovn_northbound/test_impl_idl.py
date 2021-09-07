@@ -739,11 +739,13 @@ class TestLogicalRouterOps(OvnNorthboundTest):
                           may_exist=True)
         prefix = prefix or '192.0.2.0/25'
         nexthop = nexthop or '192.0.2.254'
+        port = port or "port_name"
         sr = self.api.lr_route_add(lr.uuid, prefix, nexthop, port,
                                    **kwargs).execute(check_error=True)
         self.assertIn(sr, lr.static_routes)
         self.assertEqual(prefix, sr.ip_prefix)
         self.assertEqual(nexthop, sr.nexthop)
+        self.assertIn(port, sr.output_port)
         sr.router = lr
         return sr
 

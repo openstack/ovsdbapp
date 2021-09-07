@@ -869,7 +869,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
                 route.nexthop = self.nexthop
                 route.policy = self.policy
                 if self.port:
-                    route.port = self.port
+                    route.output_port = self.port
                 self.result = rowview.RowView(route)
                 return
         route = txn.insert(self.api.tables['Logical_Router_Static_Route'])
@@ -877,7 +877,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
         route.nexthop = self.nexthop
         route.policy = self.policy
         if self.port:
-            route.port = self.port
+            route.output_port = self.port
         lr.addvalue('static_routes', route)
         self.result = route.uuid
 
