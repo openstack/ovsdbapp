@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Added support for the "OVN_IC_Northbound" schema. The ``OvnIcNbApiIdlImpl`` class provides
+    interaction with "ovn_ic_nb.db" and adds support to add, delete and list registers rows of
+    "Transit_Switch" table.

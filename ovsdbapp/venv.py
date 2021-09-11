@@ -151,8 +151,10 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         os.path.join(os.path.sep, 'usr', 'local', 'share', 'ovn'),
         os.path.join(os.path.sep, 'usr', 'share', 'ovn')) + (
             OvsVenvFixture.OVS_PATHS)
+
     NBSCHEMA = 'ovn-nb.ovsschema'
     SBSCHEMA = 'ovn-sb.ovsschema'
+    IC_NBSCHEMA = 'ovn-ic-nb.ovsschema'
 
     def __init__(self, venv, ovndir=None, add_chassis=False, **kwargs):
         self.add_chassis = add_chassis
@@ -162,7 +164,8 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                 ":{0}/controller:{0}/northd:{0}/utilities".format(ovndir))
         super().__init__(venv, **kwargs)
         self.ovndir = self._share_path(self.OVN_PATHS, ovndir,
-                                       [self.SBSCHEMA, self.NBSCHEMA])
+                                       [self.SBSCHEMA, self.NBSCHEMA,
+                                        self.IC_NBSCHEMA])
         self.env.update({'OVN_RUNDIR': self.venv})
 
     @property
@@ -174,6 +177,10 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         return os.path.join(self.ovndir, self.NBSCHEMA)
 
     @property
+    def ovn_icnb_schema(self):
+        return os.path.join(self.ovndir, self.IC_NBSCHEMA)
+
+    @property
     def ovnnb_connection(self):
         return 'unix:' + os.path.join(self.venv, 'ovnnb_db.sock')
 
@@ -181,38 +188,45 @@ class OvsOvnVenvFixture(OvsVenvFixture):
     def ovnsb_connection(self):
         return 'unix:' + os.path.join(self.venv, 'ovnsb_db.sock')
 
+    @property
+    def ovn_icnb_connection(self):
+        return 'unix:' + os.path.join(self.venv, 'ovn_ic_nb_db.sock')
+
     def setup_dbs(self):
         super().setup_dbs()
         self.create_db('ovnsb.db', self.ovnsb_schema)
         self.create_db('ovnnb.db', self.ovnnb_schema)
+        self.create_db('ovn_ic_nb.db', self.ovn_icnb_schema)
 
     def start_ovsdb_processes(self):
         super().start_ovsdb_processes()
-        self.call(['ovsdb-server', '--detach', '--no-chdir', '-vconsole:off',
-                   '--pidfile=%s' % os.path.join(self.venv, 'ovnnb_db.pid'),
-                   '--log-file=%s' % os.path.join(self.venv, 'ovnnb_db.log'),
-                   '--remote=db:OVN_Northbound,NB_Global,connections',
-                   '--private-key=db:OVN_Northbound,SSL,private_key',
-                   '--certificate=db:OVN_Northbound,SSL,certificate',
-                   '--ca-cert=db:OVN_Northbound,SSL,ca_cert',
-                   '--ssl-protocols=db:OVN_Northbound,SSL,ssl_protocols',
-                   '--ssl-ciphers=db:OVN_Northbound,SSL,ssl_ciphers',
-                   '--remote=p' + self.ovnnb_connection, 'ovnnb.db'])
-        self.call(['ovsdb-server', '--detach', '--no-chdir', '-vconsole:off',
-                   '--pidfile=%s' % os.path.join(self.venv, 'ovnsb_db.pid'),
-                   '--log-file=%s' % os.path.join(self.venv, 'ovnsb_db.log'),
-                   '--remote=db:OVN_Southbound,SB_Global,connections',
-                   '--private-key=db:OVN_Southbound,SSL,private_key',
-                   '--certificate=db:OVN_Southbound,SSL,certificate',
-                   '--ca-cert=db:OVN_Southbound,SSL,ca_cert',
-                   '--ssl-protocols=db:OVN_Southbound,SSL,ssl_protocols',
-                   '--ssl-ciphers=db:OVN_Southbound,SSL,ssl_ciphers',
-                   '--remote=p' + self.ovnsb_connection, 'ovnsb.db'])
+        for connection, schema, db_name, table in [
+            (self.ovnnb_connection,
+             "OVN_Northbound", "ovnnb", "NB_Global"),
+            (self.ovnsb_connection,
+             "OVN_Southbound", "ovnsb", "SB_Global"),
+            (self.ovn_icnb_connection,
+             "OVN_IC_Northbound", "ovn_ic_nb", "IC_NB_Global"),
+        ]:
+            self.call(['ovsdb-server',
+                       '--detach', '--no-chdir', '-vconsole:off',
+                       '--pidfile=%s' % os.path.join(self.venv,
+                                                     '%s_db.pid' % (db_name)),
+                       '--log-file=%s' % os.path.join(self.venv,
+                                                      '%s_db.log' % (db_name)),
+                       '--remote=db:%s,%s,connections' % (schema, table),
+                       '--private-key=db:%s,SSL,private_key' % (schema),
+                       '--certificate=db:%s,SSL,certificate' % (schema),
+                       '--ca-cert=db:%s,SSL,ca_cert' % (schema),
+                       '--ssl-protocols=db:%s,SSL,ssl_protocols' % (schema),
+                       '--ssl-ciphers=db:%s,SSL,ssl_ciphers' % (schema),
+                       '--remote=p' + connection, '%s.db' % (db_name)])
 
     def init_processes(self):
         super().init_processes()
         self.call(['ovn-nbctl', 'init'])
         self.call(['ovn-sbctl', 'init'])
+        self.call(['ovn-ic-nbctl', 'init'])
         if self.add_chassis:
             self.call([
                 'ovs-vsctl', 'set', 'open', '.',
