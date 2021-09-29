@@ -1021,6 +1021,20 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self.assertEqual(
             len(self.api.tables['Logical_Router_Static_Route'].rows), 2)
 
+    def test_lr_route_add_learned_route_exist(self):
+        router_name = utils.get_rand_device_name()
+
+        learned_route = self._lr_add_route(router_name)
+        self.api.db_set(
+            'Logical_Router_Static_Route', learned_route.uuid,
+            ('external_ids', {'ic-learned-route': str(uuid.uuid4())})).execute(
+                check_error=True)
+
+        route = self._lr_add_route(router_name)
+
+        self.assertNotEqual(learned_route.uuid, route.uuid)
+        self.assertNotIn("ic-learned-route", route.external_ids)
+
     def test_lr_route_del(self):
         prefix = "192.0.2.0/25"
         route = self._lr_add_route(prefix=prefix)
