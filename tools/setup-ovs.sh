@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 OVS_BRANCH=${OVS_BRANCH:-master}
-OVN_BRANCH=${OVN_BRANCH:-$OVS_BRANCH}
+OVN_BRANCH=${OVN_BRANCH:-main}
 
 function use_new_ovn_repository {
     # If OVN_BRANCH > branch-2.12 return 0
