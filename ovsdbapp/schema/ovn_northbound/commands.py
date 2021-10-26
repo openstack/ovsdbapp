@@ -845,6 +845,53 @@ class LrpGetOptionsCommand(LspGetOptionsCommand):
     table = 'Logical_Router_Port'
 
 
+class LrpSetGatewayChassisCommand(cmd.BaseCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port, gateway_chassis, priority):
+        super().__init__(api)
+        self.port = port
+        self.gateway_chassis = gateway_chassis
+        self.priority = priority
+
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        gwc_name = '%s_%s' % (lrp.name, self.gateway_chassis)
+        cmd = GatewayChassisAddCommand(self.api, gwc_name,
+                                       self.gateway_chassis,
+                                       self.priority, may_exist=True)
+        cmd.run_idl(txn)
+        lrp.addvalue('gateway_chassis', cmd.result)
+
+
+class LrpGetGatewayChassisCommand(LrpGetOptionsCommand):
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        self.result = [rowview.RowView(d) for d in lrp.gateway_chassis]
+
+
+class LrpDelGatewayChassisCommand(cmd.BaseCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port, gateway_chassis, if_exists=False):
+        super().__init__(api)
+        self.port = port
+        self.gateway_chassis = gateway_chassis
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        for gwc in lrp.gateway_chassis:
+            if gwc.chassis_name == self.gateway_chassis:
+                lrp.delvalue('gateway_chassis', gwc)
+                return
+
+        if not self.if_exists:
+            msg = "Gateway chassis '%s' on port %s does not exist" % (
+                self.gateway_chassis, self.port)
+            raise RuntimeError(msg)
+
+
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
                  policy='dst-ip', may_exist=False):

@@ -192,6 +192,17 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lrp_get_options(self, port):
         return cmd.LrpGetOptionsCommand(self, port)
 
+    def lrp_set_gateway_chassis(self, port, gateway_chassis, priority=0):
+        return cmd.LrpSetGatewayChassisCommand(self,
+                                               port, gateway_chassis, priority)
+
+    def lrp_get_gateway_chassis(self, port):
+        return cmd.LrpGetGatewayChassisCommand(self, port)
+
+    def lrp_del_gateway_chassis(self, port, gateway_chassis, if_exists=False):
+        return cmd.LrpDelGatewayChassisCommand(self, port,
+                                               gateway_chassis, if_exists)
+
     def lr_route_add(self, router, prefix, nexthop, port=None,
                      policy='dst-ip', may_exist=False):
         return cmd.LrRouteAddCommand(self, router, prefix, nexthop, port,
