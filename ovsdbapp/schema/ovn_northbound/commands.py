@@ -815,6 +815,10 @@ class LrpListCommand(cmd.ReadOnlyCommand):
         self.result = [rowview.RowView(r) for r in router.ports]
 
 
+class LrpGetCommand(cmd.BaseGetRowCommand):
+    table = 'Logical_Router_Port'
+
+
 class LrpSetEnabledCommand(cmd.BaseCommand):
     def __init__(self, api, port, is_enabled):
         super().__init__(api)

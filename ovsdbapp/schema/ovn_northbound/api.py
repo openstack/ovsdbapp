@@ -548,6 +548,15 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def lrp_get(self, port):
+        """Get logical router port for 'port'
+
+        :param port: The name or uuid of the port
+        :type port:  string or uuid.UUID
+        :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
     def lrp_set_enabled(self, port, is_enabled):
         """Set administrative state of 'port'
 

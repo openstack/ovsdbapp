@@ -1136,6 +1136,18 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertEqual(set(networks), set(lrp.networks))
         return lrp
 
+    def _test_lrp_get(self, col):
+        lrp = self._lrp_add(None)
+        val = getattr(lrp, col)
+        found = self.api.lrp_get(val).execute(check_error=True)
+        self.assertEqual(lrp, found)
+
+    def test_lrp_get_uuid(self):
+        self._test_lrp_get('uuid')
+
+    def test_lrp_get_name(self):
+        self._test_lrp_get('name')
+
     def test_lrp_add(self):
         self._lrp_add(None, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'])
 

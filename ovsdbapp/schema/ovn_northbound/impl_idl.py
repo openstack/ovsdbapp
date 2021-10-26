@@ -180,6 +180,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lrp_list(self, router):
         return cmd.LrpListCommand(self, router)
 
+    def lrp_get(self, port):
+        return cmd.LrpGetCommand(self, port)
+
     def lrp_set_enabled(self, port, is_enabled):
         return cmd.LrpSetEnabledCommand(self, port, is_enabled)
 
