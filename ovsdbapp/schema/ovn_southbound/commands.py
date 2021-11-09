@@ -74,6 +74,12 @@ class ChassisDelCommand(cmd.BaseCommand):
             encap.delete()
         chassis.delete()
 
+        try:
+            chassis_private = self.api.lookup('Chassis_Private', self.chassis)
+            chassis_private.delete()
+        except idlutils.RowNotFound:
+            pass
+
 
 class ChassisListCommand(cmd.ReadOnlyCommand):
     def run_idl(self, txn):
