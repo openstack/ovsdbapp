@@ -159,6 +159,9 @@ class Connection(object):
 
 
 class OvsdbIdl(idl.Idl):
+    def cooperative_yield(self):
+        time.sleep(0)
+
     @classmethod
     def from_server(cls, connection_string, schema_name):
         """Create the Idl instance by pulling the schema from OVSDB server"""
