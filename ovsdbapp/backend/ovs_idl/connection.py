@@ -159,6 +159,9 @@ class Connection(object):
 
 
 class OvsdbIdl(idl.Idl):
+    def cooperative_yield(self):
+        time.sleep(0)
+
     @classmethod
     def from_server(cls, connection_string, schema_name, *args,
                     helper=None, helper_tables=None, **kwargs):
