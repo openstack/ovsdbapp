@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added functions and commands to add, delete, list and update records of 'Address_Set' table.

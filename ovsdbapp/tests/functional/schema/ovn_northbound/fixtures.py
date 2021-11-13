@@ -45,6 +45,11 @@ class PortGroupFixture(fixtures.ImplIdlFixture):
     delete = 'pg_del'
 
 
+class AddressSetFixture(fixtures.ImplIdlFixture):
+    create = 'address_set_add'
+    delete = 'address_set_del'
+
+
 class MeterFixture(fixtures.ImplIdlFixture):
     create = 'meter_add'
     delete = 'meter_del'
