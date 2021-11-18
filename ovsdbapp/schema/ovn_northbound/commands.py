@@ -896,7 +896,8 @@ class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
                  policy='dst-ip', may_exist=False):
         prefix = str(netaddr.IPNetwork(prefix))
-        nexthop = str(netaddr.IPAddress(nexthop))
+        if nexthop != const.ROUTE_DISCARD:
+            nexthop = str(netaddr.IPAddress(nexthop))
         super().__init__(api)
         self.router = router
         self.prefix = prefix

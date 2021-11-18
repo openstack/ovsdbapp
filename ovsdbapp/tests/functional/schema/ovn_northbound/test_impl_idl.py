@@ -770,6 +770,11 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self._lr_add_route(router_name)
         self._lr_add_route(router_name, may_exist=True)
 
+    def test_lr_route_add_discard(self):
+        self._lr_add_route(nexthop=const.ROUTE_DISCARD)
+        self.assertRaises(netaddr.AddrFormatError, self._lr_add_route,
+                          prefix='not-discard')
+
     def test_lr_route_del(self):
         prefix = "192.0.2.0/25"
         route = self._lr_add_route(prefix=prefix)
