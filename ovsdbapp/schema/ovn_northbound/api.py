@@ -588,6 +588,43 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def lrp_set_gateway_chassis(self, port, gateway_chassis, priority=0):
+        """Set gateway chassis for 'port'
+
+        :param port:            The name or uuid of the port
+        :type port:             string or uuid.UUID
+        :param gateway_chassis: The name of the gateway chassis
+        :type gateway_chassis:  string
+        :param priority:        The priority of the gateway chassis
+        :type priority:         int
+        :returns:               :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lrp_get_gateway_chassis(self, port):
+        """Get the names of all gateway chassis on 'port'
+
+        :param port: The name or uuid of the port
+        :type port:  string or uuid.UUID
+        :type port:  int
+        :returns:    :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def lrp_del_gateway_chassis(self, port, gateway_chassis, if_exists=False):
+        """Delete gateway chassis from 'port'
+
+        :param port:            The name or uuid of the port
+        :type port:             string or uuid.UUID
+        :param gateway_chassis: The name of the gateway chassis
+        :type gateway_chassis:  string
+        :param if_exists:       If True, don't fail if the gateway chassis
+                                doesn't exist
+        :type if_exists:        boolean
+        :returns:               :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
     def lr_route_add(self, router, prefix, nexthop, port=None,
                      policy='dst-ip', may_exist=False):
         """Add a route to 'router'

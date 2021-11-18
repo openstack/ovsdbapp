@@ -1292,6 +1292,55 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertEqual(options, self.api.lrp_get_options(lrp.uuid).execute(
             check_error=True))
 
+    def test_lrp_get_set_gateway_chassis(self):
+        lrp = self._lrp_add(None)
+        c1_name = utils.get_rand_device_name()
+        self.api.lrp_set_gateway_chassis(lrp.uuid, c1_name).execute(
+            check_error=True)
+        c1 = self.api.lookup('Gateway_Chassis', "%s_%s" % (lrp.name, c1_name))
+        lrp_gwcs = self.api.lrp_get_gateway_chassis(lrp.uuid).execute(
+            check_error=True)
+        self.assertIn(c1, lrp_gwcs)
+        self.assertEqual(c1.name, "%s_%s" % (lrp.name, c1_name))
+        self.assertEqual(c1.chassis_name, c1_name)
+        self.assertEqual(c1.priority, 0)
+
+    def test_lrp_set_multiple_gwc(self):
+        lrp = self._lrp_add(None)
+        c1_name, c2_name = [utils.get_rand_device_name() for _ in range(2)]
+        for gwc in [c1_name, c2_name]:
+            self.api.lrp_set_gateway_chassis(lrp.uuid, gwc).execute(
+                check_error=True)
+        c1 = self.api.lookup('Gateway_Chassis', "%s_%s" % (lrp.name, c1_name))
+        c2 = self.api.lookup('Gateway_Chassis', "%s_%s" % (lrp.name, c2_name))
+        lrp_gwcs = self.api.lrp_get_gateway_chassis(lrp.uuid).execute(
+            check_error=True)
+        self.assertIn(c1, lrp_gwcs)
+        self.assertIn(c2, lrp_gwcs)
+
+    def test_lrp_del_gateway_chassis(self):
+        c1_name = utils.get_rand_device_name()
+        lrp = self._lrp_add(None, gateway_chassis=[c1_name])
+        c1 = self.api.lookup('Gateway_Chassis', "%s_%s" % (lrp.name, c1_name))
+        self.assertEqual(lrp.gateway_chassis, [c1])
+        self.api.lrp_del_gateway_chassis(lrp.uuid, c1_name).execute(
+            check_error=True)
+        self.assertEqual(lrp.gateway_chassis, [])
+        self.assertRaises(idlutils.RowNotFound,
+                          self.api.lookup,
+                          'Gateway_Chassis', "%s_%s" % (lrp.name, c1_name))
+
+    def test_lrp_del_gateway_chassis_wrong_chassis(self):
+        lrp = self._lrp_add(None)
+        cmd = self.api.lrp_del_gateway_chassis(lrp.uuid, "fake_chassis")
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_lrp_del_gateway_chassis_if_exist(self):
+        lrp = self._lrp_add(None)
+        self.api.lrp_del_gateway_chassis(
+            lrp.uuid, "fake_chassis", if_exists=True
+        ).execute(check_error=True)
+
 
 class TestLoadBalancerOps(OvnNorthboundTest):
 
