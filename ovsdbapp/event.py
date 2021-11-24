@@ -12,9 +12,20 @@
 
 import abc
 import atexit
+import itertools
 import logging
 import queue
 import threading
+
+# Several supported distros don't package sortedcontainers. For this reason
+# python-ovs, which requires it for indexing support, has an in-tree copy of
+# it. We already require sortedcontainers through python-ovs' dependency, so
+# to avoid issues with distro packaging, we don't add sortedcontainers as a
+# hard direct requirement of ovsdbapp, and use python-ovs' if it is missing.
+try:
+    import sortedcontainers
+except ImportError:
+    from ovs.compat import sortedcontainers
 
 LOG = logging.getLogger(__name__)
 STOP_EVENT = ("STOP", None, None, None)
@@ -26,6 +37,7 @@ class RowEvent(object, metaclass=abc.ABCMeta):
     ROW_DELETE = "delete"
     ONETIME = False
     event_name = 'RowEvent'
+    priority = 20
 
     def __init__(self, events, table, conditions, old_conditions=None):
         self.table = table
@@ -43,7 +55,8 @@ class RowEvent(object, metaclass=abc.ABCMeta):
     def __eq__(self, other):
         try:
             return (self.key == other.key and
-                    self.conditions == other.conditions)
+                    self.conditions == other.conditions and
+                    self.priority == other.priority)
         except AttributeError:
             return False
 
@@ -51,9 +64,11 @@ class RowEvent(object, metaclass=abc.ABCMeta):
         return not self == other
 
     def __repr__(self):
-        return "%s(events=%r, table=%r, conditions=%r, old_conditions=%r)" % (
-            self.__class__.__name__, self.events, self.table, self.conditions,
-            self.old_conditions)
+        return ("%s(events=%r, table=%r, conditions=%r, old_conditions=%r), "
+                "priority=%d" %
+                (self.__class__.__name__, self.events,
+                 self.table, self.conditions, self.old_conditions,
+                 self.priority))
 
     @abc.abstractmethod
     def matches(self, event, row, old=None):
@@ -74,6 +89,7 @@ class RowEvent(object, metaclass=abc.ABCMeta):
 class WaitEvent(RowEvent):
     event_name = 'WaitEvent'
     ONETIME = True
+    priority = 10
 
     def __init__(self, *args, **kwargs):
         self.event = threading.Event()
@@ -93,7 +109,7 @@ class WaitEvent(RowEvent):
 
 class RowEventHandler(object):
     def __init__(self):
-        self._watched_events = set()
+        self._queues = sortedcontainers.SortedDict(lambda p: -p)
         self._lock = threading.Lock()
         self.notifications = queue.Queue()
         self.notify_thread = threading.Thread(target=self.notify_loop)
@@ -103,6 +119,19 @@ class RowEventHandler(object):
 
     def start(self):
         self.notify_thread.start()
+
+    def _get_queue(self, event):
+        return self._queues.setdefault(event.priority, set())
+
+    @property
+    def _watched_events(self):
+        return itertools.chain(*self._queues.values())
+
+    def _add(self, event):
+        self._get_queue(event).add(event)
+
+    def _discard(self, event):
+        self._get_queue(event).discard(event)
 
     @staticmethod
     def match(candidate, event, row, updates):
@@ -119,21 +148,21 @@ class RowEventHandler(object):
 
     def watch_event(self, event):
         with self._lock:
-            self._watched_events.add(event)
+            self._add(event)
 
     def watch_events(self, events):
         with self._lock:
             for event in events:
-                self._watched_events.add(event)
+                self._add(event)
 
     def unwatch_event(self, event):
         with self._lock:
-            self._watched_events.discard(event)
+            self._discard(event)
 
     def unwatch_events(self, events):
         with self._lock:
             for event in events:
-                self._watched_events.discard(event)
+                self._discard(event)
 
     def shutdown(self):
         self.notifications.put(STOP_EVENT)

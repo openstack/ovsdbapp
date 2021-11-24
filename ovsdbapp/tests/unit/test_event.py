@@ -18,9 +18,12 @@ from ovsdbapp.tests import base
 
 
 class TestEvent(event.RowEvent):
-    def __init__(self):
-        super(TestEvent, self).__init__(
-            (self.ROW_CREATE,), "FakeTable", (("col", "=", "val"),))
+    def __init__(self, events=(event.RowEvent.ROW_CREATE,),
+                 table="FakeTable", conditions=(("col", "=", "val"),),
+                 priority=None):
+        super().__init__(events, table, conditions)
+        if priority is not None:
+            self.priority = priority
 
     def run(self):
         pass
@@ -29,7 +32,56 @@ class TestEvent(event.RowEvent):
         pass
 
 
+class OtherTestEvent(TestEvent):
+    pass
+
+
 class TestRowEvent(base.TestCase):
     def test_compare_stop_event(self):
         r = TestEvent()
         self.assertNotEqual((r, "fake", "fake", "fake"), event.STOP_EVENT)
+
+    def test_compare_equality(self):
+        self.assertEqual(TestEvent(), TestEvent())
+        self.assertNotEqual(TestEvent(), TestEvent(table="NotFaketable"))
+        self.assertNotEqual(TestEvent(), TestEvent(conditions=None))
+        self.assertNotEqual(TestEvent(priority=1), TestEvent(priority=2))
+        self.assertNotEqual(TestEvent(), OtherTestEvent())
+
+
+class TestRowEventHandler(base.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.handler = event.RowEventHandler()
+        self.assertEqual(0, len(tuple(self.handler._watched_events)))
+
+    def test_watch_event(self):
+        event = TestEvent()
+        expected = (event,)
+        self.handler.watch_event(event)
+        self.assertCountEqual(expected, self.handler._watched_events)
+        return expected
+
+    def test_watch_events(self):
+        events = [TestEvent(priority=r) for r in range(10)]
+        expected = list(reversed(events))
+        self.handler.watch_events(events)
+        self.assertEqual(expected, list(self.handler._watched_events))
+        return expected
+
+    def test_unwatch_event(self):
+        expected = self.test_watch_events()
+        removed = expected.pop(5)
+        self.handler.unwatch_event(removed)
+        self.assertEqual(expected, list(self.handler._watched_events))
+
+    def test_unwatch_events(self):
+        expected = self.test_watch_events()
+        removed = [expected.pop(5), expected.pop(7)]
+        self.handler.unwatch_events(removed)
+        self.assertEqual(expected, list(self.handler._watched_events))
+
+    def test_add_duplicate(self):
+        self.handler.watch_event(TestEvent())
+        self.handler.watch_event(TestEvent())
+        self.assertCountEqual(self.handler._watched_events, [TestEvent()])
