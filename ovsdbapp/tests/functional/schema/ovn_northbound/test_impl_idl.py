@@ -236,6 +236,116 @@ class TestAclOps(OvnNorthboundTest):
         self.assertIn(r2, acls)
 
 
+class TestAddressSetOps(OvnNorthboundTest):
+    def setUp(self):
+        super(TestAddressSetOps, self).setUp()
+        self.table = self.api.tables['Address_Set']
+
+    def _addr_set_add(self, name=None, *args, **kwargs):
+        if name is None:
+            name = utils.get_rand_name()
+        fix = self.useFixture(fixtures.AddressSetFixture(self.api, name,
+                                                         *args, **kwargs))
+        self.assertIn(fix.obj.uuid, self.table.rows)
+        return fix.obj
+
+    def _test_addr_set_get(self, col):
+        addr_set = self._addr_set_add()
+        val = getattr(addr_set, col)
+        found = self.api.address_set_get(val).execute(check_error=True)
+        self.assertEqual(addr_set, found)
+
+    def test_addr_set_get_uuid(self):
+        self._test_addr_set_get('uuid')
+
+    def test_addr_set_get_name(self):
+        self._test_addr_set_get('name')
+
+    def test_addr_set_add_name(self):
+        name = utils.get_rand_device_name()
+        addr_set = self._addr_set_add(name)
+        self.assertEqual(name, addr_set.name)
+
+    def test_addr_set_add_exists(self):
+        name = utils.get_rand_device_name()
+        self._addr_set_add(name)
+        cmd = self.api.address_set_add(name)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_addr_set_add_may_exist(self):
+        name = utils.get_rand_device_name()
+        addr_set = self._addr_set_add(name)
+        addr_set2 = self.api.address_set_add(
+            name, may_exist=True).execute(check_error=True)
+        self.assertEqual(addr_set, addr_set2)
+
+    def test_addr_set_add_with_addresses(self):
+        addresses = ['192.168.0.1', '192.168.0.2']
+        addr_set = self._addr_set_add(addresses=addresses)
+        self.assertEqual(addresses, addr_set.addresses)
+
+    def test_addr_set_del(self):
+        addr_set = self._addr_set_add()
+        self.api.address_set_del(addr_set.uuid).execute(check_error=True)
+        self.assertNotIn(addr_set.uuid, self.table.rows)
+
+    def test_addr_set_del_by_name(self):
+        name = utils.get_rand_device_name()
+        self._addr_set_add(name)
+        self.api.address_set_del(name).execute(check_error=True)
+
+    def test_addr_set_del_no_exist(self):
+        name = utils.get_rand_device_name()
+        cmd = self.api.address_set_del(name)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_addr_set_del_if_exists(self):
+        name = utils.get_rand_device_name()
+        self.api.address_set_del(
+            name, if_exists=True).execute(check_error=True)
+
+    def test_addr_set_list(self):
+        addr_sets = {self._addr_set_add() for _ in range(3)}
+        found_sets = set(self.api.address_set_list().execute(check_error=True))
+        self.assertTrue(addr_sets.issubset(found_sets))
+
+    def test_addr_set_add_addresses(self):
+        addresses = ['192.168.0.1', '192.168.0.2']
+        addr_set = self._addr_set_add()
+
+        self.api.address_set_add_addresses(
+            addr_set.uuid, addresses).execute(check_error=True)
+        self.assertEqual(addresses, addr_set.addresses)
+
+        self.api.address_set_add_addresses(
+            addr_set.uuid, addresses).execute(check_error=True)
+        self.assertEqual(addresses, addr_set.addresses)
+
+    def test_addr_set_remove_addresses(self):
+        addresses = ['192.168.0.1', '192.168.0.2']
+        addr_set = self._addr_set_add(addresses=addresses)
+
+        self.api.address_set_remove_addresses(
+            addr_set.uuid, addresses).execute(check_error=True)
+        self.assertEqual(addr_set.addresses, [])
+
+        self.api.address_set_remove_addresses(
+            addr_set.uuid, addresses).execute(check_error=True)
+        self.assertEqual(addr_set.addresses, [])
+
+    def test_addr_set_add_remove_addresses_by_str(self):
+        address = "192.168.0.1"
+        addr_set = self._addr_set_add()
+
+        self.api.address_set_add_addresses(
+            addr_set.uuid, address).execute(check_error=True)
+        self.assertEqual([address], addr_set.addresses)
+
+        self.api.address_set_remove_addresses(
+            addr_set.uuid, address).execute(check_error=True)
+        self.assertEqual([], addr_set.addresses)
+
+
 class TestQoSOps(OvnNorthboundTest):
     def setUp(self):
         super(TestQoSOps, self).setUp()

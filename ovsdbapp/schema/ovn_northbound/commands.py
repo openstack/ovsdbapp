@@ -214,6 +214,88 @@ class PgAclListCommand(_AclListHelper):
     lookup_table = 'Port_Group'
 
 
+class AddressSetAddCommand(cmd.AddCommand):
+    table_name = 'Address_Set'
+
+    def __init__(self, api, name, addresses=None, may_exist=False):
+        super().__init__(api)
+        self.name = name
+        self.addresses = [str(netaddr.IPAddress(address))
+                          for address in addresses or []]
+        self.may_exist = may_exist
+
+    def run_idl(self, txn):
+        address_set = self.api.lookup(self.table_name, self.name, None)
+        if address_set:
+            if self.may_exist:
+                self.result = rowview.RowView(address_set)
+                return
+            raise RuntimeError("Address set %s exists" % self.name)
+
+        address_set = txn.insert(self.api.tables[self.table_name])
+        address_set.name = self.name
+        if self.addresses:
+            address_set.addresses = self.addresses
+        self.result = address_set.uuid
+
+
+class AddressSetDelCommand(cmd.BaseCommand):
+    table_name = 'Address_Set'
+
+    def __init__(self, api, address_set, if_exists=False):
+        super().__init__(api)
+        self.address_set = address_set
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        try:
+            address_set = self.api.lookup(self.table_name, self.address_set)
+            address_set.delete()
+        except idlutils.RowNotFound as e:
+            if self.if_exists:
+                return
+            msg = "Address set %s does not exist" % self.address_set
+            raise RuntimeError(msg) from e
+
+
+class AddressSetGetCommand(cmd.BaseGetRowCommand):
+    table = 'Address_Set'
+
+
+class AddressSetListCommand(cmd.ReadOnlyCommand):
+    table = 'Address_Set'
+
+    def run_idl(self, txn):
+        self.result = [rowview.RowView(r) for
+                       r in self.api.tables[self.table].rows.values()]
+
+
+class AddressSetUpdateAddressesCommand(cmd.BaseCommand):
+    table_name = 'Address_Set'
+
+    def __init__(self, api, address_set, addresses):
+        super().__init__(api)
+        self.address_set = address_set
+        if isinstance(addresses, (str, bytes)):
+            addresses = [addresses]
+        self.addresses = [str(netaddr.IPAddress(address))
+                          for address in addresses]
+
+
+class AddressSetAddAddressesCommand(AddressSetUpdateAddressesCommand):
+    def run_idl(self, txn):
+        address_set = self.api.lookup(self.table_name, self.address_set)
+        for address in self.addresses:
+            address_set.addvalue('addresses', address)
+
+
+class AddressSetRemoveAddressCommand(AddressSetUpdateAddressesCommand):
+    def run_idl(self, txn):
+        address_set = self.api.lookup(self.table_name, self.address_set)
+        for address in self.addresses:
+            address_set.delvalue('addresses', address)
+
+
 class QoSAddCommand(cmd.AddCommand):
     table_name = 'QoS'
 

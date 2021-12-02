@@ -207,6 +207,68 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def address_set_add(self, name, addresses=None, may_exist=False):
+        """Create a set of addresses named 'name'
+
+        :param name:      The name of the address set
+        :type name:       string
+        :param addresses: One or more IP addresses to add to the address set
+        :type addresses:  list of strings
+        :param may_exist: If True, don't fail if the address set already exists
+        :type may_exist:  boolean
+        :returns:         :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def address_set_del(self, address_set, if_exists=False):
+        """Delete a set of addresses 'address_set'
+
+        :param address_set: The name of the address set
+        :type address_set:  string or uuid.UUID
+        :param if_exists:   Do not fail if the Address_set row does not exist
+        :type if_exists:    bool
+        :returns:           :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def address_set_get(self, address_set):
+        """Get a set of addresses for 'address_set'
+
+        :param address_set: The name of the address set
+        :type address_set:  string or uuid.UUID
+        :returns:           :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def address_set_list(self):
+        """Get all sets of addresses
+
+        :returns: :class:`Command` with RowView list result
+        """
+
+    @abc.abstractmethod
+    def address_set_add_addresses(self, address_set, addresses):
+        """Add a list of addresses to 'address_set'
+
+        :param address_set: The name of the address set
+        :type address_set:  string or uuid.UUID
+        :param addresses:   One or more IP addresses to add to the address set
+        :type addresses:    string or list of strings
+        :returns:           :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def address_set_remove_addresses(self, address_set, addresses):
+        """Remove a list of addresses from 'address_set'
+
+        :param address_set: The name of the address set
+        :type address_set:  string or uuid.UUID
+        :param addresses:   One or more IP addresses to remove from address set
+        :type addresses:    string of list of strings
+        :returns:           :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
     def qos_add(self, switch, direction, priority, match, rate=None,
                 burst=None, dscp=None, may_exist=False, **columns):
         """Add an Qos rules to 'switch'
