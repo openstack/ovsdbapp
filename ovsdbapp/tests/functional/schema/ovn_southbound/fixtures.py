@@ -10,7 +10,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from ovsdbapp.schema.ovn_southbound import impl_idl
 from ovsdbapp.tests.functional.schema import fixtures
+
+
+class SbApiFixture(fixtures.ApiImplFixture):
+    api_cls = impl_idl.OvnSbApiIdlImpl
 
 
 class ChassisFixture(fixtures.ImplIdlFixture):
