@@ -81,9 +81,11 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.PgAclListCommand(self, port_group)
 
     def qos_add(self, switch, direction, priority, match, rate=None,
-                burst=None, dscp=None, may_exist=False, **columns):
+                burst=None, dscp=None, external_ids_match=None,
+                may_exist=False, **columns):
         return cmd.QoSAddCommand(self, switch, direction, priority, match,
-                                 rate, burst, dscp, may_exist, **columns)
+                                 rate, burst, dscp, external_ids_match,
+                                 may_exist, **columns)
 
     def qos_del(self, switch, direction=None, priority=None, match=None,
                 if_exists=True):
