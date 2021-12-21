@@ -350,7 +350,7 @@ class TestQoSOps(OvnNorthboundTest):
     def setUp(self):
         super(TestQoSOps, self).setUp()
         self.switch = self.useFixture(
-            fixtures.LogicalSwitchFixture(self.api)).obj
+            fixtures.LogicalSwitchFixture(self.api, name='LS_for_QoS')).obj
 
     def _qos_add(self, *args, **kwargs):
         cmd = self.api.qos_add(self.switch.uuid, *args, **kwargs)
@@ -464,6 +464,9 @@ class TestQoSOps(OvnNorthboundTest):
                                    dscp=10)
 
     def test_qos_delete_external_ids(self):
+        # NOTE(ralonsoh): the deletion method uses the LS name (first) and the
+        # UUID (second), in order to check that api.lookup() is working with
+        # both.
         self._create_fip_qoses()
         self.api.qos_del_ext_ids(self.switch.name,
                                  {'key1': 'value1'}).execute(check_error=True)
@@ -472,7 +475,7 @@ class TestQoSOps(OvnNorthboundTest):
         self.assertCountEqual([self.qos_2, self.qos_3], qos_rules)
 
         self.api.qos_del_ext_ids(
-            self.switch.name,
+            self.switch.uuid,
             {'key3': 'value3', 'key4': 'value4'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
@@ -486,14 +489,14 @@ class TestQoSOps(OvnNorthboundTest):
             self.switch.uuid).execute(check_error=True)
         self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
 
-        self.api.qos_del_ext_ids(self.switch.name,
+        self.api.qos_del_ext_ids(self.switch.uuid,
                                  {'key1': 'value_z'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
         self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
 
         self.api.qos_del_ext_ids(
-            self.switch.name,
+            self.switch.uuid,
             {'key3': 'value3', 'key4': 'value_z'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
