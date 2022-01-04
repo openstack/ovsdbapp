@@ -10,7 +10,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from ovsdbapp.tests.functional import base
 from ovsdbapp.tests.functional.schema.ovn_ic_northbound import fixtures
 from ovsdbapp.tests import utils
@@ -18,8 +17,17 @@ from ovsdbapp.tests import utils
 
 class OvnIcNorthboundTest(base.FunctionalTestCase):
     schemas = ['OVN_IC_Northbound']
+    fixture_class = base.venv.OvsOvnIcVenvFixture
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.schema_map = cls.schema_map.copy()
+        cls.schema_map['OVN_IC_Northbound'] = cls.ovsvenv.ovn_icnb_connection
 
     def setUp(self):
+        if not self.ovsvenv.has_icnb():
+            self.skipTest("Installed version of OVN does not support ICNB")
         super(OvnIcNorthboundTest, self).setUp()
         self.api = self.useFixture(
             fixtures.IcNbApiFixture(self.connection)).obj

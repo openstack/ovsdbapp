@@ -22,23 +22,29 @@ from ovsdbapp import venv
 
 class FunctionalTestCase(base.TestCase):
     _connections = None
-    ovsvenv = venv.OvsOvnVenvFixture(tempfile.mkdtemp(),
-                                     ovsdir=os.getenv('OVS_SRCDIR'),
-                                     ovndir=os.getenv('OVN_SRCDIR'),
-                                     remove=not bool(os.getenv('KEEP_VENV')))
-    atexit.register(ovsvenv.cleanUp)
-    ovsvenv.setUp()
-    schema_map = {'Open_vSwitch': ovsvenv.ovs_connection,
-                  'OVN_Northbound': ovsvenv.ovnnb_connection,
-                  'OVN_Southbound': ovsvenv.ovnsb_connection,
-                  'OVN_IC_Northbound': ovsvenv.ovn_icnb_connection,
-                  }
-    ovsvenvlog = None
-    if os.getenv('KEEP_VENV') and os.getenv('VIRTUAL_ENV'):
-        ovsvenvlog = open(os.path.join(os.getenv('VIRTUAL_ENV'),
-                                       'ovsvenv.%s' % os.getpid()), 'a+')
-        atexit.register(ovsvenvlog.close)
-        ovsvenvlog.write("%s\n" % ovsvenv.venv)
+    fixture_class = venv.OvsOvnVenvFixture
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.ovsvenv = cls.fixture_class(
+            tempfile.mkdtemp(),
+            ovsdir=os.getenv('OVS_SRCDIR'),
+            ovndir=os.getenv('OVN_SRCDIR'),
+            remove=not bool(os.getenv('KEEP_VENV')))
+        atexit.register(cls.ovsvenv.cleanUp)
+        cls.ovsvenv.setUp()
+        cls.schema_map = {'Open_vSwitch': cls.ovsvenv.ovs_connection,
+                          'OVN_Northbound': cls.ovsvenv.ovnnb_connection,
+                          'OVN_Southbound': cls.ovsvenv.ovnsb_connection,
+                          }
+        cls.ovsvenvlog = None
+        if os.getenv('KEEP_VENV') and os.getenv('VIRTUAL_ENV'):
+            cls.ovsvenvlog = open(
+                os.path.join(os.getenv('VIRTUAL_ENV'),
+                             'ovsvenv.%s' % os.getpid()), 'a+')
+            atexit.register(cls.ovsvenvlog.close)
+            cls.ovsvenvlog.write("%s\n" % cls.ovsvenv.venv)
 
     @classmethod
     def venv_log(cls, val):
