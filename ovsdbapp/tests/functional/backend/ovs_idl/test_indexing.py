@@ -13,8 +13,8 @@
 from unittest import mock
 
 from ovsdbapp.backend.ovs_idl import idlutils
-from ovsdbapp.schema.ovn_northbound import impl_idl
 from ovsdbapp.tests.functional import base
+from ovsdbapp.tests.functional.schema.ovn_northbound import fixtures
 from ovsdbapp.tests import utils
 
 
@@ -23,7 +23,8 @@ class TestOvnNbIndex(base.FunctionalTestCase):
 
     def setUp(self):
         super(TestOvnNbIndex, self).setUp()
-        self.api = impl_idl.OvnNbApiIdlImpl(self.connection)
+        self.api = self.useFixture(
+            fixtures.NbApiFixture(self.connection)).obj
 
     def test_find(self):
         # This test will easily time out if indexing isn't used
@@ -46,22 +47,11 @@ class TestOvnNbIndex(base.FunctionalTestCase):
 class TestOvnNbWithoutIndex(base.FunctionalTestCase):
     schemas = ['OVN_Northbound']
 
-    # Due to ovsdbapp by default creating singleton connections, it's possible
-    # that a test is run where we already have a connection/idl set up that
-    # already has indexing set up on it.
-    class NewNbApiIdlImpl(impl_idl.OvnNbApiIdlImpl):
-        @property
-        def ovsdb_connection(self):
-            return self._ovsdb_connection
-
-        @ovsdb_connection.setter
-        def ovsdb_connection(self, connection):
-            self._ovsdb_connection = connection
-
     def setUp(self):
         super(TestOvnNbWithoutIndex, self).setUp()
-        self.api = self.NewNbApiIdlImpl(self.connection, start=False,
-                                        auto_index=False)
+        self.api = self.useFixture(
+            fixtures.NbApiFixture(self.connection, start=False,
+                                  auto_index=False)).obj
 
     @mock.patch.object(idlutils, 'table_lookup')
     def test_create_index(self, table_lookup):

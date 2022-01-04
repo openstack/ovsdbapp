@@ -15,7 +15,6 @@ import testscenarios
 
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants as const
-from ovsdbapp.schema.ovn_northbound import impl_idl
 from ovsdbapp.tests.functional import base
 from ovsdbapp.tests.functional.schema.ovn_northbound import fixtures
 from ovsdbapp.tests import utils
@@ -27,7 +26,7 @@ class OvnNorthboundTest(base.FunctionalTestCase):
 
     def setUp(self):
         super(OvnNorthboundTest, self).setUp()
-        self.api = impl_idl.OvnNbApiIdlImpl(self.connection)
+        self.api = self.useFixture(fixtures.NbApiFixture(self.connection)).obj
 
 
 class TestLogicalSwitchOps(OvnNorthboundTest):

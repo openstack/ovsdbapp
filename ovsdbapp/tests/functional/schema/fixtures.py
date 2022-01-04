@@ -32,3 +32,19 @@ class ImplIdlFixture(fixtures.Fixture):
         del_value = getattr(self.obj, self.delete_id)
         self.addCleanup(delete_fn(del_value,
                         **self.delete_args).execute, check_error=True)
+
+
+class ApiImplFixture(fixtures.Fixture):
+    api_cls = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.args = args
+        self.kwargs = kwargs
+        # Create a unique subclass for every api_cls so that none of
+        # them share an ovsdb_connection, a class attribute that
+        # different tests running in the same process can trample on
+        self.cls = type('Test' + self.api_cls.__name__, (self.api_cls,), {})
+
+    def _setUp(self):
+        self.obj = self.cls(*self.args, **self.kwargs)

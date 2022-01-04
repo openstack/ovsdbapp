@@ -12,11 +12,10 @@
 
 from ovsdbapp.backend.ovs_idl import event as ovsdb_event
 from ovsdbapp.backend.ovs_idl import idlutils
-from ovsdbapp.schema.ovn_northbound import impl_idl as nbidl
-from ovsdbapp.schema.ovn_southbound import impl_idl
 from ovsdbapp.tests.functional import base
+from ovsdbapp.tests.functional.schema.ovn_northbound import fixtures as nbfix
 from ovsdbapp.tests.functional.schema.ovn_southbound import event
-from ovsdbapp.tests.functional.schema.ovn_southbound import fixtures
+from ovsdbapp.tests.functional.schema.ovn_southbound import fixtures as sbfix
 from ovsdbapp.tests import utils
 
 # Keep the class here for backward compatiblity
@@ -28,14 +27,16 @@ class OvnSouthboundTest(base.FunctionalTestCase):
 
     def setUp(self):
         super(OvnSouthboundTest, self).setUp()
-        self.api = impl_idl.OvnSbApiIdlImpl(self.connection['OVN_Southbound'])
-        self.nbapi = nbidl.OvnNbApiIdlImpl(self.connection['OVN_Northbound'])
+        self.api = self.useFixture(
+            sbfix.SbApiFixture(self.connection['OVN_Southbound'])).obj
+        self.nbapi = self.useFixture(
+            nbfix.NbApiFixture(self.connection['OVN_Northbound'])).obj
         self.handler = ovsdb_event.RowEventHandler()
         self.api.idl.notify = self.handler.notify
 
     def _chassis_add(self, encap_types, encap_ip, *args, **kwargs):
         chassis = kwargs.pop('chassis', utils.get_rand_device_name())
-        c = self.useFixture(fixtures.ChassisFixture(
+        c = self.useFixture(sbfix.ChassisFixture(
             self.api, chassis=chassis, encap_types=encap_types,
             encap_ip=encap_ip, *args, **kwargs)).obj
         self.assertIn(c, self.api.chassis_list().execute(check_error=True))

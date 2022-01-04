@@ -16,8 +16,8 @@ import uuid
 
 from ovsdbapp.backend.ovs_idl import event
 from ovsdbapp.backend.ovs_idl import idlutils
-from ovsdbapp.schema.ovn_northbound import impl_idl
 from ovsdbapp.tests.functional import base
+from ovsdbapp.tests.functional.schema.ovn_northbound import fixtures
 
 
 class TestOvnNbIndex(base.FunctionalTestCase):
@@ -25,7 +25,7 @@ class TestOvnNbIndex(base.FunctionalTestCase):
 
     def setUp(self):
         super(TestOvnNbIndex, self).setUp()
-        self.api = impl_idl.OvnNbApiIdlImpl(self.connection)
+        self.api = self.useFixture(fixtures.NbApiFixture(self.connection)).obj
         self.lsp_name = str(uuid.uuid4())
         self.a = None
 
