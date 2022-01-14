@@ -410,8 +410,7 @@ class QoSDelExtIdCommand(cmd.BaseCommand):
 
     def run_idl(self, txn):
         try:
-            lswitch = idlutils.row_by_value(self.api.idl, 'Logical_Switch',
-                                            'name', self.lswitch)
+            lswitch = self.api.lookup('Logical_Switch', self.lswitch)
         except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
