@@ -12,6 +12,7 @@
 
 import netaddr
 import testscenarios
+import uuid
 
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants as const
@@ -361,7 +362,7 @@ class TestQoSOps(OvnNorthboundTest):
         self.assertEqual(cmd.rate, row.bandwidth.get('rate', None))
         self.assertEqual(cmd.burst, row.bandwidth.get('burst', None))
         self.assertEqual(cmd.dscp, row.action.get('dscp', None))
-        return row
+        return idlutils.frozen_row(row)
 
     def test_qos_add_dscp(self):
         self._qos_add('from-lport', 0, 'output == "fake_port" && ip', dscp=33)
@@ -396,9 +397,80 @@ class TestQoSOps(OvnNorthboundTest):
 
     def test_qos_add_may_exist(self):
         args = ('from-lport', 0, 'output == "fake_port" && ip', 1000)
-        row = self._qos_add(*args)
-        row2 = self._qos_add(*args, may_exist=True)
+        row = self._qos_add(*args, external_ids={'port_id': '1'})
+        row2 = self._qos_add(*args, external_ids={'port_id': '1'},
+                             may_exist=True)
         self.assertEqual(row, row2)
+
+    def test_qos_add_may_exist_update_using_external_ids_match(self):
+        args = ('from-lport', 0, 'output == "fake_port" && ip')
+        kwargs = {'rate': 1000, 'burst': 800, 'dscp': 16,
+                  'external_ids': {'port_id': '1'}}
+        row = self._qos_add(*args, **kwargs)
+
+        # Update QoS parameters: rate, burst and DSCP.
+        kwargs = {'rate': 1200, 'burst': 900, 'dscp': 24}
+        row2 = self._qos_add(*args, external_ids_match={'port_id': '1'},
+                             may_exist=True, **kwargs)
+        self.assertEqual(row.uuid, row2.uuid)
+        self.assertEqual(row2.bandwidth, {'rate': 1200, 'burst': 900})
+        self.assertEqual(row2.action, {'dscp': 24})
+
+        # Remove QoS parameters.
+        kwargs = {'rate': 1500, 'burst': 1100}
+        row3 = self._qos_add(*args, external_ids_match={'port_id': '1'},
+                             may_exist=True, **kwargs)
+        self.assertEqual(row.uuid, row3.uuid)
+        self.assertEqual(row3.bandwidth, {'rate': 1500, 'burst': 1100})
+        self.assertEqual(row3.action, {})
+
+        kwargs = {'rate': 2000}
+        row4 = self._qos_add(*args, external_ids_match={'port_id': '1'},
+                             may_exist=True, **kwargs)
+        self.assertEqual(row.uuid, row4.uuid)
+        self.assertEqual(row4.bandwidth, {'rate': 2000})
+        self.assertEqual(row4.action, {})
+
+        kwargs = {'dscp': 16}
+        row5 = self._qos_add(*args, external_ids_match={'port_id': '1'},
+                             may_exist=True, **kwargs)
+        self.assertEqual(row.uuid, row5.uuid)
+        self.assertEqual(row5.bandwidth, {})
+        self.assertEqual(row5.action, {'dscp': 16})
+
+    def test_qos_add_may_exist_using_external_ids_match(self):
+        _uuid = str(uuid.uuid4())
+        _uuid2 = str(uuid.uuid4())
+        for key in ('neutron:port_id', 'neutron:fip_id'):
+            args = ('from-lport', 0, 'output == "fake_port" && ip')
+            kwargs = {'rate': 1000, 'burst': 800, 'dscp': 16}
+            self._qos_add(*args, external_ids={key: _uuid}, **kwargs)
+
+            # "args" in this second call are different, "QoSAddCommand" will
+            # use the "external_ids_match" reference passed instead to match
+            # the QoS rules.
+            args = ('from-lport', 1, 'output == "fake_port" && ip')
+            self._qos_add(*args, external_ids_match={key: _uuid},
+                          may_exist=True, **kwargs)
+            qos_rules = self.api.qos_list(self.switch.uuid).execute(
+                check_error=True)
+            self.assertEqual(1, len(qos_rules))
+
+            # This call will update the "external_ids" to "_uuid2". Before
+            # changing it, "_uuid" will be used to find the register.
+            self._qos_add(*args, external_ids_match={key: _uuid},
+                          external_ids={key: _uuid2}, may_exist=True, **kwargs)
+            qos_rules = self.api.qos_list(self.switch.uuid).execute(
+                check_error=True)
+            self.assertEqual(1, len(qos_rules))
+
+            # The deletion call uses "_uuid2" because it was changed in the
+            # previous call.
+            self.api.qos_del_ext_ids(self.switch.name,
+                                     {key: _uuid2}).execute(check_error=True)
+            qos_rules = self.api.qos_list(self.switch.uuid).execute(
+                check_error=True)
+            self.assertEqual(0, len(qos_rules))
 
     def test_qos_add_extids(self):
         external_ids = {'mykey': 'myvalue', 'yourkey': 'yourvalue'}
@@ -417,8 +489,9 @@ class TestQoSOps(OvnNorthboundTest):
         r2 = self._qos_add('to-lport', 0, 'output == "fake_port"', 1000)
         self.api.qos_del(self.switch.uuid, 'from-lport').execute(
             check_error=True)
-        self.assertNotIn(r1, self.switch.qos_rules)
-        self.assertIn(r2, self.switch.qos_rules)
+        qos_rules = [idlutils.frozen_row(row) for row in self.switch.qos_rules]
+        self.assertNotIn(r1, qos_rules)
+        self.assertIn(r2, qos_rules)
 
     def test_qos_del_direction_priority_match(self):
         r1 = self._qos_add('from-lport', 0, 'output == "fake_port"', 1000)
@@ -426,8 +499,9 @@ class TestQoSOps(OvnNorthboundTest):
         cmd = self.api.qos_del(self.switch.uuid,
                                'from-lport', 0, 'output == "fake_port"')
         cmd.execute(check_error=True)
-        self.assertNotIn(r1, self.switch.qos_rules)
-        self.assertIn(r2, self.switch.qos_rules)
+        qos_rules = [idlutils.frozen_row(row) for row in self.switch.qos_rules]
+        self.assertNotIn(r1, qos_rules)
+        self.assertIn(r2, qos_rules)
 
     def test_qos_del_priority_without_match(self):
         self.assertRaises(TypeError, self.api.qos_del, self.switch.uuid,
@@ -449,6 +523,7 @@ class TestQoSOps(OvnNorthboundTest):
         r2 = self._qos_add('from-lport', 1, 'output == "fake_port2"', 1000)
         qos_rules = self.api.qos_list(self.switch.uuid).execute(
             check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertIn(r1, qos_rules)
         self.assertIn(r2, qos_rules)
 
@@ -471,6 +546,7 @@ class TestQoSOps(OvnNorthboundTest):
                                  {'key1': 'value1'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertCountEqual([self.qos_2, self.qos_3], qos_rules)
 
         self.api.qos_del_ext_ids(
@@ -478,6 +554,7 @@ class TestQoSOps(OvnNorthboundTest):
             {'key3': 'value3', 'key4': 'value4'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertCountEqual([self.qos_3], qos_rules)
 
     def test_qos_delete_external_ids_wrong_keys_or_values(self):
@@ -486,12 +563,14 @@ class TestQoSOps(OvnNorthboundTest):
                                  {'key_z': 'value1'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
 
         self.api.qos_del_ext_ids(self.switch.uuid,
                                  {'key1': 'value_z'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
 
         self.api.qos_del_ext_ids(
@@ -499,6 +578,7 @@ class TestQoSOps(OvnNorthboundTest):
             {'key3': 'value3', 'key4': 'value_z'}).execute(check_error=True)
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
 
     def test_qos_delete_external_ids_empty_dict(self):
@@ -516,6 +596,7 @@ class TestQoSOps(OvnNorthboundTest):
         # No qos rule has been deleted from the correct logical switch.
         qos_rules = self.api.qos_list(
             self.switch.uuid).execute(check_error=True)
+        qos_rules = [idlutils.frozen_row(row) for row in qos_rules]
         self.assertCountEqual([self.qos_1, self.qos_2, self.qos_3], qos_rules)
 
 

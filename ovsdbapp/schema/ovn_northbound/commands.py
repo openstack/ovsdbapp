@@ -300,7 +300,8 @@ class QoSAddCommand(cmd.AddCommand):
     table_name = 'QoS'
 
     def __init__(self, api, switch, direction, priority, match, rate=None,
-                 burst=None, dscp=None, may_exist=False, **columns):
+                 burst=None, dscp=None, external_ids_match=None,
+                 may_exist=False, **columns):
         if direction not in ('from-lport', 'to-lport'):
             raise TypeError("direction must be either from-lport or to-lport")
         if not 0 <= priority <= const.ACL_PRIORITY_MAX:
@@ -317,6 +318,9 @@ class QoSAddCommand(cmd.AddCommand):
                              dscp, const.QOS_DSCP_MAX)
         if rate is None and dscp is None:
             raise ValueError("One of the rate or dscp must be configured")
+        if (external_ids_match is not None and
+                not isinstance(external_ids_match, dict)):
+            raise ValueError("external_ids_match must be None or a dictionary")
         super().__init__(api)
         self.switch = switch
         self.direction = direction
@@ -327,8 +331,12 @@ class QoSAddCommand(cmd.AddCommand):
         self.dscp = dscp
         self.may_exist = may_exist
         self.columns = columns
+        self.external_ids_match = external_ids_match
 
     def qos_match(self, row):
+        if self.external_ids_match:
+            return self.external_ids_match.items() <= row.external_ids.items()
+
         return (self.direction == row.direction and
                 self.priority == row.priority and
                 self.match == row.match)
@@ -337,10 +345,13 @@ class QoSAddCommand(cmd.AddCommand):
         ls = self.api.lookup('Logical_Switch', self.switch)
         for qos_rule in iter(r for r in ls.qos_rules if self.qos_match(r)):
             if self.may_exist:
-                self.result = rowview.RowView(qos_rule)
-                return
+                return self._update_qos(qos_rule)
             raise RuntimeError("QoS (%s, %s, %s) already exists" % (
                 self.direction, self.priority, self.match))
+
+        self._create_qos(txn, ls)
+
+    def _create_qos(self, txn, ls):
         row = txn.insert(self.api.tables[self.table_name])
         row.direction = self.direction
         row.priority = self.priority
@@ -354,6 +365,30 @@ class QoSAddCommand(cmd.AddCommand):
         self.set_columns(row, **self.columns)
         ls.addvalue('qos_rules', row)
         self.result = row.uuid
+
+    def _update_qos(self, qos_rule):
+        qos_rule.direction = self.direction
+        qos_rule.priority = self.priority
+        qos_rule.match = self.match
+        if self.rate:
+            qos_rule.setkey('bandwidth', 'rate', self.rate)
+            if self.burst:
+                qos_rule.setkey('bandwidth', 'burst', self.burst)
+            else:
+                qos_rule.delkey('bandwidth', 'burst')
+        else:
+            qos_rule.delkey('bandwidth', 'rate')
+            qos_rule.delkey('bandwidth', 'burst')
+
+        if self.dscp:
+            qos_rule.setkey('action', 'dscp', self.dscp)
+        else:
+            qos_rule.delkey('action', 'dscp')
+
+        for column, value in self.columns.items():
+            if getattr(qos_rule, column) != value:
+                self.set_column(qos_rule, column, value)
+        self.result = qos_rule.uuid
 
 
 class QoSDelCommand(cmd.BaseCommand):
