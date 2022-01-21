@@ -91,10 +91,17 @@ class Transaction(api.Transaction):
                           {'idx': i, 'cmd': command, 'n': attempts})
                 try:
                     command.run_idl(txn)
-                except Exception:
+                except Exception as e:
                     txn.abort()
                     if self.check_error:
                         raise
+                    if self.log_errors:
+                        LOG.error("txn n=%(n)d command(idx=%(idx)s): %(cmd)s ",
+                                  "aborted due to error: %(err)s",
+                                  {'idx': i,
+                                   'cmd': command,
+                                   'n': attempts,
+                                   'err': e})
             status = txn.commit_block()
             if status == txn.TRY_AGAIN:
                 LOG.debug("OVSDB transaction returned TRY_AGAIN, retrying")
