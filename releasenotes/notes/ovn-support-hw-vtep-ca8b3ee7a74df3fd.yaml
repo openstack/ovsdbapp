@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Added support for the "hardware_vtep" schema. The ``HwVtepApiIdlImpl`` class provides
+    interaction with "hw_vtep.db", adds support to add, delete and list registers rows of
+    "Logical_Switch" table. Also added support for some methods for working with MAC-addresses
+    ("clear-local-macs", "clear-remote-macs") and bindings ("bind-ls", "unbind-ls").
