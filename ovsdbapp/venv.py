@@ -32,6 +32,8 @@ class OvsVenvFixture(fixtures.Fixture):
         os.path.join(os.path.sep, 'usr', 'local', 'share', 'openvswitch'),
         os.path.join(os.path.sep, 'usr', 'share', 'openvswitch'))
 
+    OVS_SCHEMA = 'vswitch.ovsschema'
+
     def __init__(self, venv, ovsdir=None, dummy=DUMMY_OVERRIDE_ALL,
                  remove=False):
         """Initialize fixture
@@ -76,10 +78,10 @@ class OvsVenvFixture(fixtures.Fixture):
 
     @property
     def ovs_schema(self):
-        path = os.path.join(self.ovsdir, 'vswitchd', 'vswitch.ovsschema')
+        path = os.path.join(self.ovsdir, 'vswitchd', self.OVS_SCHEMA)
         if os.path.isfile(path):
             return path
-        return os.path.join(self.ovsdir, 'vswitch.ovsschema')
+        return os.path.join(self.ovsdir, self.OVS_SCHEMA)
 
     @property
     def dummy_arg(self):
@@ -275,3 +277,37 @@ class OvsOvnIcVenvFixture(OvsOvnVenvFixture):
     def init_processes(self):
         super().init_processes()
         self.call(['ovn-ic-nbctl', 'init'])
+
+
+class OvsVtepVenvFixture(OvsOvnVenvFixture):
+    VTEP_SCHEMA = 'vtep.ovsschema'
+
+    def __init__(self, venv, vtepdir=None, **kwargs):
+        if vtepdir and os.path.isdir(vtepdir):
+            self.PATH_VAR_TEMPLATE += ":{0}".format(vtepdir)
+        self.vtepdir = self._share_path(self.OVS_PATHS, vtepdir)
+        super().__init__(venv, **kwargs)
+
+    def _setUp(self):
+        if self.has_vtep:
+            super()._setUp()
+
+    @property
+    def vtep_schema(self):
+        return os.path.join(self.vtepdir, self.VTEP_SCHEMA)
+
+    @property
+    def has_vtep(self):
+        return os.path.isfile(self.vtep_schema)
+
+    def setup_dbs(self):
+        db_filename = 'vtep.conf'
+        super().setup_dbs()
+        self.create_db(db_filename, self.vtep_schema)
+        self.ovsdb_server_dbs.append(db_filename)
+
+    def init_processes(self):
+        super().init_processes()
+        # there are no 'init' method in vtep-ctl,
+        # but record in 'Global' table is needed
+        self.call(['vtep-ctl', 'show'])
