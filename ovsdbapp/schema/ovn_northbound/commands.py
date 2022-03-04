@@ -1012,6 +1012,41 @@ class LrpDelGatewayChassisCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
+class _LrpNetworksCommand(cmd.BaseCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port, networks, exists):
+        super().__init__(api)
+        self.port = port
+        self.exists = exists
+        if isinstance(networks, (str, bytes)):
+            networks = [networks]
+        self.networks = [str(netaddr.IPNetwork(network))
+                         for network in networks]
+
+
+class LrpAddNetworksCommand(_LrpNetworksCommand):
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        for network in self.networks:
+            if network in lrp.networks and not self.exists:
+                msg = "Network '%s' already exist in networks of port %s" % (
+                    network, lrp.uuid)
+                raise RuntimeError(msg)
+            lrp.addvalue('networks', network)
+
+
+class LrpDelNetworksCommand(_LrpNetworksCommand):
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        for network in self.networks:
+            if network not in lrp.networks and not self.exists:
+                msg = "Network '%s' does not exist in networks of port %s" % (
+                    network, lrp.uuid)
+                raise RuntimeError(msg)
+            lrp.delvalue('networks', network)
+
+
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
                  policy='dst-ip', may_exist=False):

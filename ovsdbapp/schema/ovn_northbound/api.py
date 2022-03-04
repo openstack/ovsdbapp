@@ -696,6 +696,33 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def lrp_add_networks(self, port, networks, may_exist=False):
+        """Add a network to 'port'
+
+        :param port:      The name or uuid of the port
+        :type port:       string or uuid.UUID
+        :param networks:  One or more IP address/netmask to assign to the port
+        :type networks:   list or string
+        :param may_exist: If True, don't fail if the networks already exists
+        :type may_exist:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lrp_del_networks(self, port, networks, if_exists=False):
+        """Remove a network from 'port'
+
+        :param port:      The name or uuid of the port
+        :type port:       string or uuid.UUID
+        :param networks:  One or more IP address/netmask to remove from
+                          the port
+        :type networks:   list or string
+        :param if_exists: If True, don't fail if the networks doesn't exist
+        :type if_exists:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
     def lr_route_add(self, router, prefix, nexthop, port=None,
                      policy='dst-ip', may_exist=False):
         """Add a route to 'router'
