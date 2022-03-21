@@ -212,13 +212,25 @@ class OvsdbIdl(idl.Idl):
 
         schema = schema_helper.get_idl_schema()
         self._db = schema
-        self.tables = schema.tables
-        for table in schema.tables.values():
+        removed = self.tables.keys() - schema.tables.keys()
+        added = schema.tables.keys() - self.tables.keys()
+
+        # stop monitoring removed tables
+        for table in removed:
+            self.cond_change(table, [False])
+            del self.tables[table]
+
+        # add new tables as Idl.__init__ does
+        for table in (schema.tables[table] for table in added):
+            self.tables[table.name] = table
             for column in table.columns.values():
                 if not hasattr(column, 'alert'):
                     column.alert = True
             table.need_table = False
             table.rows = custom_index.IndexedRows(table)
             table.idl = self
-            table.condition = [True]
+            try:
+                table.condition = idl.ConditionState()
+            except AttributeError:
+                table.condition = [True]
             table.cond_changed = False

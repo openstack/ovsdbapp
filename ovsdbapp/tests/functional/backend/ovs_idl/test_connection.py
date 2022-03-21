@@ -64,6 +64,9 @@ class TestOvsdbIdl(base.FunctionalTestCase):
         for table in tables:
             valid_func(table, self.idl.tables)
 
+        # ensure that the Idl still works after we update the tables
+        self.idl.run()
+
     def test_add_new_table(self):
         tables = ["Port", "Interface"]
 
