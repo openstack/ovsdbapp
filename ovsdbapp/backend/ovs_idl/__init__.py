@@ -14,34 +14,12 @@ import logging
 import uuid
 
 from ovsdbapp.backend.ovs_idl import command as cmd
-from ovsdbapp.backend.ovs_idl import event
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.backend.ovs_idl import transaction
 from ovsdbapp import exceptions
 
 LOG = logging.getLogger(__name__)
 _NO_DEFAULT = object()
-
-
-class LookupWaitEvent(event.WaitEvent):
-
-    def __init__(self, backend, table, record, timeout):
-        events = (self.ROW_CREATE, self.ROW_UPDATE)
-        super().__init__(events, table, None, timeout=timeout)
-        self.backend = backend
-        self.record = record
-        self.event_name = 'LookupWaitEvent_%s' % table
-        self.result = None
-
-    def match_fn(self, event, row, old):
-        try:
-            # Normally, we would use run() to do things on match, but in this
-            # case, that would mean we'd have to run lookup() again.
-            with self.backend.ovsdb_connection.lock:
-                self.result = self.backend.lookup(self.table, self.record)
-            return bool(self.result)
-        except idlutils.RowNotFound:
-            return False
 
 
 class Backend(object):
@@ -195,34 +173,16 @@ class Backend(object):
 
     def lookup(self, table, record, default=_NO_DEFAULT, timeout=None,
                notify_handler=None):
-        """Search for a record in a table
-
-        If timeout and notify_handler of type ``row_event.RowEventHandler``
-        are passed, in case the record is not present in the selected table,
-        the method creates an event, waiting for this record (UUID), on this
-        table and events CREATE and UPDATE. The event returns with the record
-        memoized if the record was created or updated.
-        """
+        if timeout or notify_handler:
+            LOG.warning("The timeout and notify_handler parameters are no "
+                        "longer used. Please update calling code accordingly.")
         try:
             with self.ovsdb_connection.lock:
                 return self._lookup(table, record)
         except idlutils.RowNotFound:
             if default is not _NO_DEFAULT:
                 return default
-            if not notify_handler:
-                notify_handler = getattr(self, 'notify_handler', None)
-            if not (timeout and notify_handler):
-                raise
-
-            wait_event = LookupWaitEvent(self, table, record, timeout)
-            notify_handler.watch_event(wait_event)
-            if not wait_event.wait():
-                LOG.info('Record %s from table %s was not registered in the '
-                         'IDL DB cache after %d seconds', record, table,
-                         timeout)
-                notify_handler.unwatch_event(wait_event)
-                raise
-            return wait_event.result
+            raise
 
     def _lookup(self, table, record):
         if record == "":
