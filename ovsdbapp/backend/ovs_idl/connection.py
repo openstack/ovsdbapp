@@ -200,9 +200,13 @@ class OvsdbIdl(idl.Idl):
             self.cond_change(table, [False])
             del self.tables[table]
 
+        try:
+            _tables = idl.IdlTable.schema_tables(self, schema)
+        except AttributeError:
+            _tables = None
         # add new tables as Idl.__init__ does
         for table in (schema.tables[table] for table in added):
-            self.tables[table.name] = table
+            self.tables[table.name] = _tables[table.name] if _tables else table
             for column in table.columns.values():
                 if not hasattr(column, 'alert'):
                     column.alert = True
