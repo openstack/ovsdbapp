@@ -695,29 +695,12 @@ class LspGetTypeCommand(cmd.ReadOnlyCommand):
         self.result = lsp.type
 
 
-class LspSetOptionsCommand(cmd.BaseCommand):
+class LspSetOptionsCommand(cmd.BaseSetOptionsCommand):
     table = 'Logical_Switch_Port'
 
-    def __init__(self, api, port, **options):
-        super().__init__(api)
-        self.port = port
-        self.options = options
 
-    def run_idl(self, txn):
-        lsp = self.api.lookup(self.table, self.port)
-        lsp.options = self.options
-
-
-class LspGetOptionsCommand(cmd.ReadOnlyCommand):
+class LspGetOptionsCommand(cmd.BaseGetOptionsCommand):
     table = 'Logical_Switch_Port'
-
-    def __init__(self, api, port):
-        super().__init__(api)
-        self.port = port
-
-    def run_idl(self, txn):
-        lsp = self.api.lookup(self.table, self.port)
-        self.result = lsp.options
 
 
 class LspSetDhcpV4OptionsCommand(cmd.BaseCommand):
@@ -778,25 +761,12 @@ class DhcpOptionsGetCommand(cmd.BaseGetRowCommand):
     table = 'DHCP_Options'
 
 
-class DhcpOptionsSetOptionsCommand(cmd.BaseCommand):
-    def __init__(self, api, dhcpopt_uuid, **options):
-        super().__init__(api)
-        self.dhcpopt_uuid = dhcpopt_uuid
-        self.options = options
-
-    def run_idl(self, txn):
-        dhcpopt = self.api.lookup('DHCP_Options', self.dhcpopt_uuid)
-        dhcpopt.options = self.options
+class DhcpOptionsSetOptionsCommand(cmd.BaseSetOptionsCommand):
+    table = 'DHCP_Options'
 
 
-class DhcpOptionsGetOptionsCommand(cmd.ReadOnlyCommand):
-    def __init__(self, api, dhcpopt_uuid):
-        super().__init__(api)
-        self.dhcpopt_uuid = dhcpopt_uuid
-
-    def run_idl(self, txn):
-        dhcpopt = self.api.lookup('DHCP_Options', self.dhcpopt_uuid)
-        self.result = dhcpopt.options
+class DhcpOptionsGetOptionsCommand(cmd.BaseGetOptionsCommand):
+    table = 'DHCP_Options'
 
 
 class LrAddCommand(cmd.BaseCommand):
@@ -957,11 +927,11 @@ class LrpGetEnabledCommand(cmd.ReadOnlyCommand):
         self.result = next(iter(lrp.enabled), True)
 
 
-class LrpSetOptionsCommand(LspSetOptionsCommand):
+class LrpSetOptionsCommand(cmd.BaseSetOptionsCommand):
     table = 'Logical_Router_Port'
 
 
-class LrpGetOptionsCommand(LspGetOptionsCommand):
+class LrpGetOptionsCommand(cmd.BaseGetOptionsCommand):
     table = 'Logical_Router_Port'
 
 
@@ -984,7 +954,13 @@ class LrpSetGatewayChassisCommand(cmd.BaseCommand):
         lrp.addvalue('gateway_chassis', cmd.result)
 
 
-class LrpGetGatewayChassisCommand(LrpGetOptionsCommand):
+class LrpGetGatewayChassisCommand(cmd.ReadOnlyCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port):
+        super().__init__(api)
+        self.port = port
+
     def run_idl(self, txn):
         lrp = self.api.lookup(self.table, self.port)
         self.result = [rowview.RowView(d) for d in lrp.gateway_chassis]
