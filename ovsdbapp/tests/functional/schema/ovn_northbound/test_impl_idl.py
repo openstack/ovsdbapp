@@ -1551,6 +1551,52 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
             lrp.uuid, "fake_chassis", if_exists=True
         ).execute(check_error=True)
 
+    def test_lrp_add_del_network(self):
+        networks = ['10.0.0.0/24']
+        new_networks = ['172.31.0.0/24', '172.31.1.0/24']
+        lrp = self._lrp_add(None, networks=networks)
+
+        self.api.lrp_add_networks(lrp.name,
+                                  new_networks).execute(check_error=True)
+        self.assertEqual(lrp.networks, networks + new_networks)
+
+        self.api.lrp_del_networks(lrp.name,
+                                  new_networks).execute(check_error=True)
+        self.assertEqual(lrp.networks, networks)
+
+    def test_lrp_add_del_network_by_str(self):
+        networks = ['10.0.0.0/24']
+        new_network = '172.31.0.0/24'
+        lrp = self._lrp_add(None, networks=networks)
+
+        self.api.lrp_add_networks(lrp.name,
+                                  new_network).execute(check_error=True)
+        self.assertEqual(lrp.networks, networks + [new_network])
+
+        self.api.lrp_del_networks(lrp.name,
+                                  new_network).execute(check_error=True)
+        self.assertEqual(lrp.networks, networks)
+
+    def test_lrp_add_del_network_negative(self):
+        networks = ['10.0.0.0/24']
+        no_existing_network = '192.168.0.0/24'
+        lrp = self._lrp_add(None, networks=networks)
+
+        cmd = self.api.lrp_add_networks(lrp.name, networks)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+        cmd = self.api.lrp_del_networks(lrp.name, no_existing_network)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+        for new_net in ["fake", ["10.0.1.0/24", "fake"]]:
+            self.assertRaises(netaddr.AddrFormatError,
+                              self.api.lrp_add_networks, lrp.name, new_net)
+            self.assertEqual(lrp.networks, networks)
+
+            self.assertRaises(netaddr.AddrFormatError,
+                              self.api.lrp_del_networks, lrp.name, new_net)
+            self.assertEqual(lrp.networks, networks)
+
 
 class TestLoadBalancerOps(OvnNorthboundTest):
 
