@@ -329,6 +329,31 @@ class BaseGetRowCommand(ReadOnlyCommand):
         self.result = self.api.lookup(self.table, self.record)
 
 
+class BaseSetOptionsCommand(BaseCommand):
+    table = []
+
+    def __init__(self, api, entity, **options):
+        super().__init__(api)
+        self.entity = entity
+        self.options = options
+
+    def run_idl(self, txn):
+        entity = self.api.lookup(self.table, self.entity)
+        entity.options = self.options
+
+
+class BaseGetOptionsCommand(ReadOnlyCommand):
+    table = []
+
+    def __init__(self, api, entity, **options):
+        super().__init__(api)
+        self.entity = entity
+
+    def run_idl(self, txn):
+        entity = self.api.lookup(self.table, self.entity)
+        self.result = entity.options
+
+
 class DbRemoveCommand(BaseCommand):
     def __init__(self, api, table, record, column, *values, **keyvalues):
         super().__init__(api)
