@@ -1715,6 +1715,109 @@ class TestLoadBalancerOps(OvnNorthboundTest):
         lbset = self.api.lb_list().execute(check_error=True)
         self.assertTrue(lbs.issubset(lbset))
 
+    def _test_lb_get(self, col):
+        lb = self._lb_add(utils.get_rand_device_name(),
+                          '192.0.0.1', ['10.0.0.1'])
+        val = getattr(lb, col)
+        found = self.api.lb_get(val).execute(check_error=True)
+        self.assertEqual(lb, found)
+
+    def test_lb_get_uuid(self):
+        self._test_lb_get('uuid')
+
+    def test_lb_get_name(self):
+        self._test_lb_get('name')
+
+    def _test_lb_add_del_health_check(self, col):
+        hc_options = {
+            'interval': '2',
+            'timeout': '10',
+            'success_count': '3',
+            'failure_count': '3',
+        }
+        hc_vip = '172.31.0.1'
+
+        lb = self._lb_add(utils.get_rand_device_name(),
+                          '192.0.0.1', ['10.0.0.1'])
+        self.assertEqual(lb.health_check, [])
+        val = getattr(lb, col)
+        self.api.lb_add_health_check(val,
+                                     hc_vip,
+                                     **hc_options).execute(check_error=True)
+        self.assertEqual(len(lb.health_check), 1)
+        hc = self.api.lookup('Load_Balancer_Health_Check',
+                             lb.health_check[0].uuid)
+        self.assertEqual(hc.vip, hc_vip)
+        self.assertEqual(hc.options, hc_options)
+
+        self.api.lb_del_health_check(val, hc.uuid).execute(check_error=True)
+        self.assertEqual(len(lb.health_check), 0)
+        self.assertNotIn(hc.uuid,
+                         self.api.tables['Load_Balancer_Health_Check'].rows)
+
+    def test_lb_add_del_health_check_uuid(self):
+        self._test_lb_add_del_health_check('uuid')
+
+    def test_lb_add_del_health_check_name(self):
+        self._test_lb_add_del_health_check('name')
+
+    def test_lb_del_health_check_if_exists(self):
+        lb = self._lb_add(utils.get_rand_device_name(),
+                          '192.0.0.1', ['10.0.0.1'])
+        self.api.lb_del_health_check(lb.name, uuid.uuid4(),
+                                     if_exists=True).execute(check_error=True)
+
+    def _test_lb_add_del_ip_port_mapping(self, col):
+        endpoint_ip = '172.31.0.4'
+        port_name = 'sw1-p1'
+        source_ip = '172.31.0.6'
+        lb = self._lb_add(utils.get_rand_device_name(),
+                          '192.0.0.1', ['10.0.0.1'])
+        self.assertEqual(lb.ip_port_mappings, {})
+        val = getattr(lb, col)
+        self.api.lb_add_ip_port_mapping(val,
+                                        endpoint_ip,
+                                        port_name,
+                                        source_ip).execute(check_error=True)
+        self.assertEqual(lb.ip_port_mappings[endpoint_ip],
+                         '%s:%s' % (port_name, source_ip))
+
+        self.api.lb_del_ip_port_mapping(val,
+                                        endpoint_ip).execute(check_error=True)
+        self.assertEqual(lb.ip_port_mappings, {})
+
+    def test_lb_add_del_ip_port_mapping_uuid(self):
+        self._test_lb_add_del_ip_port_mapping('uuid')
+
+    def test_lb_add_del_ip_port_mapping_name(self):
+        self._test_lb_add_del_ip_port_mapping('name')
+
+    def test_hc_get_set_options(self):
+        hc_options = {
+            'interval': '2',
+            'timeout': '10',
+            'success_count': '3',
+            'failure_count': '3',
+        }
+        lb = self._lb_add(utils.get_rand_device_name(),
+                          '192.0.0.1', ['10.0.0.1'])
+        self.api.lb_add_health_check(lb.uuid,
+                                     '172.31.0.1',
+                                     **hc_options).execute(check_error=True)
+        hc = self.api.lookup('Load_Balancer_Health_Check',
+                             lb.health_check[0].uuid)
+        options = self.api.health_check_get_options(
+            hc.uuid).execute(check_error=True)
+        self.assertEqual(hc_options, options)
+
+        options.update({
+            'interval': '5',
+            'new-option': 'option',
+        })
+        self.api.health_check_set_options(hc.uuid,
+                                          **options).execute(check_error=True)
+        self.assertEqual(hc.options, options)
+
 
 class TestObLbOps(testscenarios.TestWithScenarios, OvnNorthboundTest):
     scenarios = [

@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Added functions and commands to add, delete, list and update records of
+    'Load_Balancer_Health_Check' table. Also added a method to get one load balancer
+    by name or uuid and methods to modify 'ip_port_mappings' column in the load balancer.

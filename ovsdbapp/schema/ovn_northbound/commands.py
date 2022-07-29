@@ -1376,6 +1376,100 @@ class LbListCommand(cmd.ReadOnlyCommand):
                        for r in self.api.tables['Load_Balancer'].rows.values()]
 
 
+class LbGetCommand(cmd.BaseGetRowCommand):
+    table = 'Load_Balancer'
+
+
+class LbAddHealthCheckCommand(cmd.BaseCommand):
+    table = 'Load_Balancer'
+
+    def __init__(self, api, lb, vip, **options):
+        super().__init__(api)
+        self.lb = lb
+        self.vip = vip
+        self.options = options
+
+    def run_idl(self, txn):
+        lb = self.api.lookup(self.table, self.lb)
+        cmd = HealthCheckAddCommand(self.api, self.vip, **self.options)
+        cmd.run_idl(txn)
+        lb.addvalue('health_check', cmd.result)
+
+
+class LbDelHealthCheckCommand(cmd.BaseCommand):
+    table = 'Load_Balancer'
+
+    def __init__(self, api, lb, hc_uuid, if_exists=False):
+        super().__init__(api)
+        self.lb = lb
+        self.hc_uuid = hc_uuid
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        lb = self.api.lookup(self.table, self.lb)
+        for health_check in lb.health_check:
+            if health_check.uuid == self.hc_uuid:
+                lb.delvalue('health_check', health_check)
+                health_check.delete()
+                return
+        if not self.if_exists:
+            msg = "Health check '%s' on lb %s does not exist" % (
+                self.hc_uuid, self.lb)
+            raise RuntimeError(msg)
+
+
+class LbAddIpPortMappingСommand(cmd.BaseCommand):
+    table = 'Load_Balancer'
+
+    def __init__(self, api, lb, endpoint_ip, port_name, source_ip):
+        super().__init__(api)
+        self.lb = lb
+        self.endpoint_ip = str(netaddr.IPAddress(endpoint_ip))
+        self.port_name = port_name
+        self.source_ip = str(netaddr.IPAddress(source_ip))
+
+    def run_idl(self, txn):
+        lb = self.api.lookup(self.table, self.lb)
+        lb.setkey('ip_port_mappings', self.endpoint_ip,
+                  '%s:%s' % (self.port_name, self.source_ip))
+
+
+class LbDelIpPortMappingCommand(cmd.BaseCommand):
+    table = 'Load_Balancer'
+
+    def __init__(self, api, lb, endpoint_ip):
+        super().__init__(api)
+        self.lb = lb
+        self.endpoint_ip = str(netaddr.IPAddress(endpoint_ip))
+
+    def run_idl(self, txn):
+        lb = self.api.lookup(self.table, self.lb)
+        lb.delkey('ip_port_mappings', self.endpoint_ip)
+
+
+class HealthCheckAddCommand(cmd.AddCommand):
+    table_name = 'Load_Balancer_Health_Check'
+
+    def __init__(self, api, vip, **options):
+        super().__init__(api)
+        self.vip = utils.normalize_ip_port(vip)
+        self.options = options
+
+    def run_idl(self, txn):
+        hc = txn.insert(self.api.tables[self.table_name])
+        hc.vip = self.vip
+        hc.options = self.options
+        self.result = hc
+
+
+class HealthCheckSetOptionsCommand(cmd.BaseSetOptionsCommand):
+    table = 'Load_Balancer_Health_Check'
+
+
+class HealthCheckGetOptionsCommand(cmd.BaseGetOptionsCommand):
+    table = 'Load_Balancer_Health_Check'
+
+
 class LrLbAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, lb, may_exist=False):
         super().__init__(api)
