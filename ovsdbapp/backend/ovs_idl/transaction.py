@@ -23,7 +23,6 @@ from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import exceptions
 
 LOG = logging.getLogger(__name__)
-MAX_SLEEP = 8
 
 
 class Transaction(api.Transaction):
@@ -75,7 +74,6 @@ class Transaction(api.Transaction):
     def do_commit(self):
         self.start_time = time.time()
         attempts = 0
-        retries = 0
         if not self.commands:
             LOG.debug("There are no commands to commit")
             return []
@@ -84,6 +82,7 @@ class Transaction(api.Transaction):
                 raise RuntimeError("OVS transaction timed out")
             attempts += 1
             # TODO(twilson) Make sure we don't loop longer than vsctl_timeout
+            seqno = self.api.idl.change_seqno
             txn = idl.Transaction(self.api.idl)
             self.pre_commit(txn)
             for i, command in enumerate(self.commands):
@@ -105,20 +104,9 @@ class Transaction(api.Transaction):
             status = txn.commit_block()
             if status == txn.TRY_AGAIN:
                 LOG.debug("OVSDB transaction returned TRY_AGAIN, retrying")
-                # In the case that there is a reconnection after
-                # Connection.run() calls self.idl.run() but before do_commit()
-                # is called, commit_block() can loop w/o calling idl.run()
-                # which does the reconnect logic. It will then always return
-                # TRY_AGAIN until we time out and Connection.run() calls
-                # idl.run() again. So, call idl.run() here just in case.
-                self.api.idl.run()
-
-                # In the event that there is an issue with the txn or the db
-                # is down, don't spam new txns as fast as we can
-                time.sleep(min(2 ** retries, self.time_remaining(), MAX_SLEEP))
-                retries += 1
+                idlutils.wait_for_change(self.api.idl, self.time_remaining(),
+                                         seqno)
                 continue
-            retries = 0
             if status in (txn.ERROR, txn.NOT_LOCKED):
                 msg = 'OVSDB Error: '
                 if status == txn.NOT_LOCKED:
