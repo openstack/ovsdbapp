@@ -12,11 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import unittest
 from unittest import mock
+
+import testscenarios
 
 from ovsdbapp import api
 from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp import exceptions
 from ovsdbapp.tests import base
+
+
+load_tests = testscenarios.load_tests_apply_scenarios
 
 
 class MockColumn(object):
@@ -181,6 +188,76 @@ class TestIdlUtils(base.TestCase):
             self.assertEqual(result, idlutils.index_name(*args))
 
         self.assertRaises(AssertionError, idlutils.index_name)
+
+
+class TestWaitForChange(base.TestCase):
+    assertRaises = unittest.TestCase.assertRaises  # context manager support
+    scenarios = testscenarios.multiply_scenarios([
+        ('seqno matches', dict(seqno_eq=True)),
+        ('seqno unmatched', dict(seqno_eq=False)),
+    ], [
+        ('Idl.run returns False', dict(run_=False)),
+        ('Idl.run returns True', dict(run_=True)),
+    ], [
+        ('timeout is None', dict(timeout=None)),
+        ('timeout is negative', dict(timeout=-1)),
+        ('timeout is zero', dict(timeout=0)),
+        ('timeout is positive', dict(timeout=1)),
+    ], [
+        ('timeout not elapsed', dict(timed_out=False)),
+        ('timeout is elapsed', dict(timed_out=True)),
+    ])
+
+    def _make_idl_mock(self):
+        idl = mock.MagicMock()
+        idl.change_seqno = 42
+        idl.run.return_value = self.run_
+        idl.wait.side_effect = [None, None, StopIteration]
+        return idl
+
+    def test_wait_for_change(self):
+        timeout = self.timeout and self.timeout > 0
+        exc_raised = False
+        if self.seqno_eq and not self.run_:
+            if not timeout or not self.timed_out:
+                exc_raised = StopIteration
+            elif timeout and self.timed_out:
+                exc_raised = exceptions.TimeoutException
+
+        expected = {
+            'idl_wait': self.seqno_eq and not self.run_,
+            'timer_wait': self.seqno_eq and not self.run_ and timeout,
+            'exc_raised': exc_raised}
+
+        Idl = self._make_idl_mock()
+        now = 228399780
+        if timeout:
+            end_time = now + self.timeout - int(not self.timed_out)
+        else:
+            end_time = Exception
+        poller_inst = mock.MagicMock()
+        seqno = Idl.change_seqno if self.seqno_eq else Idl.change_seqno - 1
+
+        @mock.patch.object(idlutils.time, 'time', side_effect=[now, end_time])
+        @mock.patch.object(idlutils.poller, 'Poller', return_value=poller_inst)
+        def do_test(_poll_mock, _time_mock):
+            if expected['exc_raised']:
+                with self.assertRaises(expected['exc_raised']):
+                    idlutils.wait_for_change(Idl, self.timeout, seqno)
+            else:
+                idlutils.wait_for_change(Idl, self.timeout, seqno)
+
+            if expected['idl_wait']:
+                Idl.wait.assert_called()
+            else:
+                Idl.wait.assert_not_called()
+
+            if expected['timer_wait']:
+                poller_inst.timer_wait.assert_called()
+            else:
+                poller_inst.timer_wait.assert_not_called()
+
+        do_test()
 
 
 class TestMergeIntersection(base.TestCase):
