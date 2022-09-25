@@ -89,7 +89,7 @@ class Connection(object):
             self.poller = poller.Poller()
             self.is_running = True
             self.thread = threading.Thread(target=self.run)
-            self.thread.setDaemon(True)
+            self.thread.daemon = True
             self.thread.start()
 
     def run(self):

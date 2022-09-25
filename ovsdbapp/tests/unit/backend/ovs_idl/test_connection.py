@@ -41,7 +41,7 @@ class TestOVSNativeConnection(base.TestCase):
         mock_wait_for_change.assert_any_call(self.conn.idl, self.conn.timeout)
         mock_poller.assert_called_once_with()
         mock_thread.assert_called_once_with(target=self.conn.run)
-        mock_thread.return_value.setDaemon.assert_called_once_with(True)
+        self.assertIs(True, mock_thread.return_value.daemon)
         mock_thread.return_value.start.assert_called_once_with()
 
     def test_queue_txn(self, mock_thread):
