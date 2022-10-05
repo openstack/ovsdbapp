@@ -96,7 +96,7 @@ class Transaction(api.Transaction):
                     if self.check_error:
                         raise
                     if self.log_errors:
-                        LOG.error("txn n=%(n)d command(idx=%(idx)s): %(cmd)s ",
+                        LOG.error("txn n=%(n)d command(idx=%(idx)s): %(cmd)s "
                                   "aborted due to error: %(err)s",
                                   {'idx': i,
                                    'cmd': command,
