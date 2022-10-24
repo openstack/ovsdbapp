@@ -93,7 +93,6 @@ class Connection(object):
             self.thread.start()
 
     def run(self):
-        errors = 0
         while self.is_running:
             # If we fail in an Idl call, we could have missed an update
             # from the server, leaving us out of sync with ovsdb-server.
@@ -108,22 +107,10 @@ class Connection(object):
                     self.idl.run()
             except Exception as e:
                 # This shouldn't happen, but is possible if there is a bug
-                # in python-ovs
-                errors += 1
+                # in python-ovs, or an unhandled exception in overridden
+                # Idl.notify() code
                 LOG.exception(e)
-                with self.lock:
-                    self.idl.force_reconnect()
-                    try:
-                        idlutils.wait_for_change(self.idl, self.timeout)
-                    except Exception as e:
-                        # This could throw the same exception as idl.run()
-                        # or Exception("timeout"), either way continue
-                        LOG.exception(e)
-                sleep = min(2 ** errors, 60)
-                LOG.info("Trying to recover, sleeping %s seconds", sleep)
-                time.sleep(sleep)
                 continue
-            errors = 0
             txn = self.txns.get_nowait()
             if txn is not None:
                 try:
