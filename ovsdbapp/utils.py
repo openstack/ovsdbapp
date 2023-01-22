@@ -13,6 +13,11 @@
 import uuid
 
 import netaddr
+from ovs.db import idl
+
+from ovsdbapp import api
+from ovsdbapp.backend.ovs_idl import rowview
+
 
 # NOTE(twilson) Clearly these are silly, but they are good enough for now
 # I'm happy for someone to replace them with better parsing
@@ -76,3 +81,15 @@ def is_uuid_like(val):
         return str(uuid.UUID(val)).replace('-', '') == _format_uuid_string(val)
     except (TypeError, ValueError, AttributeError):
         return False
+
+
+def get_uuid(reg_uuid_or_cmd):
+    """Return the UUID of a UUID itself or a BaseCommand"""
+    if isinstance(reg_uuid_or_cmd, api.Command):
+        reg_uuid = reg_uuid_or_cmd.result
+        if isinstance(reg_uuid, (rowview.RowView, idl.Row)):
+            reg_uuid = reg_uuid.uuid
+    else:
+        reg_uuid = reg_uuid_or_cmd
+
+    return reg_uuid

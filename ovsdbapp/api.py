@@ -33,6 +33,16 @@ class Command(object, metaclass=abc.ABCMeta):
         :param transaction_options: Options to pass to the transaction
         """
 
+    @property
+    @abc.abstractmethod
+    def result(self):
+        """Returned value from the command execution"""
+
+    @result.setter
+    @abc.abstractmethod
+    def result(self, value):
+        """Setter of the result property"""
+
 
 class Transaction(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod

@@ -30,7 +30,15 @@ class BaseCommand(api.Command):
 
     def __init__(self, api):
         self.api = api
-        self.result = None
+        self._result = None
+
+    @property
+    def result(self):
+        return self._result
+
+    @result.setter
+    def result(self, value):
+        self._result = value
 
     def execute(self, check_error=False, log_errors=True, **kwargs):
         try:

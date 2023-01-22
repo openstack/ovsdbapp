@@ -2192,6 +2192,37 @@ class TestHAChassisGroup(OvnNorthboundTest):
             check_error=True)
         self.assertEqual([], hcg.ha_chassis)
 
+    def test_ha_chassis_group_add_delete_chassis_within_txn(self):
+        with self.api.create_transaction(check_error=True) as txn:
+            hcg_cmd = txn.add(self.api.ha_chassis_group_add(self.hcg_name))
+            priority = 20
+            txn.add(self.api.ha_chassis_group_add_chassis(
+                hcg_cmd, self.chassis, priority))
+
+        # Assert that the HA Chassis entry was created
+        hcg = self.api.ha_chassis_group_get(self.hcg_name).execute(
+            check_error=True)
+        hc = self.api.db_find(
+            'HA_Chassis',
+            ('chassis_name', '=', self.chassis)).execute(check_error=True)
+        self.assertEqual(priority, hc[0]['priority'])
+        ha_chassis_uuid_list = [hc.uuid for hc in hcg.ha_chassis]
+        self.assertEqual(ha_chassis_uuid_list, [hc[0]['_uuid']])
+
+        with self.api.create_transaction(check_error=True) as txn:
+            hcg_cmd = txn.add(self.api.ha_chassis_group_add(self.hcg_name,
+                                                            may_exist=True))
+            txn.add(self.api.ha_chassis_group_del_chassis(hcg_cmd,
+                                                          self.chassis))
+
+        hcg = self.api.ha_chassis_group_get(self.hcg_name).execute(
+            check_error=True)
+        ha = self.api.db_find(
+            'HA_Chassis',
+            ('chassis_name', '=', self.chassis)).execute(check_error=True)
+        self.assertEqual([], ha)
+        self.assertEqual([], hcg.ha_chassis)
+
     def test_ha_chassis_group_if_exists(self):
         self.api.ha_chassis_group_add(self.hcg_name).execute(check_error=True)
         self.api.ha_chassis_group_add_chassis(

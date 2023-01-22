@@ -50,10 +50,18 @@ class MockRow(object):
 
 class MockCommand(api.Command):
     def __init__(self, result):
-        self.result = result
+        self._result = result
 
     def execute(self, **kwargs):
         pass
+
+    @property
+    def result(self):
+        return self._result
+
+    @result.setter
+    def result(self, value):
+        self._result = value
 
 
 class TestIdlUtils(base.TestCase):
