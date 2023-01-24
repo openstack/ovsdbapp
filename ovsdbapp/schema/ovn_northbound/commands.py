@@ -1418,7 +1418,7 @@ class LbDelHealthCheckCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
-class LbAddIpPortMappingСommand(cmd.BaseCommand):
+class LbAddIpPortMappingCommand(cmd.BaseCommand):
     table = 'Load_Balancer'
 
     def __init__(self, api, lb, endpoint_ip, port_name, source_ip):
