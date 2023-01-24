@@ -289,7 +289,7 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.LbDelHealthCheckCommand(self, lb, hc_uuid, if_exists)
 
     def lb_add_ip_port_mapping(self, lb, endport_ip, port_name, source_ip):
-        return cmd.LbAddIpPortMappingСommand(self, lb, endport_ip,
+        return cmd.LbAddIpPortMappingCommand(self, lb, endport_ip,
                                              port_name, source_ip)
 
     def lb_del_ip_port_mapping(self, lb, endport_ip):
