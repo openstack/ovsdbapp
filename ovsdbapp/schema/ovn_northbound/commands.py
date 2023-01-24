@@ -1459,7 +1459,7 @@ class HealthCheckAddCommand(cmd.AddCommand):
         hc = txn.insert(self.api.tables[self.table_name])
         hc.vip = self.vip
         hc.options = self.options
-        self.result = hc
+        self.result = hc.uuid
 
 
 class HealthCheckSetOptionsCommand(cmd.BaseSetOptionsCommand):
@@ -1749,7 +1749,7 @@ class GatewayChassisAddCommand(cmd.AddCommand):
         gwc.chassis_name = self.chassis_name
         gwc.priority = self.priority
         self.set_columns(gwc, **self.columns)
-        self.result = gwc
+        self.result = gwc.uuid
 
 
 class HAChassisGroupAddCommand(cmd.AddCommand):
