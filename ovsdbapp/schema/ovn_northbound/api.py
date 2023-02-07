@@ -1397,3 +1397,72 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type meter:   string or uuid.UUID
         :returns:      :class:`Command` with RowView result
         """
+
+    @abc.abstractmethod
+    def bfd_add(self, logical_port, dst_ip, min_tx=None, min_rx=None,
+                detect_mult=None, external_ids=None, options=None,
+                may_exist=False):
+        """Create a BFD entry
+
+        :param logical_port: Name of logical port where BFD engine should run.
+        :type logical_port:  str
+        :param dst_ip:       BFD peer IP address.
+        :type dst_ip:        str
+        :param min_tx:       This is the minimum interval, in milliseconds,
+                             that the local system would like to use when
+                             transmitting BFD Control packets, less any jitter
+                             applied. The value zero is reserved. Default value
+                             is 1000 ms.
+        :type min_tx:        Optional[int]
+        :param min_rx:       This is the minimum interval, in milliseconds,
+                             between received BFD Control packets that this
+                             system is capable of supporting, less any jitter
+                             applied by the sender. If this value is zero, the
+                             transmitting system does not want the remote
+                             system to send any periodic BFD Control packets.
+        :type min_rx:        Optional[int]
+        :param detect_mult:  Detection time multiplier.  The negotiated
+                             transmit interval, multiplied by this value,
+                             provides the Detection Time for the receiving
+                             system in Asynchronous mode. Default value is 5.
+        :type detect_mult:   Optional[int]
+        :param external_ids: Values to be added as external_id pairs.
+        :type external_ids:  Optional[Dict[str,str]]
+        :param options:      Reserved for future use.
+        :type options:       Optional[Dict[str,str]]
+        :param may_exist:    If True, update any existing BFD entry if it
+                             already exists.  Default is False which will raise
+                             an error if a BFD entry with same logical_port,
+                             dst_ip pair already exists.
+        :type may_exist:     Optional[bool]
+        :returns:            :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def bfd_del(self, uuid):
+        """Delete a BFD entry
+
+        :param uuid:   The uuid of the BFD entry
+        :type uuid:    uuid.UUID
+        :returns:      :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def bfd_find(self, logical_port, dst_ip):
+        """Find BFD entry.
+
+        :param logical_port: Name of logical port where BFD engine runs.
+        :type logical_port:  str
+        :param dst_ip:       BFD peer IP address.
+        :type dst_ip:        str
+        :returns:            :class:`Command` with List[Dict[str,any]] result
+        """
+
+    @abc.abstractmethod
+    def bfd_get(self, uuid):
+        """Get the BFD entry
+
+        :param uuid:   The uuid of the BFD entry
+        :type uuid:    uuid.UUID
+        :returns:      :class:`Command` with RowView result
+        """

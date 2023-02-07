@@ -1045,6 +1045,98 @@ class LrpDelNetworksCommand(_LrpNetworksCommand):
             lrp.delvalue('networks', network)
 
 
+class BFDFindCommand(cmd.DbFindCommand):
+    table = 'BFD'
+
+    def __init__(self, api, port, dst_ip):
+        super().__init__(
+            api,
+            self.table,
+            ('logical_port', '=', port),
+            ('dst_ip', '=', dst_ip),
+            row=True,
+        )
+
+
+class BFDAddCommand(cmd.AddCommand):
+    # cmd.AddCommand uses self.table_name, other base commands use self.table
+    table_name = 'BFD'
+
+    def __init__(self, api, logical_port, dst_ip, min_tx=None, min_rx=None,
+                 detect_mult=None, external_ids=None, options=None,
+                 may_exist=False):
+        for attr in ('logical_port', 'dst_ip'):
+            if not isinstance(locals().get(attr), str):
+                raise ValueError("%s must be of type str" % attr)
+        for attr in ('min_tx', 'min_rx', 'detect_mult'):
+            value = locals().get(attr)
+            if value and (not isinstance(value, int) or value < 1):
+                raise ValueError("%s must be of type int and > 0" % attr)
+        for attr in ('external_ids', 'options'):
+            value = locals().get(attr)
+            if value and not isinstance(value, dict):
+                raise ValueError("%s must be of type dict" % attr)
+        super().__init__(api)
+        self.logical_port = logical_port
+        self.dst_ip = dst_ip
+        self.columns = {
+            'logical_port': logical_port,
+            'dst_ip': dst_ip,
+            'min_tx': [min_tx] if min_tx else [],
+            'min_rx': [min_rx] if min_rx else [],
+            'detect_mult': [detect_mult] if detect_mult else [],
+            'external_ids': external_ids or {},
+            'options': options or {},
+        }
+        self.may_exist = may_exist
+
+    def run_idl(self, txn):
+        cmd = BFDFindCommand(self.api, self.logical_port, self.dst_ip)
+        cmd.run_idl(txn)
+        bfd_result = cmd.result
+        if bfd_result:
+            if len(bfd_result) > 1:
+                # With the current database schema, this cannot happen, but
+                # better safe than sorry.
+                raise RuntimeError(
+                    "Unexpected duplicates in database for port %s "
+                    "and dst_ip %s" % (self.logical_port, self.dst_ip))
+            bfd = bfd_result[0]
+            if self.may_exist:
+                self.set_columns(bfd, **self.columns)
+                # When no changes are made to a record, the parent
+                # `post_commit` method will not be called.
+                #
+                # Ensure consistent return to caller of `Command.execute()`
+                # even when no changes have been applied.
+                self.result = rowview.RowView(bfd)
+                return
+            else:
+                raise RuntimeError(
+                    "BFD entry for port %s and dst_ip %s exists" % (
+                        self.logical_port, self.dst_ip))
+        bfd = txn.insert(self.api.tables[self.table_name])
+        bfd.logical_port = self.logical_port
+        bfd.dst_ip = self.dst_ip
+        self.set_columns(bfd, **self.columns)
+        # Setting the result to something other than a :class:`rowview.RowView`
+        # or :class:`ovs.db.idl.Row` typed value will make the parent
+        # `post_commit` method retrieve the newly insterted row from IDL and
+        # return that to the caller.
+        self.result = bfd.uuid
+
+
+class BFDDelCommand(cmd.DbDestroyCommand):
+    table = 'BFD'
+
+    def __init__(self, api, uuid):
+        super().__init__(api, self.table, uuid)
+
+
+class BFDGetCommand(cmd.BaseGetRowCommand):
+    table = 'BFD'
+
+
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
                  policy='dst-ip', may_exist=False):
