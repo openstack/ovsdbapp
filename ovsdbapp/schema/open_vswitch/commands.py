@@ -214,11 +214,12 @@ class SetFailModeCommand(BaseCommand):
 class AddPortCommand(command.AddCommand):
     table_name = 'Port'
 
-    def __init__(self, api, bridge, port, may_exist):
+    def __init__(self, api, bridge, port, may_exist, **interface_attrs):
         super().__init__(api)
         self.bridge = bridge
         self.port = port
         self.may_exist = may_exist
+        self.interface_attrs = interface_attrs
 
     def run_idl(self, txn):
         br = idlutils.row_by_value(self.api.idl, 'Bridge', 'name', self.bridge)
@@ -241,6 +242,8 @@ class AddPortCommand(command.AddCommand):
         iface = txn.insert(self.api._tables['Interface'])
         txn.expected_ifaces.add(iface.uuid)
         iface.name = self.port
+        self.set_columns(iface, **self.interface_attrs)
+
         # This is a new port, so it won't have any existing interfaces
         port.interfaces = [iface]
         self.result = port.uuid

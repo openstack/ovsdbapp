@@ -137,8 +137,9 @@ class OvsdbIdl(ovs_idl.Backend, api.API):
     def set_fail_mode(self, bridge, mode):
         return cmd.SetFailModeCommand(self, bridge, mode)
 
-    def add_port(self, bridge, port, may_exist=True):
-        return cmd.AddPortCommand(self, bridge, port, may_exist)
+    def add_port(self, bridge, port, may_exist=True, **interface_attrs):
+        return cmd.AddPortCommand(self, bridge, port, may_exist,
+                                  **interface_attrs)
 
     def del_port(self, port, bridge=None, if_exists=True):
         return cmd.DelPortCommand(self, port, bridge, if_exists)

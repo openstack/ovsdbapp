@@ -87,18 +87,31 @@ class TestOvsdbIdl(base.FunctionalTestCase):
         exists = self.api.br_exists(self.brname).execute(check_error=True)
         self.assertFalse(exists)
 
-    def _test_add_port(self):
+    def _test_add_port(self, **interface_attrs):
         pname = utils.get_rand_device_name()
         with self.api.transaction(check_error=True) as txn:
             txn.extend([self.api.add_br(self.brname),
-                        self.api.add_port(self.brname, pname)])
+                        self.api.add_port(self.brname, pname,
+                                          **interface_attrs)])
         return pname
 
     def test_add_port(self):
-        pname = self._test_add_port()
+        interface_attrs = {'external_ids': {'iface-id': 'port_iface-id'},
+                           'type': 'internal'}
+        pname = self._test_add_port(**interface_attrs)
         plist_cmd = self.api.list_ports(self.brname)
         ports = plist_cmd.execute(check_error=True)
         self.assertIn(pname, ports)
+        with self.api.transaction(check_error=True) as txn:
+            external_ids = txn.add(self.api.db_get('Interface', pname,
+                                                   'external_ids'))
+            _type = txn.add(self.api.db_get('Interface', pname, 'type'))
+        self.assertEqual(interface_attrs['external_ids'], external_ids.result)
+        self.assertEqual(interface_attrs['type'], _type.result)
+
+    def test_add_port_wrong_interface_attrs(self):
+        interface_attrs = {'invalid_interface_field': 'value'}
+        self.assertRaises(KeyError, self._test_add_port, **interface_attrs)
 
     def test_add_port_may_exist_false(self):
         pname = self._test_add_port()

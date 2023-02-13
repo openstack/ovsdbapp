@@ -171,7 +171,7 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def add_port(self, bridge, port, may_exist=True):
+    def add_port(self, bridge, port, may_exist=True, **interface_attrs):
         """Create a command to add a port to an OVS bridge
 
         :param bridge:    The name of the bridge
@@ -180,6 +180,9 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type port:       string
         :param may_exist: Do not fail if the port already exists
         :type may_exist:  bool
+        :param interface_attrs: Additional parameters to be set in the
+                          "Interface" register (not the "Port" register) that
+                          is created along with the "Port" one
         :returns:         :class:`Command` with RowView result
         """
 
