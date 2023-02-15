@@ -41,6 +41,11 @@ class TestLogicalSwitchOps(OvnNorthboundTest):
         self.assertIn(fix.obj.uuid, self.table.rows)
         return fix.obj
 
+    def _lsp_add(self, switch, name, *args, **kwargs):
+        name = utils.get_rand_device_name() if name is None else name
+        self.api.lsp_add(switch.uuid, name, *args, **kwargs).execute(
+            check_error=True)
+
     def _test_ls_get(self, col):
         ls = self._ls_add(switch=utils.get_rand_device_name())
         val = getattr(ls, col)
@@ -101,6 +106,30 @@ class TestLogicalSwitchOps(OvnNorthboundTest):
         switches = {self._ls_add() for _ in range(3)}
         switch_set = set(self.api.ls_list().execute(check_error=True))
         self.assertTrue(switches.issubset(switch_set))
+
+    def test_ls_get_localnet_ports(self):
+        ls = self._ls_add()
+        self._lsp_add(ls, None, type=const.LOCALNET)
+        localnet_ports = self.api.ls_get_localnet_ports(ls.uuid).execute(
+            check_error=True)
+        self.assertEqual(ls.ports, localnet_ports)
+
+    def test_ls_get_localnet_ports_no_ports(self):
+        ls = self._ls_add()
+        localnet_ports = self.api.ls_get_localnet_ports(ls.uuid).execute(
+            check_error=True)
+        self.assertEqual([], localnet_ports)
+
+    def test_ls_get_localnet_ports_no_exist(self):
+        name = utils.get_rand_device_name()
+        cmd = self.api.ls_get_localnet_ports(name)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_ls_get_localnet_ports_if_exists(self):
+        name = utils.get_rand_device_name()
+        localnet_ports = self.api.ls_get_localnet_ports(
+            name, if_exists=True).execute(check_error=True)
+        self.assertEqual([], localnet_ports)
 
 
 class TestAclOps(OvnNorthboundTest):

@@ -53,6 +53,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return self.db_remove('Logical_Switch', switch_uuid, 'dns_records',
                               dns_uuid, if_exists=if_exists)
 
+    def ls_get_localnet_ports(self, switch, if_exists=False):
+        return cmd.LSGetLocalnetPortsCommand(self, switch, if_exists)
+
     def acl_add(self, switch, direction, priority, match, action, log=False,
                 may_exist=False, **external_ids):
         return cmd.AclAddCommand(self, switch, direction, priority,

@@ -40,11 +40,11 @@ class API(api.API, metaclass=abc.ABCMeta):
     def ls_del(self, switch, if_exists=False):
         """Delete logical switch 'switch' and all its ports
 
-        :param switch:   The name or uuid of the switch
-        :type switch:    string or uuid.UUID
-        :type if_exists: If True, don't fail if the switch doesn't exist
-        :type if_exists: boolean
-        :returns:        :class:`Command` with no result
+        :param switch:    The name or uuid of the switch
+        :type switch:     string or uuid.UUID
+        :param if_exists: If True, don't fail if the switch doesn't exist
+        :type if_exists:  boolean
+        :returns:         :class:`Command` with no result
         """
 
     @abc.abstractmethod
@@ -94,6 +94,17 @@ class API(api.API, metaclass=abc.ABCMeta):
                             doesn't exist
         :type if_exists:    boolean
         :returns: :class:`Command` with RowView result
+        """
+
+    @abc.abstractmethod
+    def ls_get_localnet_ports(self, switch, if_exists=False):
+        """Get localnet ports on logical switch 'switch'
+
+        :param switch:    The name or uuid of the switch
+        :type switch:     string or uuid.UUID
+        :param if_exists: If True, don't fail if the switch doesn't exist
+        :type if_exists:  boolean
+        :returns: :class:`Command` with the RowView list result
         """
 
     @abc.abstractmethod

@@ -80,6 +80,28 @@ class LsGetCommand(cmd.BaseGetRowCommand):
     table = 'Logical_Switch'
 
 
+class LSGetLocalnetPortsCommand(cmd.ReadOnlyCommand):
+    def __init__(self, api, switch, if_exists=False):
+        super().__init__(api)
+        self.switch = switch
+        self.if_exists = if_exists
+
+    def localnet_port(self, row):
+        return row.type == const.LOCALNET
+
+    def run_idl(self, txn):
+        try:
+            lswitch = self.api.lookup('Logical_Switch', self.switch)
+            self.result = [rowview.RowView(p) for p in lswitch.ports
+                           if self.localnet_port(p)]
+        except idlutils.RowNotFound as e:
+            if self.if_exists:
+                self.result = []
+                return
+            msg = "Logical Switch %s does not exist" % self.switch
+            raise RuntimeError(msg) from e
+
+
 class _AclAddHelper(cmd.AddCommand):
     table_name = 'ACL'
 

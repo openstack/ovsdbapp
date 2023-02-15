@@ -39,3 +39,5 @@ PROTO_TCP = 'tcp'
 PROTO_UDP = 'udp'
 
 ROUTE_DISCARD = "discard"
+
+LOCALNET = 'localnet'
