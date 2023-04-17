@@ -144,8 +144,9 @@ class Backend(object):
     def db_destroy(self, table, record):
         return cmd.DbDestroyCommand(self, table, record)
 
-    def db_set(self, table, record, *col_values):
-        return cmd.DbSetCommand(self, table, record, *col_values)
+    def db_set(self, table, record, *col_values, if_exists=True, **columns):
+        return cmd.DbSetCommand(self, table, record, *col_values,
+                                if_exists=if_exists, **columns)
 
     def db_add(self, table, record, column, *values):
         return cmd.DbAddCommand(self, table, record, column, *values)

@@ -152,7 +152,7 @@ class API(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def db_set(self, table, record, *col_values):
+    def db_set(self, table, record, *col_values, if_exists=True, **columns):
         """Create a command to set fields in a record
 
         :param table:      The OVS table containing the record to be modified
@@ -162,11 +162,14 @@ class API(object, metaclass=abc.ABCMeta):
         :param col_values: The columns and their associated values
         :type col_values:  Tuples of (column, value). Values may be atomic
                            values or unnested sequences/mappings
+        :param if_exists:  Do not fail if record does not exist
+        :type if_exists:   bool
+        :param columns:    The columns and their associated values
+                           (mutually exclusive with col_values and col_values
+                           is used if available)
+        :type columns:     Dictionary of columns names and values
         :returns:          :class:`Command` with no result
         """
-        # TODO(twilson) Consider handling kwargs for arguments where order
-        # doesn't matter. Though that would break the assert_called_once_with
-        # unit tests
 
     @abc.abstractmethod
     def db_add(self, table, record, column, *values):
