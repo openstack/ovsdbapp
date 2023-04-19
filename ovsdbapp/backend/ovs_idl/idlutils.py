@@ -231,17 +231,27 @@ def parse_connection(connection_string):
     return [c.strip() for c in connection_string.split(',')]
 
 
-def wait_for_change(_idl, timeout, seqno=None):
+def wait_for_change(_idl, timeout=None, seqno=None):
+    """Wait for the Idl seqno to change
+
+    :param _idl: The Idl instance
+    :type _idl: ovs.db.idl.Idl
+    :param timeout: raise a TimeoutException after if timeout > 0/not None
+    :type timeout: int (seconds) or None
+    """
+    if timeout and timeout <= 0:
+        timeout = None
     if seqno is None:
         seqno = _idl.change_seqno
-    stop = time.time() + timeout
+    stop = time.time() + timeout if timeout else None
     while _idl.change_seqno == seqno and not _idl.run():
         ovs_poller = poller.Poller()
         _idl.wait(ovs_poller)
-        ovs_poller.timer_wait(timeout * 1000)
+        if timeout:
+            ovs_poller.timer_wait(timeout * 1000)
         ovs_poller.block()
-        if time.time() > stop:
-            raise Exception("Timeout")  # TODO(twilson) use TimeoutException?
+        if stop and time.time() >= stop:
+            raise exceptions.TimeoutException()
 
 
 def get_column_value(row, col):
