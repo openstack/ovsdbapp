@@ -415,3 +415,20 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def meter_get(self, meter):
         return cmd.MeterGetCommand(self, meter)
+
+    def bfd_add(self, logical_port, dst_ip, min_tx=None, min_rx=None,
+                detect_mult=None, external_ids=None, options=None,
+                may_exist=False):
+        return cmd.BFDAddCommand(self, logical_port, dst_ip, min_tx=min_tx,
+                                 min_rx=min_rx, detect_mult=detect_mult,
+                                 external_ids=external_ids, options=options,
+                                 may_exist=may_exist)
+
+    def bfd_del(self, uuid):
+        return cmd.BFDDelCommand(self, uuid)
+
+    def bfd_find(self, logical_port, dst_ip):
+        return cmd.BFDFindCommand(self, logical_port, dst_ip)
+
+    def bfd_get(self, uuid):
+        return cmd.BFDGetCommand(self, uuid)
