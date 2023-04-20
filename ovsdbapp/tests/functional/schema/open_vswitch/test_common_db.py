@@ -113,3 +113,43 @@ class TestBackendDb(base.FunctionalTestCase):
             'Queue', external_ids={'x': 'x'}).execute(check_error=True)
         self.assertIsInstance(row, rowview.RowView)
         self.api.db_destroy('Queue', row.uuid).execute(check_error=True)
+
+    def test_db_set_args(self):
+        brname = self.bridges[0]['name']
+        br = self.api.lookup('Bridge', brname)
+        ext_ids = {'test': 'value'}
+        self.api.db_set('Bridge', brname,
+                        ('external_ids', ext_ids)).execute(check_error=True)
+        self.assertEqual(ext_ids, br.external_ids)
+
+    def test_db_set_kwargs(self):
+        brname = self.bridges[0]['name']
+        br = self.api.lookup('Bridge', brname)
+        ext_ids = {'test': 'value'}
+        self.api.db_set('Bridge', brname,
+                        external_ids=ext_ids).execute(check_error=True)
+        self.assertEqual(ext_ids, br.external_ids)
+
+    def test_db_set_if_exists(self):
+        brname = self.bridges[0]['name']
+        br = self.api.lookup('Bridge', brname)
+        ext_ids = {'test': 'value'}
+        self.api.db_set('Bridge', brname, if_exists=True,
+                        external_ids=ext_ids).execute(check_error=True)
+        self.assertEqual(ext_ids, br.external_ids)
+
+    def test_db_set_if_exists_missing(self):
+        brname = "missing_bridge"
+        ext_ids = {'test': 'value'}
+        # Just ensure that this completes without throwing an exception
+        self.api.db_set('Bridge', brname, if_exists=True,
+                        external_ids=ext_ids).execute(check_error=True)
+
+    def test_db_set_args_and_kwrags(self):
+        brname = self.bridges[0]['name']
+        br = self.api.lookup('Bridge', brname)
+        ext_ids = {'test': 'value'}
+        ext_ids2 = {'test2': 'value2'}
+        self.api.db_set('Bridge', brname, ('external_ids', ext_ids),
+                        external_ids=ext_ids2).execute(check_error=True)
+        self.assertEqual(ext_ids, br.external_ids)
