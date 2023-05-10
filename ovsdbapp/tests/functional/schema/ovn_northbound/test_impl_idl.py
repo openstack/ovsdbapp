@@ -956,13 +956,13 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self.assertTrue(lrs.issubset(lr_set), "%s vs %s" % (lrs, lr_set))
 
     def _lr_add_route(self, router=None, prefix=None, nexthop=None, port=None,
-                      **kwargs):
+                      ecmp=False, **kwargs):
         lr = self._lr_add(router or utils.get_rand_device_name(),
                           may_exist=True)
         prefix = prefix or '192.0.2.0/25'
         nexthop = nexthop or '192.0.2.254'
         port = port or "port_name"
-        sr = self.api.lr_route_add(lr.uuid, prefix, nexthop, port,
+        sr = self.api.lr_route_add(lr.uuid, prefix, nexthop, port, ecmp=ecmp,
                                    **kwargs).execute(check_error=True)
         self.assertIn(sr, lr.static_routes)
         self.assertEqual(prefix, sr.ip_prefix)
@@ -991,6 +991,12 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         router_name = utils.get_rand_device_name()
         self._lr_add_route(router_name)
         self._lr_add_route(router_name, may_exist=True)
+
+    def test_lr_route_add_exists_ecmp(self):
+        router_name = utils.get_rand_device_name()
+        self._lr_add_route(router_name)
+        self._lr_add_route(router=router_name, nexthop='192.0.3.254',
+                           ecmp=True)
 
     def test_lr_route_add_discard(self):
         self._lr_add_route(nexthop=const.ROUTE_DISCARD)

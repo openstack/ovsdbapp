@@ -1139,7 +1139,7 @@ class BFDGetCommand(cmd.BaseGetRowCommand):
 
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
-                 policy='dst-ip', may_exist=False):
+                 policy='dst-ip', may_exist=False, ecmp=False):
         prefix = str(netaddr.IPNetwork(prefix))
         if nexthop != const.ROUTE_DISCARD:
             nexthop = str(netaddr.IPAddress(nexthop))
@@ -1149,12 +1149,15 @@ class LrRouteAddCommand(cmd.BaseCommand):
         self.nexthop = nexthop
         self.port = port
         self.policy = policy
+        self.ecmp = ecmp
         self.may_exist = may_exist
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
         for route in lr.static_routes:
             if self.prefix == route.ip_prefix:
+                if self.ecmp and self.nexthop != route.nexthop:
+                    continue
                 if not self.may_exist:
                     msg = "Route %s already exists on router %s" % (
                         self.prefix, self.router)

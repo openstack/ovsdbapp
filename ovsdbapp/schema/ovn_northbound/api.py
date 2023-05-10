@@ -735,7 +735,7 @@ class API(api.API, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def lr_route_add(self, router, prefix, nexthop, port=None,
-                     policy='dst-ip', may_exist=False):
+                     policy='dst-ip', may_exist=False, ecmp=False):
         """Add a route to 'router'
 
         :param router:    The name or uuid of the router
@@ -754,6 +754,10 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type policy:     string, 'dst-ip' or 'src-ip'
         :param may_exist: If True, don't fail if the route already exists
         :type may_exist:  boolean
+        :param ecmp:      Enable ECMP support. If True adding routes with
+                          same IP prefix is allowed as long as the nexthop is
+                          different
+        :type ecmp:       boolean
         returns:          :class:`Command` with RowView result
         """
 
