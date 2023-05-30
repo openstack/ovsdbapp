@@ -1384,7 +1384,7 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
     def test_lrp_add(self):
         self._lrp_add(None, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'])
 
-    def test_lpr_add_peer(self):
+    def test_lrp_add_peer(self):
         lrp = self._lrp_add(None, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'],
                             peer='fake_peer')
         self.assertIn('fake_peer', lrp.peer)
@@ -1415,7 +1415,7 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         name = utils.get_rand_device_name()
         args = (name, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'])
         self._lrp_add(*args)
-        self.assertRaises(RuntimeError, self._lrp_add, *args, may_exist=True)
+        self._lrp_add(*args, may_exist=True)
 
     def test_lrp_add_may_exist_different_router(self):
         name = utils.get_rand_device_name()

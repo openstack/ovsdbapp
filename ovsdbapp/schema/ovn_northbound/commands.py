@@ -853,7 +853,7 @@ class LrpAddCommand(cmd.BaseCommand):
         self.networks = [str(netaddr.IPNetwork(net)) for net in networks]
         self.router = router
         self.port = port
-        self.peer = peer
+        self.peer = peer if peer else []
         self.may_exist = may_exist
         self.columns = columns
         super().__init__(api)
