@@ -1137,6 +1137,113 @@ class BFDGetCommand(cmd.BaseGetRowCommand):
     table = 'BFD'
 
 
+class MirrorAddCommand(cmd.AddCommand):
+    # cmd.AddCommand uses self.table_name, other base commands use self.table
+    table_name = 'Mirror'
+
+    def __init__(self, api, name, mirror_type, index, direction_filter, dest,
+                 external_ids=None, may_exist=False):
+        self.name = name
+        self.direction_filter = direction_filter
+        self.mirror_type = mirror_type
+        if mirror_type != 'local':
+            self.dest = str(netaddr.IPAddress(dest))
+        else:
+            self.dest = dest
+        self.index = index
+
+        super().__init__(api)
+
+        self.columns = {
+            'name': name,
+            'filter': direction_filter,
+            'sink': dest,
+            'type': mirror_type,
+            'index': index,
+            'external_ids': external_ids or {},
+        }
+        self.may_exist = may_exist
+
+    def run_idl(self, txn):
+        try:
+            mirror_result = self.api.lookup(self.table_name, self.name)
+            self.result = rowview.RowView(mirror_result)
+            if self.may_exist:
+                self.set_columns(mirror_result, **self.columns)
+                self.result = rowview.RowView(mirror_result)
+                return
+            raise RuntimeError("Mirror %s already exists" % self.name)
+        except idlutils.RowNotFound:
+            pass
+
+        mirror = txn.insert(self.api.tables[self.table_name])
+        mirror.name = self.name
+        mirror.type = self.mirror_type
+        mirror.filter = self.direction_filter
+        mirror.sink = self.dest
+        mirror.index = self.index
+        self.set_columns(mirror, **self.columns)
+        # Setting the result to something other than a :class:`rowview.RowView`
+        # or :class:`ovs.db.idl.Row` typed value will make the parent
+        # `post_commit` method retrieve the newly insterted row from IDL and
+        # return that to the caller.
+        self.result = mirror.uuid
+
+
+class MirrorDelCommand(cmd.DbDestroyCommand):
+    table = 'Mirror'
+
+    def __init__(self, api, record):
+        super().__init__(api, self.table, record)
+
+
+class MirrorGetCommand(cmd.BaseGetRowCommand):
+    table = 'Mirror'
+
+
+class LspAttachMirror(cmd.BaseCommand):
+    def __init__(self, api, port, mirror, may_exist=False):
+        super().__init__(api)
+        self.port = port
+        self.mirror = mirror
+        self.may_exist = may_exist
+
+    def run_idl(self, txn):
+        try:
+            lsp = self.api.lookup('Logical_Switch_Port', self.port)
+            mirror = self.api.lookup('Mirror', self.mirror)
+            if mirror in lsp.mirror_rules and not self.may_exist:
+                msg = "Mirror Rule %s is already set on LSP %s" % (self.mirror,
+                                                                   self.port)
+                raise RuntimeError(msg)
+            lsp.addvalue('mirror_rules', self.mirror)
+        except idlutils.RowNotFound as e:
+            raise RuntimeError("LSP %s not found" % self.port) from e
+
+
+class LspDetachMirror(cmd.BaseCommand):
+    def __init__(self, api, port, mirror, if_exist=False):
+        super().__init__(api)
+        self.port = port
+        self.mirror = mirror
+        self.if_exist = if_exist
+
+    def run_idl(self, txn):
+        try:
+            lsp = self.api.lookup('Logical_Switch_Port', self.port)
+            mirror = self.api.lookup('Mirror', self.mirror)
+            if mirror not in lsp.mirror_rules and not self.if_exist:
+                msg = "Mirror Rule %s doesn't exist on LSP %s" % (self.mirror,
+                                                                  self.port)
+                raise RuntimeError(msg)
+            lsp.delvalue('mirror_rules', self.mirror)
+        except idlutils.RowNotFound as e:
+            if self.if_exists:
+                return
+            msg = "LSP %s doesn't exist" % self.port
+            raise RuntimeError(msg) from e
+
+
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
                  policy='dst-ip', may_exist=False, ecmp=False):
