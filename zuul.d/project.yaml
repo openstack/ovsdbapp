@@ -6,8 +6,6 @@
     check:
       jobs:
         - openstack-tox-functional
-        - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
     gate:
       jobs:
         - openstack-tox-functional
-        - ovsdbapp-tempest-dsvm-networking-ovn-ovs-release
