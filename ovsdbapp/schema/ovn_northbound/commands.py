@@ -1186,12 +1186,14 @@ class LrRouteAddCommand(cmd.BaseCommand):
 
 
 class LrRouteDelCommand(cmd.BaseCommand):
-    def __init__(self, api, router, prefix=None, if_exists=False):
+    def __init__(self, api, router, prefix=None, if_exists=False,
+                 nexthop=None):
         if prefix is not None:
             prefix = str(netaddr.IPNetwork(prefix))
         super().__init__(api)
         self.router = router
         self.prefix = prefix
+        self.nexthop = nexthop
         self.if_exists = if_exists
 
     def run_idl(self, txn):
@@ -1201,8 +1203,10 @@ class LrRouteDelCommand(cmd.BaseCommand):
             return
         for route in lr.static_routes:
             if self.prefix == route.ip_prefix:
+                if self.nexthop and route.nexthop != self.nexthop:
+                    continue
+
                 lr.delvalue('static_routes', route)
-                # There should only be one possible match
                 return
 
         if not self.if_exists:

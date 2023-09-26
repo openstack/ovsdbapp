@@ -1031,6 +1031,32 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self.api.lr_route_del(lr.uuid, '192.0.2.0/25', if_exists=True).execute(
             check_error=True)
 
+    def test_lr_route_del_ecmp(self):
+        prefix = "10.0.0.0/24"
+        nexthop1 = "1.1.1.1"
+        nexthop2 = "2.2.2.2"
+        lr = self._lr_add()
+
+        self._lr_add_route(lr.uuid, prefix=prefix, nexthop=nexthop1)
+        ecmp_route = self._lr_add_route(lr.uuid, prefix=prefix,
+                                        nexthop=nexthop2, ecmp=True)
+        self.assertEqual(
+            len(self.api.tables['Logical_Router_Static_Route'].rows), 2)
+
+        self.api.lr_route_del(lr.uuid, prefix, nexthop=nexthop2).execute(
+            check_error=True)
+
+        self.assertNotIn(
+            ecmp_route.uuid,
+            len(self.api.tables['Logical_Router_Static_Route'].rows),
+        )
+
+        cmd = self.api.lr_route_del(lr.uuid, prefix, nexthop=nexthop2)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+        self.assertEqual(
+            len(self.api.tables['Logical_Router_Static_Route'].rows), 1)
+
     def test_lr_route_list(self):
         lr = self._lr_add()
         routes = {self._lr_add_route(lr.uuid, prefix="192.0.%s.0/25" % p)

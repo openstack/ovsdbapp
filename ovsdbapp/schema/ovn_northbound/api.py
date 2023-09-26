@@ -762,7 +762,7 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def lr_route_del(self, router, prefix=None, if_exists=False):
+    def lr_route_del(self, router, prefix=None, if_exists=False, nexthop=None):
         """Remove routes from 'router'
 
         :param router:    The name or uuid of the router
@@ -771,6 +771,10 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type prefix:     type string
         :param if_exists: If True, don't fail if the port doesn't exist
         :type if_exists:  boolean
+        :parm nexthop:    The gateway to use for this route, which should be
+                          the IP address of one of `router`'s logical router
+                          ports or the IP address of a logical port
+        :type nexthop:    string
         :returns:        :class:`Command` with no result
         """
 
