@@ -2636,3 +2636,137 @@ class TestBFDOps(OvnNorthboundTest):
         b1 = self.api.bfd_add(name, name).execute(check_error=True)
         b2 = self.api.bfd_get(b1.uuid).execute(check_error=True)
         self.assertEqual(b1, b2)
+
+
+class TestMirrorOps(OvnNorthboundTest):
+
+    def setUp(self):
+        super(TestMirrorOps, self).setUp()
+        self.table = self.api.tables['Mirror']
+        self.switch = self.useFixture(
+            fixtures.LogicalSwitchFixture(self.api)).obj
+        lsp_add_cmd = self.api.lsp_add(self.switch.uuid, 'testport')
+        with self.api.transaction(check_error=True) as txn:
+            txn.add(lsp_add_cmd)
+
+        self.port_uuid = lsp_add_cmd.result.uuid
+
+    def _mirror_add(self, name=None, direction_filter='to-lport',
+                    dest='10.11.1.1', mirror_type='gre', index=42, **kwargs):
+        if not name:
+            name = utils.get_rand_name()
+        cmd = self.api.mirror_add(name, mirror_type, index, direction_filter,
+                                  dest, **kwargs)
+        row = cmd.execute(check_error=True)
+        self.assertEqual(cmd.name, row.name)
+        self.assertEqual(cmd.direction_filter, row.filter)
+        self.assertEqual(cmd.dest, row.sink)
+        self.assertEqual(cmd.mirror_type, row.type)
+        self.assertEqual(cmd.index, row.index)
+        return idlutils.frozen_row(row)
+
+    def test_mirror_addx(self):
+        self._mirror_add(dest='10.13.1.1')
+
+    def test_mirror_add_duplicate(self):
+        name = utils.get_rand_name()
+        cmd = self.api.mirror_add(name, 'gre', 100, 'from-lport',
+                                  '192.169.1.1')
+        cmd.execute(check_error=True)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_mirror_add_may_exist_no_change(self):
+        name = utils.get_rand_name()
+        mirror1 = self._mirror_add(name=name, dest='10.18.1.1')
+        mirror2 = self._mirror_add(name=name, dest='10.18.1.1',
+                                   may_exist=True)
+        self.assertEqual(mirror1, mirror2)
+
+    def test_mirror_add_may_exist_change(self):
+        name = utils.get_rand_name()
+        mirror1 = self._mirror_add(name=name, dest='10.12.1.0')
+        mirror2 = self._mirror_add(
+            name=name, direction_filter='from-lport', dest='10.12.1.0',
+            mirror_type='gre', index=100, may_exist=True,
+        )
+        self.assertNotEqual(mirror1, mirror2)
+        self.assertEqual(mirror1.uuid, mirror2.uuid)
+
+    def test_mirror_del(self):
+        name = utils.get_rand_name()
+        mirror1 = self._mirror_add(name=name, dest='10.14.1.0')
+        self.assertIn(mirror1.uuid, self.table.rows)
+        self.api.mirror_del(mirror1.uuid).execute(check_error=True)
+        self.assertNotIn(mirror1.uuid, self.table.rows)
+
+    def test_mirror_get(self):
+        name = utils.get_rand_name()
+        mirror1 = self.api.mirror_add(name, 'gre', 100, 'from-lport',
+                                      '10.15.1.1').execute(check_error=True)
+        mirror2 = self.api.mirror_get(mirror1.uuid).execute(check_error=True)
+        self.assertEqual(mirror1, mirror2)
+
+    def test_lsp_attach_detach_mirror(self):
+        mirror = self._mirror_add(name='my_mirror')
+        self.api.lsp_attach_mirror(
+            self.port_uuid, mirror.uuid).execute(check_error=True)
+        port = self.api.lsp_get(self.port_uuid).execute(check_error=True)
+
+        self.assertEqual(1, len(port.mirror_rules))
+        mir_rule = self.api.lookup('Mirror', port.mirror_rules[0].uuid)
+        self.assertEqual(mirror.uuid, mir_rule.uuid)
+
+        self.api.lsp_detach_mirror(
+            self.port_uuid, mirror.uuid).execute(check_error=True)
+        port = self.api.lsp_get(self.port_uuid).execute(check_error=True)
+
+        self.assertEqual(0, len(port.mirror_rules))
+
+    def test_lsp_attach_detach_may_exist(self):
+        mirror1 = self._mirror_add(name='mirror1')
+        self.api.lsp_attach_mirror(
+            self.port_uuid, mirror1.uuid).execute(check_error=True)
+        mirror2 = self._mirror_add(name='mirror2', dest='10.17.1.0')
+
+        # Try to attach a mirror to a port which already has mirror_rule
+        # attached
+        failing_cmd = self.api.lsp_attach_mirror(
+            self.port_uuid, mirror1.uuid,
+            may_exist=False)
+        self.assertRaises(
+            RuntimeError,
+            failing_cmd.execute,
+            check_error=True
+        )
+
+        self.api.lsp_attach_mirror(
+            self.port_uuid, mirror2.uuid,
+            may_exist=True).execute(check_error=True)
+        check_res = self.api.lsp_get(self.port_uuid).execute(check_error=True)
+        rule_on_lsp = False
+        for m_rule in check_res.mirror_rules:
+            if mirror2.uuid == m_rule.uuid:
+                rule_on_lsp = True
+        self.assertTrue(rule_on_lsp)
+
+        self.api.lsp_detach_mirror(
+            self.port_uuid, mirror2.uuid).execute(check_error=True)
+        port = self.api.lsp_get(self.port_uuid).execute(check_error=True)
+        self.assertEqual(1, len(port.mirror_rules))
+        self.assertEqual(mirror1.uuid, port.mirror_rules[0].uuid)
+
+        # Try to detach a rule that is already detached
+        failing_cmd = self.api.lsp_detach_mirror(
+            self.port_uuid, mirror2.uuid)
+        self.assertRaises(
+            RuntimeError,
+            failing_cmd.execute,
+            check_error=True
+        )
+
+        # detach with if_exist=True, and check the result, to be as previously
+        self.api.lsp_detach_mirror(
+            self.port_uuid, mirror2.uuid,
+            if_exist=True).execute(check_error=True)
+        self.assertEqual(1, len(port.mirror_rules))
+        self.assertEqual(mirror1.uuid, port.mirror_rules[0].uuid)

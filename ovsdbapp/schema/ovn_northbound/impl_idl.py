@@ -435,3 +435,25 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def bfd_get(self, uuid):
         return cmd.BFDGetCommand(self, uuid)
+
+    def mirror_get(self, uuid):
+        return cmd.MirrorGetCommand(self, uuid)
+
+    def mirror_del(self, mirror):
+        return cmd.MirrorDelCommand(self, mirror)
+
+    def mirror_add(self, name, mirror_type, index, direction_filter,
+                   dest, external_ids=None, may_exist=False):
+        return cmd.MirrorAddCommand(self, name=name,
+                                    mirror_type=mirror_type,
+                                    index=index,
+                                    direction_filter=direction_filter,
+                                    dest=dest,
+                                    external_ids=external_ids,
+                                    may_exist=may_exist)
+
+    def lsp_attach_mirror(self, port, mirror, may_exist=False):
+        return cmd.LspAttachMirror(self, port, mirror, may_exist)
+
+    def lsp_detach_mirror(self, port, mirror, if_exist=False):
+        return cmd.LspDetachMirror(self, port, mirror, if_exist)
