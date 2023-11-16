@@ -138,3 +138,19 @@ class OvnSouthboundTest(base.FunctionalTestCase):
     def test_lsp_unbind_if_exists(self):
         pname = utils.get_rand_device_name()
         self.api.lsp_unbind(pname, if_exists=True).execute(check_error=True)
+
+    def test_event_with_match_fn_and_conditions(self):
+        cond_event = event.MatchFnConditionsEvent(
+            events=(event.MatchFnConditionsEvent.ROW_UPDATE,),
+            table="SB_Global",
+            conditions=(("external_ids", "=", {"foo": "bar"}),))
+        self.handler.watch_event(cond_event)
+        # Test that we match on condition with an Event that has a match_fn()
+        cmd = self.api.db_set("SB_Global", ".", external_ids={"foo": "bar"})
+        cmd.execute(check_error=True)
+        self.assertTrue(cond_event.wait())
+        cond_event.event.clear()
+        # Test that we don't ignore the condition when match_fn() returns True
+        cmd = self.api.db_set("SB_Global", ".", external_ids={"bar": "bar"})
+        cmd.execute(check_error=True)
+        self.assertFalse(cond_event.wait())

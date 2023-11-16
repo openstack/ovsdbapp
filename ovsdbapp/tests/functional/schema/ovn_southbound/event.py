@@ -28,3 +28,14 @@ class ExceptionalMatchFnEvent(WaitForPortBindingEvent):
 
     def match_fn(self, event, row, old):
         raise Exception()
+
+
+class MatchFnConditionsEvent(event.WaitEvent):
+    def __init__(self, *args, timeout=1, **kwargs):
+        super().__init__(*args, timeout=timeout, **kwargs)
+
+    def match_fn(self, event, row, old):
+        # This should only be called if we pass all other conditions
+        # so make sure wait() returns False if we see any other events. This
+        # ensures that adding a match_fn() doesn't skip the conditions checks.
+        return True

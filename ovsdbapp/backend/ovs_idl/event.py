@@ -20,6 +20,16 @@ LOG = logging.getLogger(__name__)
 
 class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
     def match_fn(self, event, row, old):
+        """User-overridable custom matching function
+
+        This method takes the same arguments as the RowEvent API call
+        `matches` and allows for more complex matching criteria. This
+        method will apply additional checks to those specified in the
+        creation of the RowEvent
+        """
+        return True
+
+    def base_match(self, event, row, old):
         if self.conditions and not idlutils.row_match(row, self.conditions):
             return False
         if self.old_conditions:
@@ -37,6 +47,8 @@ class RowEvent(ovsdb_event.RowEvent):  # pylint: disable=abstract-method
         if event not in self.events:
             return False
         if row._table.name != self.table:
+            return False
+        if not self.base_match(event, row, old):
             return False
         if not self.match_fn(event, row, old):
             return False
