@@ -13,6 +13,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import time
+
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.schema.hardware_vtep.commands import get_global_record
 from ovsdbapp.tests.functional import base
@@ -352,6 +354,16 @@ class TestMacBindingsOps(HardwareVtepTest):
         ]:
             self.addCleanup(self.ovsvenv.call, args)
 
+    def _wait_db_rows(self, table):
+        """Wait for rows in specified table. Raises RuntimeError otherwise."""
+
+        for _ in range(4):
+            if table.rows:
+                return
+            time.sleep(0.5)
+
+        raise RuntimeError("Table '%s' is empty" % table.name)
+
     def test_list_local_macs(self):
         local_macs = self.api.list_local_macs(
             self.ls.name).execute(check_error=True)
@@ -370,6 +382,7 @@ class TestMacBindingsOps(HardwareVtepTest):
         ucast_table = self.api.tables['Ucast_Macs_Local']
         mcast_table = self.api.tables['Mcast_Macs_Local']
         for table in [ucast_table, mcast_table]:
+            self._wait_db_rows(table)
             self.assertEqual(len(table.rows), 1)
 
         self.api.clear_local_macs(self.ls.name).execute(check_error=True)
@@ -380,6 +393,7 @@ class TestMacBindingsOps(HardwareVtepTest):
         ucast_table = self.api.tables['Ucast_Macs_Remote']
         mcast_table = self.api.tables['Mcast_Macs_Remote']
         for table in [ucast_table, mcast_table]:
+            self._wait_db_rows(table)
             self.assertEqual(len(table.rows), 1)
 
         self.api.clear_remote_macs(self.ls.name).execute(check_error=True)

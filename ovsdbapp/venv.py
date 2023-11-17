@@ -282,10 +282,12 @@ class OvsOvnIcVenvFixture(OvsOvnVenvFixture):
 class OvsVtepVenvFixture(OvsOvnVenvFixture):
     VTEP_SCHEMA = 'vtep.ovsschema'
 
-    def __init__(self, venv, vtepdir=None, **kwargs):
+    def __init__(self, venv, **kwargs):
+        vtepdir = os.getenv('VTEP_SRCDIR')
         if vtepdir and os.path.isdir(vtepdir):
             self.PATH_VAR_TEMPLATE += ":{0}".format(vtepdir)
-        self.vtepdir = self._share_path(self.OVS_PATHS, vtepdir)
+        self.vtepdir = self._share_path(self.OVS_PATHS, vtepdir,
+                                        [self.VTEP_SCHEMA])
         super().__init__(venv, **kwargs)
 
     def _setUp(self):
