@@ -21,6 +21,9 @@ class OvnSbApiIdlImpl(ovs_idl.Backend, api.API):
     lookup_table = {
         'Chassis': idlutils.RowLookup('Chassis', 'name', None),
         'MAC_Binding': idlutils.RowLookup('MAC_Binding', 'ip', None),
+        'Port_Binding': idlutils.RowLookup(
+            'Port_Binding', 'logical_port', None
+        ),
     }
 
     def chassis_add(self, chassis, encap_types, encap_ip, may_exist=False,
