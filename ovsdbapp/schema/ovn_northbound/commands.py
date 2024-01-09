@@ -20,6 +20,15 @@ from ovsdbapp import constants as const
 from ovsdbapp import utils
 
 
+def normalize_prefix(addr):
+    return str(netaddr.IPNetwork(addr).cidr if '/' in addr
+               else netaddr.IPAddress(addr))
+
+
+def normalize_prefixes(addrs):
+    return [normalize_prefix(addr) for addr in addrs or []]
+
+
 class LsAddCommand(cmd.AddCommand):
     table_name = 'Logical_Switch'
 
@@ -242,8 +251,7 @@ class AddressSetAddCommand(cmd.AddCommand):
     def __init__(self, api, name, addresses=None, may_exist=False):
         super().__init__(api)
         self.name = name
-        self.addresses = [str(netaddr.IPAddress(address))
-                          for address in addresses or []]
+        self.addresses = normalize_prefixes(addresses)
         self.may_exist = may_exist
 
     def run_idl(self, txn):
@@ -300,8 +308,7 @@ class AddressSetUpdateAddressesCommand(cmd.BaseCommand):
         self.address_set = address_set
         if isinstance(addresses, (str, bytes)):
             addresses = [addresses]
-        self.addresses = [str(netaddr.IPAddress(address))
-                          for address in addresses]
+        self.addresses = normalize_prefixes(addresses)
 
 
 class AddressSetAddAddressesCommand(AddressSetUpdateAddressesCommand):

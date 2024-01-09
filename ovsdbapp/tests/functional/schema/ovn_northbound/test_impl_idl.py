@@ -309,7 +309,7 @@ class TestAddressSetOps(OvnNorthboundTest):
         self.assertEqual(addr_set, addr_set2)
 
     def test_addr_set_add_with_addresses(self):
-        addresses = ['192.168.0.1', '192.168.0.2']
+        addresses = ['192.168.0.1', '192.168.0.2', '192.168.10.10/32']
         addr_set = self._addr_set_add(addresses=addresses)
         self.assertEqual(addresses, addr_set.addresses)
 
@@ -339,7 +339,7 @@ class TestAddressSetOps(OvnNorthboundTest):
         self.assertTrue(addr_sets.issubset(found_sets))
 
     def test_addr_set_add_addresses(self):
-        addresses = ['192.168.0.1', '192.168.0.2']
+        addresses = ['192.168.0.1', '192.168.0.2', '192.168.10.10/32']
         addr_set = self._addr_set_add()
 
         self.api.address_set_add_addresses(
@@ -351,7 +351,7 @@ class TestAddressSetOps(OvnNorthboundTest):
         self.assertEqual(addresses, addr_set.addresses)
 
     def test_addr_set_remove_addresses(self):
-        addresses = ['192.168.0.1', '192.168.0.2']
+        addresses = ['192.168.0.1', '192.168.0.2', '192.168.10.10/32']
         addr_set = self._addr_set_add(addresses=addresses)
 
         self.api.address_set_remove_addresses(
