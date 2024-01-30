@@ -1,49 +1,85 @@
 # The format of this file isn't really documented; just use --generate-rcfile
-[MASTER]
+[MAIN]
 # Add <file or directory> to the black list. It should be a base name, not a
 # path. You may set this option multiple times.
 ignore=.git,tests
 
+# List of plugins (as comma separated values of python module names) to load,
+# usually to register additional checkers.
+load-plugins=pylint.extensions.no_self_use
+
+# When enabled, pylint would attempt to guess common misconfiguration and emit
+# user-friendly hints instead of false-positive error messages.
+suggestion-mode=yes
+
 [MESSAGES CONTROL]
-# TODO: This list is copied from neutron, the options which do not need to be
-# suppressed have been already removed, some of the remaining options will be
-# removed by code adjustment.
+# NOTE(gus): This is a long list.  A number of these are important and
+# should be re-enabled once the offending code is fixed (or marked
+# with a local disable)
 disable=
 # "F" Fatal errors that prevent further processing
  import-error,
 # "I" Informational noise
+ c-extension-no-member,
+ locally-disabled,
 # "E" Error for important programming issues (likely bugs)
+ access-member-before-definition,
  no-member,
+ no-method-argument,
+ no-self-argument,
+ not-an-iterable,
 # "W" Warnings for stylistic problems or minor programming issues
  abstract-method,
  arguments-differ,
  attribute-defined-outside-init,
+ bad-indentation,
  broad-except,
  dangerous-default-value,
+ expression-not-assigned,
  fixme,
  global-statement,
- no-init,
+ keyword-arg-before-vararg,
+ literal-comparison,
+ non-parent-init-called,
+ not-callable,
  protected-access,
  redefined-builtin,
  redefined-outer-name,
  signature-differs,
+ super-init-not-called,
+ unpacking-non-sequence,
  unused-argument,
  unused-import,
  unused-variable,
  useless-super-delegation,
+ unnecessary-pass,
+ raise-missing-from,
+ arguments-renamed,
+ broad-exception-raised,
+ unspecified-encoding,
+ redundant-u-string-prefix,
+ unused-private-member,
 # "C" Coding convention violations
- bad-continuation,
+ consider-iterating-dictionary,
+ consider-using-enumerate,
  invalid-name,
  len-as-condition,
- misplaced-comparison-constant,
  missing-docstring,
+ singleton-comparison,
  superfluous-parens,
  ungrouped-imports,
  wrong-import-order,
+ consider-using-f-string,
+ consider-using-dict-items,
 # "R" Refactor recommendations
+ consider-merging-isinstance,
+ consider-using-ternary,
  duplicate-code,
+ inconsistent-return-statements,
  no-else-return,
  no-self-use,
+ redefined-argument-from-local,
+ simplifiable-if-statement,
  too-few-public-methods,
  too-many-ancestors,
  too-many-arguments,
@@ -51,22 +87,15 @@ disable=
  too-many-instance-attributes,
  too-many-lines,
  too-many-locals,
+ too-many-nested-blocks,
  too-many-public-methods,
  too-many-return-statements,
  too-many-statements,
- inconsistent-return-statements,
- useless-object-inheritance,
- too-many-nested-blocks,
- too-many-boolean-expressions,
- not-callable,
-# new for python3 version of pylint
- chained-comparison,
- consider-using-dict-comprehension,
- consider-using-in,
  consider-using-set-comprehension,
- unnecessary-pass,
- useless-object-inheritance
-
+ useless-object-inheritance,
+ super-with-arguments,
+ use-dict-literal,
+ consider-using-with
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores
@@ -79,8 +108,8 @@ argument-rgx=[a-z_][a-z0-9_]{1,30}$
 # and be lowercased with underscores
 method-rgx=([a-z_][a-z0-9_]{2,}|setUp|tearDown)$
 
-# Module names matching
-module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
+# Module names matching neutron-* are ok (files in bin/)
+module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+)|(neutron-[a-z0-9_-]+))$
 
 # Don't require docstrings on tests.
 no-docstring-rgx=((__.*__)|([tT]est.*)|setUp|tearDown)$
@@ -92,23 +121,27 @@ max-line-length=79
 [VARIABLES]
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
-additional-builtins=
+# _ is used by our localization
+additional-builtins=_
 
 [CLASSES]
-# List of interface methods to ignore, separated by a comma.
-ignore-iface-methods=
+# List of valid names for the first argument in a class method.
+valid-classmethod-first-arg=cls
+
+# List of valid names for the first argument in a metaclass class method.
+valid-metaclass-classmethod-first-arg=cls
 
 [IMPORTS]
 # Deprecated modules which should not be used, separated by a comma
 deprecated-modules=
 # should use oslo_serialization.jsonutils
- json
+ json,
+ six
 
 [TYPECHECK]
 # List of module names for which member attributes should not be checked
-ignored-modules=six.moves,_MovedItems
+ignored-modules=_MovedItems
 
 [REPORTS]
 # Tells whether to display a full report or only the messages
 reports=no
-
