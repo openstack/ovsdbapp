@@ -1223,7 +1223,7 @@ class LspAttachMirror(cmd.BaseCommand):
                 msg = "Mirror Rule %s is already set on LSP %s" % (self.mirror,
                                                                    self.port)
                 raise RuntimeError(msg)
-            lsp.addvalue('mirror_rules', self.mirror)
+            lsp.addvalue('mirror_rules', mirror)
         except idlutils.RowNotFound as e:
             raise RuntimeError("LSP %s not found" % self.port) from e
 
@@ -1243,7 +1243,7 @@ class LspDetachMirror(cmd.BaseCommand):
                 msg = "Mirror Rule %s doesn't exist on LSP %s" % (self.mirror,
                                                                   self.port)
                 raise RuntimeError(msg)
-            lsp.delvalue('mirror_rules', self.mirror)
+            lsp.delvalue('mirror_rules', mirror)
         except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
