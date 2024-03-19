@@ -12,6 +12,7 @@
 
 import netaddr
 import testscenarios
+import types
 import uuid
 
 from ovsdbapp.backend.ovs_idl import idlutils
@@ -2542,6 +2543,13 @@ class TestBFDOps(OvnNorthboundTest):
         super(TestBFDOps, self).setUp()
         self.table = self.api.tables['BFD']
 
+    @staticmethod
+    def _freeze_and_filter_row(row, filter_columns):
+        return types.SimpleNamespace(
+            **{k: v
+               for k, v in idlutils.frozen_row(row)._asdict().items()
+               if k not in filter_columns})
+
     def _bfd_add(self, *args, **kwargs):
         cmd = self.api.bfd_add(*args, **kwargs)
         row = cmd.execute(check_error=True)
@@ -2555,7 +2563,7 @@ class TestBFDOps(OvnNorthboundTest):
             'detect_mult'] else [], row.detect_mult)
         self.assertEqual(cmd.columns['external_ids'] or {}, row.external_ids)
         self.assertEqual(cmd.columns['options'] or {}, row.options)
-        return idlutils.frozen_row(row)
+        return self._freeze_and_filter_row(row, ('status',))
 
     def test_bfd_add(self):
         name = utils.get_rand_name()
@@ -2633,8 +2641,12 @@ class TestBFDOps(OvnNorthboundTest):
 
     def test_bfd_get(self):
         name = utils.get_rand_name()
-        b1 = self.api.bfd_add(name, name).execute(check_error=True)
-        b2 = self.api.bfd_get(b1.uuid).execute(check_error=True)
+        b1 = self._freeze_and_filter_row(
+            self.api.bfd_add(name, name).execute(check_error=True),
+            ('status',))
+        b2 = self._freeze_and_filter_row(
+            self.api.bfd_get(b1.uuid).execute(check_error=True),
+            ('status',))
         self.assertEqual(b1, b2)
 
 
