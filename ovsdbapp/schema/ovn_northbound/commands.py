@@ -1670,15 +1670,22 @@ class LbDelHealthCheckCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
-class LbAddIpPortMappingCommand(cmd.BaseCommand):
+class LbIpPortMappingCommand(cmd.BaseCommand):
+    @staticmethod
+    def normalize_ip(ip_str):
+        ip = netaddr.IPAddress(ip_str)
+        return f"[{ip}]" if ip.version == 6 else str(ip)
+
+
+class LbAddIpPortMappingCommand(LbIpPortMappingCommand):
     table = 'Load_Balancer'
 
     def __init__(self, api, lb, endpoint_ip, port_name, source_ip):
         super().__init__(api)
         self.lb = lb
-        self.endpoint_ip = str(netaddr.IPAddress(endpoint_ip))
+        self.endpoint_ip = self.normalize_ip(endpoint_ip)
         self.port_name = port_name
-        self.source_ip = str(netaddr.IPAddress(source_ip))
+        self.source_ip = self.normalize_ip(source_ip)
 
     def run_idl(self, txn):
         lb = self.api.lookup(self.table, self.lb)
@@ -1686,13 +1693,13 @@ class LbAddIpPortMappingCommand(cmd.BaseCommand):
                   '%s:%s' % (self.port_name, self.source_ip))
 
 
-class LbDelIpPortMappingCommand(cmd.BaseCommand):
+class LbDelIpPortMappingCommand(LbIpPortMappingCommand):
     table = 'Load_Balancer'
 
     def __init__(self, api, lb, endpoint_ip):
         super().__init__(api)
         self.lb = lb
-        self.endpoint_ip = str(netaddr.IPAddress(endpoint_ip))
+        self.endpoint_ip = self.normalize_ip(endpoint_ip)
 
     def run_idl(self, txn):
         lb = self.api.lookup(self.table, self.lb)
