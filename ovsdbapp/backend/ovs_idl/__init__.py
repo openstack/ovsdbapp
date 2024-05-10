@@ -32,12 +32,12 @@ class Backend(object):
         super().__init__(**kwargs)
         self.ovsdb_connection = connection
         if auto_index:
-            if connection.is_running:
+            if self.ovsdb_connection.is_running:
                 LOG.debug("Connection already started, not creating indices")
             else:
                 self.autocreate_indices()
         if start:
-            self.start_connection(connection)
+            self.start_connection(self.ovsdb_connection)
 
     @property
     def ovsdb_connection(self):
