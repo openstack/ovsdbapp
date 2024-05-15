@@ -1641,6 +1641,17 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertEqual(options, self.api.lrp_get_options(lrp.uuid).execute(
             check_error=True))
 
+    def test_lrp_set_options_if_exists(self):
+        options = {'one': 'two', 'three': 'four'}
+        self.api.lrp_set_options(utils.get_rand_device_name(),
+                                 if_exists=True,
+                                 **options).execute(check_error=True)
+
+    def test_lrp_set_options_no_exist(self):
+        options = {'one': 'two', 'three': 'four'}
+        cmd = self.api.lrp_set_options(utils.get_rand_device_name(), **options)
+        self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
+
     def test_lrp_get_set_gateway_chassis(self):
         lrp = self._lrp_add(None)
         c1_name = utils.get_rand_device_name()
