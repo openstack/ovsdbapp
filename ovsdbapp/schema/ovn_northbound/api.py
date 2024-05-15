@@ -639,14 +639,17 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def lrp_set_options(self, port, **options):
+    def lrp_set_options(self, port, if_exists=False, **options):
         """Set options related to the type of 'port'
 
-        :param port:    The name or uuid of the port
-        :type port:     string or uuid.UUID
-        :param options: keys and values for the port 'options' dict
-        :type options:  key: string, value: string
-        :returns:       :class:`Command` with no result
+        :param port:      The name or uuid of the port
+        :type port:       string or uuid.UUID
+        :param options:   keys and values for the port 'options' dict
+        :param if_exists: If True, don't fail if the logical router port
+                          doesn't exist
+        :type if_exists:  boolean
+        :type options:    key: string, value: string
+        :returns:         :class:`Command` with no result
         """
 
     @abc.abstractmethod

@@ -340,14 +340,20 @@ class BaseGetRowCommand(ReadOnlyCommand):
 class BaseSetOptionsCommand(BaseCommand):
     table = []
 
-    def __init__(self, api, entity, **options):
+    def __init__(self, api, entity, if_exists=False, **options):
         super().__init__(api)
         self.entity = entity
         self.options = options
+        self.if_exists = if_exists
 
     def run_idl(self, txn):
-        entity = self.api.lookup(self.table, self.entity)
-        entity.options = self.options
+        try:
+            entity = self.api.lookup(self.table, self.entity)
+            entity.options = self.options
+        except idlutils.RowNotFound:
+            if self.if_exists:
+                return
+            raise
 
 
 class BaseGetOptionsCommand(ReadOnlyCommand):
