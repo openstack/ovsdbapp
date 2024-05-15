@@ -212,8 +212,8 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lrp_get_enabled(self, port):
         return cmd.LrpGetEnabledCommand(self, port)
 
-    def lrp_set_options(self, port, **options):
-        return cmd.LrpSetOptionsCommand(self, port, **options)
+    def lrp_set_options(self, port, if_exists=False, **options):
+        return cmd.LrpSetOptionsCommand(self, port, if_exists, **options)
 
     def lrp_get_options(self, port):
         return cmd.LrpGetOptionsCommand(self, port)
