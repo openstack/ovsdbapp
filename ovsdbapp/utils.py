@@ -24,7 +24,7 @@ from ovsdbapp.backend.ovs_idl import rowview
 
 
 def normalize_ip(ip):
-    return str(netaddr.IPAddress(ip))
+    return str(netaddr.IPAddress(ip, flags=netaddr.INET_ATON))
 
 
 def normalize_ip_port(ipport):
