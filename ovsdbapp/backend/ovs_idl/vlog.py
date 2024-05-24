@@ -31,7 +31,7 @@ _LOG = logging.getLogger(__name__)
 # Map local log LEVELS to local LOG functions
 CRITICAL = _LOG.critical
 ERROR = _LOG.error
-WARN = _LOG.warn
+WARN = _LOG.warning
 INFO = _LOG.info
 DEBUG = _LOG.debug
 
