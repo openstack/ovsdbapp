@@ -1813,10 +1813,11 @@ class TestLoadBalancerOps(OvnNorthboundTest):
         self.api.lb_del_health_check(lb.name, uuid.uuid4(),
                                      if_exists=True).execute(check_error=True)
 
-    def _test_lb_add_del_ip_port_mapping(self, col):
-        endpoint_ip = '172.31.0.4'
+    def _test_lb_add_del_ip_port_mapping(self, col, input, expected):
+        endpoint_ip, source_ip = input
+        expected_endpoint_ip, expected_source_ip = expected
         port_name = 'sw1-p1'
-        source_ip = '172.31.0.6'
+
         lb = self._lb_add(utils.get_rand_device_name(),
                           '192.0.0.1', ['10.0.0.1'])
         self.assertEqual(lb.ip_port_mappings, {})
@@ -1825,18 +1826,30 @@ class TestLoadBalancerOps(OvnNorthboundTest):
                                         endpoint_ip,
                                         port_name,
                                         source_ip).execute(check_error=True)
-        self.assertEqual(lb.ip_port_mappings[endpoint_ip],
-                         '%s:%s' % (port_name, source_ip))
+        self.assertEqual(lb.ip_port_mappings[expected_endpoint_ip],
+                         '%s:%s' % (port_name, expected_source_ip))
 
         self.api.lb_del_ip_port_mapping(val,
                                         endpoint_ip).execute(check_error=True)
         self.assertEqual(lb.ip_port_mappings, {})
 
     def test_lb_add_del_ip_port_mapping_uuid(self):
-        self._test_lb_add_del_ip_port_mapping('uuid')
+        input = ('172.31.0.3', '172.31.0.6')
+        self._test_lb_add_del_ip_port_mapping('uuid', input, input)
+
+    def test_lb_add_del_ip_port_mapping_uuid_v6(self):
+        input = ('2001:db8::1', '2001:db8::2')
+        expected = (f"[{input[0]}]", f"[{input[1]}]")
+        self._test_lb_add_del_ip_port_mapping('uuid', input, expected)
 
     def test_lb_add_del_ip_port_mapping_name(self):
-        self._test_lb_add_del_ip_port_mapping('name')
+        input = ('172.31.0.3', '172.31.0.6')
+        self._test_lb_add_del_ip_port_mapping('name', input, input)
+
+    def test_lb_add_del_ip_port_mapping_name_v6(self):
+        input = ('2001:db8::1', '2001:db8::2')
+        expected = (f"[{input[0]}]", f"[{input[1]}]")
+        self._test_lb_add_del_ip_port_mapping('name', input, expected)
 
     def test_hc_get_set_options(self):
         hc_options = {
