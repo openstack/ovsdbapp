@@ -61,8 +61,10 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.AclAddCommand(self, switch, direction, priority,
                                  match, action, log, may_exist, **external_ids)
 
-    def acl_del(self, switch, direction=None, priority=None, match=None):
-        return cmd.AclDelCommand(self, switch, direction, priority, match)
+    def acl_del(self, switch, direction=None, priority=None, match=None,
+                if_exists=False):
+        return cmd.AclDelCommand(self, switch, direction, priority, match,
+                                 if_exists)
 
     def acl_list(self, switch):
         return cmd.AclListCommand(self, switch)
@@ -76,9 +78,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
                                    **external_ids)
 
     def pg_acl_del(self, port_group, direction=None, priority=None,
-                   match=None):
+                   match=None, if_exists=False):
         return cmd.PgAclDelCommand(self, port_group, direction, priority,
-                                   match)
+                                   match, if_exists)
 
     def pg_acl_list(self, port_group):
         return cmd.PgAclListCommand(self, port_group)

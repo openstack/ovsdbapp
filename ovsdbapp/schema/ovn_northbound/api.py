@@ -128,7 +128,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def acl_del(self, switch, direction=None, priority=None, match=None):
+    def acl_del(self, switch, direction=None, priority=None, match=None,
+                if_exists=False):
         """Remove ACLs from 'switch'
 
         If only switch is supplied, all the ACLs from the logical switch are
@@ -144,6 +145,9 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type priority:   int
         :param match:     The match rule
         :type match:      string
+        :param if_exists: If True, don't fail if the parent logical switch
+                          containing the ACL doesn't exist
+        :type if_exists:  boolean
         :returns:         :class:`Command` with no result
         """
 
@@ -189,7 +193,7 @@ class API(api.API, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def pg_acl_del(self, port_group, direction=None, priority=None,
-                   match=None):
+                   match=None, if_exists=False):
         """Remove ACLs from 'port_group'
 
         If only port_group is supplied, all the ACLs from the logical switch
@@ -205,6 +209,9 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type priority:    int
         :param match:      The match rule
         :type match:       string
+        :param if_exists:  If True, don't fail if the parent port group
+                           containing the ACL doesn't exist
+        :type if_exists:   boolean
         :returns:          :class:`Command` with no result
         """
 
