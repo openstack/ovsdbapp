@@ -190,13 +190,14 @@ class PgAclAddCommand(_AclAddHelper):
 
 class _AclDelHelper(cmd.BaseCommand):
     def __init__(self, api, entity, direction=None,
-                 priority=None, match=None):
+                 priority=None, match=None, if_exists=False):
         if (priority is None) != (match is None):
             raise TypeError("Must specify priority and match together")
         if priority is not None and not direction:
             raise TypeError("Cannot specify priority/match without direction")
         super().__init__(api)
         self.entity = entity
+        self.if_exists = if_exists
         self.conditions = []
         if direction:
             self.conditions.append(('direction', '=', direction))
@@ -206,7 +207,14 @@ class _AclDelHelper(cmd.BaseCommand):
                                     ('match', '=', match)]
 
     def run_idl(self, txn):
-        entity = self.api.lookup(self.lookup_table, self.entity)
+        try:
+            entity = self.api.lookup(self.lookup_table, self.entity)
+        except idlutils.RowNotFound as e:
+            if self.if_exists:
+                return
+            msg = "%s %s does not exist" % (self.lookup_table, self.entity)
+            raise RuntimeError(msg) from e
+
         for acl in [a for a in entity.acls
                     if idlutils.row_match(a, self.conditions)]:
             entity.delvalue('acls', acl)
@@ -215,12 +223,6 @@ class _AclDelHelper(cmd.BaseCommand):
 
 class AclDelCommand(_AclDelHelper):
     lookup_table = 'Logical_Switch'
-
-    def __init__(self, api, switch, direction=None,
-                 priority=None, match=None):
-        # NOTE: we're overriding the constructor here to not break any
-        # existing callers before we introduced Port Groups.
-        super().__init__(api, switch, direction, priority, match)
 
 
 class PgAclDelCommand(_AclDelHelper):
