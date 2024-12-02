@@ -1256,7 +1256,7 @@ class LspDetachMirror(cmd.BaseCommand):
 class LrRouteAddCommand(cmd.BaseCommand):
     def __init__(self, api, router, prefix, nexthop, port=None,
                  policy='dst-ip', may_exist=False, ecmp=False,
-                 route_table=const.MAIN_ROUTE_TABLE):
+                 route_table=const.MAIN_ROUTE_TABLE, bfd=None):
         prefix = str(netaddr.IPNetwork(prefix))
         if nexthop != const.ROUTE_DISCARD:
             nexthop = str(netaddr.IPAddress(nexthop))
@@ -1268,6 +1268,7 @@ class LrRouteAddCommand(cmd.BaseCommand):
         self.policy = policy
         self.ecmp = ecmp
         self.route_table = route_table
+        self.bfd = bfd
         self.may_exist = may_exist
 
     def run_idl(self, txn):
@@ -1297,6 +1298,8 @@ class LrRouteAddCommand(cmd.BaseCommand):
         route.route_table = self.route_table
         if self.port:
             route.output_port = self.port
+        if self.bfd:
+            route.bfd = self.bfd
         lr.addvalue('static_routes', route)
         self.result = route.uuid
 
