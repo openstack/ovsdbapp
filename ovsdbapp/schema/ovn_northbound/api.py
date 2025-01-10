@@ -746,7 +746,7 @@ class API(api.API, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def lr_route_add(self, router, prefix, nexthop, port=None,
                      policy='dst-ip', may_exist=False, ecmp=False,
-                     route_table=const.MAIN_ROUTE_TABLE):
+                     route_table=const.MAIN_ROUTE_TABLE, bfd=None):
         """Add a route to 'router'
 
         :param router:    The name or uuid of the router
@@ -771,6 +771,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type ecmp:       boolean
         :param route_table: The name of route table
         :type route_table:  str
+        :param bfd:       A reference to the BFD table row.
+        :type bfd:        uuid.UUID
         returns:          :class:`Command` with RowView result
         """
 

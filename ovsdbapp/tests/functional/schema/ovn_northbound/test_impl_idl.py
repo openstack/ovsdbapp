@@ -1079,6 +1079,15 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         self.assertNotEqual(learned_route.uuid, route.uuid)
         self.assertNotIn("ic-learned-route", route.external_ids)
 
+    def test_lr_route_add_with_bfd(self):
+        router_name = utils.get_rand_device_name()
+        data = utils.get_rand_name()
+        bfd = self.api.bfd_add(data, data).execute(check_error=True)
+
+        route = self._lr_add_route(router_name, bfd=bfd.uuid)
+
+        self.assertEqual(bfd, route.bfd[0])
+
     def test_lr_route_del(self):
         prefix = "192.0.2.0/25"
         route = self._lr_add_route(prefix=prefix)

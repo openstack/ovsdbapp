@@ -242,9 +242,9 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
 
     def lr_route_add(self, router, prefix, nexthop, port=None,
                      policy='dst-ip', may_exist=False, ecmp=False,
-                     route_table=const.MAIN_ROUTE_TABLE):
+                     route_table=const.MAIN_ROUTE_TABLE, bfd=None):
         return cmd.LrRouteAddCommand(self, router, prefix, nexthop, port,
-                                     policy, may_exist, ecmp, route_table)
+                                     policy, may_exist, ecmp, route_table, bfd)
 
     def lr_route_del(self, router, prefix=None, if_exists=False, nexthop=None,
                      route_table=const.MAIN_ROUTE_TABLE):
