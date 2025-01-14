@@ -23,9 +23,6 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     lookup_table = {
         'Logical_Switch': idlutils.RowLookup('Logical_Switch', 'name', None),
         'Logical_Router': idlutils.RowLookup('Logical_Router', 'name', None),
-        'Logical_Router_Port': idlutils.RowLookup(
-            'Logical_Router_Port', 'name', None
-        ),
         'Load_Balancer': idlutils.RowLookup('Load_Balancer', 'name', None),
     }
 
