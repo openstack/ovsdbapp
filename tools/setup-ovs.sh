@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-OVS_BRANCH=${OVS_BRANCH:-master}
+OVS_BRANCH=${OVS_BRANCH:-main}
 OVN_BRANCH=${OVN_BRANCH:-main}
 
 function use_new_ovn_repository {
