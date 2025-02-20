@@ -1239,6 +1239,19 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def dns_set_options(self, uuid, if_exists=True, **options):
+        """Sets the 'options' field of the DNS row
+
+        :param uuid: The uuid of the DNS row to set the options with
+        :type uuid:  string or uuid.UUID
+        :param if_exists: Do not fail if the DNS row does not exist
+        :type if_exists:  boolean
+        :param options: keys and values for the DNS 'options' dict
+        :type options:  key: string, value: string
+        :returns:    :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
     def pg_add(self, name=None, may_exist=False, **columns):
         """Create a port group
 

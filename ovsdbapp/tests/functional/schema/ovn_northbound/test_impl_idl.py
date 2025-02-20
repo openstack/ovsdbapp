@@ -2227,6 +2227,30 @@ class TestDnsOps(OvnNorthboundTest):
             dns.uuid, **{}).execute(check_error=True)
         self.assertEqual({}, dns.external_ids)
 
+    def test_dns_set_options(self):
+        dns = self._dns_add()
+        options = {'a': 'one', 'b': 'two'}
+        self.api.dns_set_options(
+            dns.uuid, **options).execute(check_error=True)
+        dns = self.api.dns_get(dns.uuid).execute(
+            check_error=True)
+        self.assertEqual(options, dns.options)
+        self.api.dns_set_options(
+            dns.uuid, **{}).execute(check_error=True)
+        self.assertEqual({}, dns.options)
+
+    def test_dns_set_options_if_exists(self):
+        non_existent_dns = ovsdb_utils.generate_uuid()
+        options = {}
+
+        # Assert that if if_exists is True (default ) it won't raise an error
+        self.api.dns_set_options(
+            non_existent_dns, **options).execute(check_error=True)
+
+        # Assert that if if_exists is False it will raise an error
+        self.assertRaises(RuntimeError, self.api.dns_set_options(
+            non_existent_dns, if_exists=False, **options).execute, True)
+
     def test_dns_add_remove_records(self):
         dns = self._dns_add()
         self.api.dns_add_record(dns.uuid, 'a', 'one').execute()

@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added method and command to allow setting 'dns.options' column.

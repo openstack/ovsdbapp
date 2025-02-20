@@ -372,6 +372,10 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def dns_set_external_ids(self, uuid, **external_ids):
         return cmd.DnsSetExternalIdsCommand(self, uuid, **external_ids)
 
+    def dns_set_options(self, uuid, if_exists=True, **options):
+        return cmd.DnsSetOptionsCommand(self, uuid, if_exists=if_exists,
+                                        **options)
+
     def pg_add(self, name=None, may_exist=False, **columns):
         return cmd.PgAddCommand(self, name, may_exist=may_exist, **columns)
 

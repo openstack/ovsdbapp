@@ -1893,6 +1893,13 @@ class DnsSetExternalIdsCommand(cmd.BaseCommand):
             raise RuntimeError(msg) from e
 
 
+class DnsSetOptionsCommand(cmd.BaseSetOptionsCommand):
+    table = 'DNS'
+
+    def __init__(self, api, row_uuid, if_exists=True, **options):
+        super().__init__(api, row_uuid, if_exists=if_exists, **options)
+
+
 class PgAddCommand(cmd.AddCommand):
     table_name = 'Port_Group'
 
