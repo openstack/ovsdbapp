@@ -50,11 +50,14 @@ class TransactionQueue(queue.Queue, object):
 
     def put(self, *args, **kwargs):
         super().put(*args, **kwargs)
-        self._wait_queue.alert_notify()
+        self.alert_notify()
 
     @property
     def alert_fileno(self):
         return self._wait_queue.alert_fileno
+
+    def alert_notify(self):
+        self._wait_queue.alert_notify()
 
 
 class Connection(object):
@@ -143,6 +146,10 @@ class Connection(object):
             raise exceptions.TimeoutException(commands=txn.commands,
                                               timeout=self.timeout,
                                               cause='TXN queue is full') from e
+
+    def force_reconnect(self):
+        self.idl.force_reconnect()
+        self.txns.alert_notify()
 
 
 class OvsdbIdl(idl.Idl):

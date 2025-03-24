@@ -13,9 +13,11 @@
 from unittest import mock
 
 from ovsdbapp.backend.ovs_idl import connection
+from ovsdbapp.backend.ovs_idl import event
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants
 from ovsdbapp.tests.functional import base
+from ovsdbapp.tests.functional.schema.ovn_northbound import test_impl_idl
 
 
 def create_schema_helper(sh):
@@ -86,3 +88,41 @@ class TestOvsdbIdl(base.FunctionalTestCase):
 
         self.validate_tables(new_tables, present=True)
         self.validate_tables([removed_table], present=False)
+
+
+class LsCreateWaitEvent(event.WaitEvent):
+    ONETIME = True
+
+    def __init__(self, lsp_name, timeout):
+        super().__init__((self.ROW_CREATE,), "Logical_Switch",
+                         (("name", "=", lsp_name),), timeout=timeout)
+
+
+class TestConnectionReconnect(test_impl_idl.OvnNorthboundTest):
+
+    def setUp(self):
+        super().setUp()
+        # seed the db with an LS prior to setting up notifications
+        self.ls = self._ls_add("test")
+        self.handler = event.RowEventHandler()
+        self.api.idl.notify = self.handler.notify
+
+    def _ls_add(self, name):
+        self.api.ls_add(name).execute(check_error=True)
+        ls = self.api.ls_get(name).execute(check_error=True)
+        self.assertEqual(name, ls.name)
+        return ls
+
+    def _create_and_watch_wait_event(self, name):
+        event = LsCreateWaitEvent(name, timeout=10)
+        self.handler.watch_event(event)
+        return event
+
+    def test_force_reconnect(self):
+        event = self._create_and_watch_wait_event(self.ls.name)
+        self.api.ovsdb_connection.force_reconnect()
+        self.assertTrue(event.wait())
+        # test things work after reconnect
+        event = self._create_and_watch_wait_event("test2")
+        self._ls_add("test2")
+        self.assertTrue(event.wait())
