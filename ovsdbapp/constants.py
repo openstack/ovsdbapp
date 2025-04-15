@@ -31,9 +31,12 @@ NAT_TYPES = (NAT_SNAT, NAT_DNAT, NAT_BOTH)
 POLICY_ACTION_ALLOW = 'allow'
 POLICY_ACTION_DROP = 'drop'
 POLICY_ACTION_REROUTE = 'reroute'
+POLICY_ACTION_JUMP = 'jump'
 POLICY_ACTION_TYPES = (POLICY_ACTION_ALLOW,
                        POLICY_ACTION_DROP,
-                       POLICY_ACTION_REROUTE)
+                       POLICY_ACTION_REROUTE,
+                       POLICY_ACTION_JUMP,
+                       )
 
 PROTO_TCP = 'tcp'
 PROTO_UDP = 'udp'
@@ -42,3 +45,4 @@ ROUTE_DISCARD = "discard"
 MAIN_ROUTE_TABLE = ""
 
 LOCALNET = 'localnet'
+DEFAULT_CHAIN = ''
