@@ -14,6 +14,7 @@
 
 import collections
 from collections import abc
+import functools
 # json is not deprecated
 # pylint: disable=deprecated-module
 import json
@@ -24,6 +25,7 @@ import time
 import uuid
 
 from ovs.db import idl
+from ovs.db import types
 from ovs import jsonrpc
 from ovs import poller
 from ovs import stream
@@ -454,15 +456,58 @@ def db_replace_record(obj):
     return obj
 
 
-def row2str(row):
-    """Get a string representation of a Row"""
+def process_value_for_str(row, col):
+    class StrUuid(uuid.UUID):
+        """A UUID class that will return a repr of the UUID as the UUID string
 
-    # This is not a repr, as the Row object takes a dict of Datum objects and
-    # we don't really want to deal with those, just what the Python values are.
-    # Row foreign keys are printed as their UUID
-    return "%s(%s)" % (row._table.name, ", ".join(
-        "%s=%s" % (col, idl._row_to_uuid(getattr(row, col)))
-        for col in row._table.columns if hasattr(row, col)))
+        This lets us use the default stringification of lists/dicts to display
+        in the format we want without having to generate them ourselves
+        """
+        __repr__ = uuid.UUID.__str__
+
+        @classmethod
+        def from_col(cls, col_src, value):
+            if col_src.is_ref():
+                return cls(int=value.uuid.int)
+            return cls(int=value.int)
+
+    # If we are passed UUID as a column, just return the modified row.uuid
+    if col == 'uuid':
+        return StrUuid(int=row.uuid.int)
+
+    val = getattr(row, col)
+    col_type = row._table.columns[col].type
+    if col_type.is_optional():
+        try:
+            val = val[0]
+        except IndexError:
+            return []  # Unset optional
+    elif col_type.is_map():
+        # pylint: disable=unnecessary-lambda-assignment
+        _ = k = v = lambda x: x
+        if col_type.key.type == types.UuidType:
+            k = functools.partial(StrUuid.from_col, col_type.key)
+        if col_type.value.type == types.UuidType:
+            v = functools.partial(StrUuid.from_col, col_type.value)
+        if k == v == _:  # No change needed
+            return val
+        return {k(x): v(y) for x, y in val.items()}
+    elif col_type.is_set():
+        if col_type.key.type == types.UuidType:
+            return [StrUuid.from_col(col_type.key, v) for v in val]
+        return getattr(row, col)
+    # optional and non-optional uuid-type columns
+    if col_type.key.type == types.UuidType:
+        return StrUuid.from_col(col_type.key, val)
+    return val
+
+
+def row2str(row):
+    return "{table}({data})".format(
+        table=row._table.name,
+        data=", ".join("{col!s}={val!r}".format(
+            col=c, val=process_value_for_str(row, c))
+            for c in ['uuid'] + sorted(row._table.columns) if hasattr(row, c)))
 
 
 def frozen_row(row):
