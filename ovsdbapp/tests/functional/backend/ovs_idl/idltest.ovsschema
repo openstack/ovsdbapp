@@ -1,0 +1,84 @@
+{
+  "name": "idltest",
+  "version": "1.0.0",
+  "cksum": "123456789 1234",
+  "tables": {
+    "SimpleTypes": {
+      "columns": {
+        "integer_col": {"type": "integer"},
+        "real_col": {"type": "real"},
+        "boolean_col": {"type": "boolean"},
+        "string_col": {"type": "string"},
+        "uuid_col": {"type": "uuid"}
+      },
+      "isRoot": true
+    },
+    "OptionalTypes": {
+      "columns": {
+        "opt_integer": {"type": {"key": "integer", "min": 0, "max": 1}},
+        "opt_real": {"type": {"key": "real", "min": 0, "max": 1}},
+        "opt_boolean": {"type": {"key": "boolean", "min": 0, "max": 1}},
+        "opt_string": {"type": {"key": "string", "min": 0, "max": 1}},
+        "opt_uuid": {"type": {"key": "uuid", "min": 0, "max": 1}}
+      },
+      "isRoot": true
+    },
+    "SetTypes": {
+      "columns": {
+        "integer_set": {"type": {"key": "integer", "min": 0, "max": "unlimited"}},
+        "real_set": {"type": {"key": "real", "min": 0, "max": "unlimited"}},
+        "boolean_set": {"type": {"key": "boolean", "min": 0, "max": "unlimited"}},
+        "string_set": {"type": {"key": "string", "min": 0, "max": "unlimited"}},
+        "uuid_set": {"type": {"key": "uuid", "min": 0, "max": "unlimited"}}
+      },
+      "isRoot": true
+    },
+    "MapTypes": {
+      "columns": {
+        "int_int_map": {"type": {"key": "integer", "value": "integer", "min": 0, "max": "unlimited"}},
+        "int_real_map": {"type": {"key": "integer", "value": "real", "min": 0, "max": "unlimited"}},
+        "int_bool_map": {"type": {"key": "integer", "value": "boolean", "min": 0, "max": "unlimited"}},
+        "int_string_map": {"type": {"key": "integer", "value": "string", "min": 0, "max": "unlimited"}},
+        "int_uuid_map": {"type": {"key": "integer", "value": "uuid", "min": 0, "max": "unlimited"}},
+        "real_int_map": {"type": {"key": "real", "value": "integer", "min": 0, "max": "unlimited"}},
+        "real_real_map": {"type": {"key": "real", "value": "real", "min": 0, "max": "unlimited"}},
+        "real_bool_map": {"type": {"key": "real", "value": "boolean", "min": 0, "max": "unlimited"}},
+        "real_string_map": {"type": {"key": "real", "value": "string", "min": 0, "max": "unlimited"}},
+        "real_uuid_map": {"type": {"key": "real", "value": "uuid", "min": 0, "max": "unlimited"}},
+        "bool_int_map": {"type": {"key": "boolean", "value": "integer", "min": 0, "max": "unlimited"}},
+        "bool_real_map": {"type": {"key": "boolean", "value": "real", "min": 0, "max": "unlimited"}},
+        "bool_bool_map": {"type": {"key": "boolean", "value": "boolean", "min": 0, "max": "unlimited"}},
+        "bool_string_map": {"type": {"key": "boolean", "value": "string", "min": 0, "max": "unlimited"}},
+        "bool_uuid_map": {"type": {"key": "boolean", "value": "uuid", "min": 0, "max": "unlimited"}},
+        "string_int_map": {"type": {"key": "string", "value": "integer", "min": 0, "max": "unlimited"}},
+        "string_real_map": {"type": {"key": "string", "value": "real", "min": 0, "max": "unlimited"}},
+        "string_bool_map": {"type": {"key": "string", "value": "boolean", "min": 0, "max": "unlimited"}},
+        "string_string_map": {"type": {"key": "string", "value": "string", "min": 0, "max": "unlimited"}},
+        "string_uuid_map": {"type": {"key": "string", "value": "uuid", "min": 0, "max": "unlimited"}},
+        "uuid_int_map": {"type": {"key": "uuid", "value": "integer", "min": 0, "max": "unlimited"}},
+        "uuid_real_map": {"type": {"key": "uuid", "value": "real", "min": 0, "max": "unlimited"}},
+        "uuid_bool_map": {"type": {"key": "uuid", "value": "boolean", "min": 0, "max": "unlimited"}},
+        "uuid_string_map": {"type": {"key": "uuid", "value": "string", "min": 0, "max": "unlimited"}},
+        "uuid_uuid_map": {"type": {"key": "uuid", "value": "uuid", "min": 0, "max": "unlimited"}}
+      },
+      "isRoot": true
+    },
+    "RefTarget": {
+      "columns": {
+        "value": {"type": "integer"}
+      },
+      "isRoot": true
+    },
+    "RefTypes": {
+      "columns": {
+        "single_ref": {"type": {"key": {"type": "uuid", "refTable": "RefTarget"}}},
+        "opt_ref": {"type": {"key": {"type": "uuid", "refTable": "RefTarget"}, "min": 0, "max": 1}},
+        "ref_set": {"type": {"key": {"type": "uuid", "refTable": "RefTarget"}, "min": 0, "max": "unlimited"}},
+        "ref_map_key": {"type": {"key": {"type": "uuid", "refTable": "RefTarget"}, "value": "string", "min": 0, "max": "unlimited"}},
+        "ref_map_value": {"type": {"key": "string", "value": {"type": "uuid", "refTable": "RefTarget"}, "min": 0, "max": "unlimited"}},
+        "ref_map_both": {"type": {"key": {"type": "uuid", "refTable": "RefTarget"}, "value": {"type": "uuid", "refTable": "RefTarget"}, "min": 0, "max": "unlimited"}}
+      },
+      "isRoot": true
+    }
+  }
+}
