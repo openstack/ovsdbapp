@@ -18,6 +18,7 @@ from unittest import mock
 from ovsdbapp import exceptions as exc
 from ovsdbapp.schema.open_vswitch import impl_idl
 from ovsdbapp.tests.functional import base
+from ovsdbapp.tests.functional.schema.open_vswitch import fixtures
 from ovsdbapp.tests import utils
 
 
@@ -34,7 +35,7 @@ class TestOvsdbIdl(base.FunctionalTestCase):
 
     def setUp(self):
         super(TestOvsdbIdl, self).setUp()
-        self.api = impl_idl.OvsdbIdl(self.connection)
+        self.api = self.useFixture(fixtures.OvsApiFixture(self.connection)).obj
         self.brname = utils.get_rand_device_name()
         # Destroying the bridge cleans up most things created by tests
         cleanup_cmd = self.api.del_br(self.brname)
@@ -172,7 +173,7 @@ class ImplIdlTestCase(base.FunctionalTestCase):
 
     def setUp(self):
         super(ImplIdlTestCase, self).setUp()
-        self.api = impl_idl.OvsdbIdl(self.connection)
+        self.api = self.useFixture(fixtures.OvsApiFixture(self.connection)).obj
         self.brname = utils.get_rand_device_name()
         # Make sure exceptions pass through by calling do_post_commit directly
         mock.patch.object(
