@@ -265,16 +265,18 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.LrNatListCommand(self, router)
 
     def lr_policy_add(self, router, priority, match, action,
-                      may_exist=False, **columns):
+                      may_exist=False, chain=const.DEFAULT_CHAIN, **columns):
         return cmd.LrPolicyAddCommand(
-            self, router, priority, match, action, may_exist, **columns)
+            self, router, priority, match, action, may_exist,
+            chain, **columns)
 
     def lr_policy_del(self, router, priority=None, match=None,
-                      if_exists=False):
-        return cmd.LrPolicyDelCommand(self, router, priority, match, if_exists)
+                      if_exists=False, chain=const.DEFAULT_CHAIN):
+        return cmd.LrPolicyDelCommand(self, router, priority, match, if_exists,
+                                      chain)
 
-    def lr_policy_list(self, router):
-        return cmd.LrPolicyListCommand(self, router)
+    def lr_policy_list(self, router, chain=None):
+        return cmd.LrPolicyListCommand(self, router, chain)
 
     def lb_add(self, lb, vip, ips, protocol=const.PROTO_TCP, may_exist=False,
                **columns):

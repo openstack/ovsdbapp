@@ -1481,7 +1481,7 @@ class LrPolicyAddCommand(cmd.AddCommand):
     table_name = 'Logical_Router_Policy'
 
     def __init__(self, api, router, priority, match, action, may_exist=False,
-                 **columns):
+                 chain=const.DEFAULT_CHAIN, **columns):
         if not 0 <= priority <= const.LR_POLICY_PRIORITY_MAX:
             raise ValueError("priority must be between 0 and %s, inclusive"
                              % (const.LR_POLICY_PRIORITY_MAX,))
@@ -1495,18 +1495,28 @@ class LrPolicyAddCommand(cmd.AddCommand):
                 action != const.POLICY_ACTION_REROUTE):
             raise ValueError("nexthop only valid for action %s"
                              % (const.POLICY_ACTION_REROUTE,))
+        if (action == const.POLICY_ACTION_JUMP and not
+                columns.get("jump_chain")):
+            raise ValueError("must specify jump_chain for action %s"
+                             % (const.POLICY_ACTION_JUMP,))
         super().__init__(api)
         self.router = router
         self.priority = priority
         self.match = match
         self.action = action
         self.may_exist = may_exist
+        self.chain = chain
         self.columns = columns
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
         for policy in lr.policies:
-            if (self.priority, self.match) == (policy.priority, policy.match):
+            try:
+                policy_chain = policy.chain[0]
+            except (AttributeError, IndexError):
+                policy_chain = const.DEFAULT_CHAIN
+            if ((self.priority, self.match, self.chain) ==
+                    (policy.priority, policy.match, policy_chain)):
                 if self.may_exist:
                     policy.action = self.action
                     self.set_columns(policy, **self.columns)
@@ -1517,6 +1527,8 @@ class LrPolicyAddCommand(cmd.AddCommand):
         policy.priority = self.priority
         policy.match = self.match
         policy.action = self.action
+        if idlutils.table_has_column(self.api.idl, self.table_name, 'chain'):
+            policy.chain = [self.chain] if self.chain else []
         self.set_columns(policy, **self.columns)
         lr.addvalue('policies', policy)
         self.result = policy.uuid
@@ -1524,7 +1536,7 @@ class LrPolicyAddCommand(cmd.AddCommand):
 
 class LrPolicyDelCommand(cmd.BaseCommand):
     def __init__(self, api, router, priority=None, match=None,
-                 if_exists=False):
+                 if_exists=False, chain=const.DEFAULT_CHAIN):
         self.conditions = []
         if priority is not None:
             if not 0 <= priority <= const.LR_POLICY_PRIORITY_MAX:
@@ -1540,12 +1552,18 @@ class LrPolicyDelCommand(cmd.BaseCommand):
         self.priority = priority
         self.match = match
         self.if_exists = if_exists
+        self.chain = chain
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
         found = False
         for policy in lr.policies:
-            if idlutils.row_match(policy, self.conditions):
+            try:
+                policy_chain = policy.chain[0]
+            except (AttributeError, IndexError):
+                policy_chain = const.DEFAULT_CHAIN
+            if (idlutils.row_match(policy, self.conditions) and
+                    policy_chain == self.chain):
                 found = True
                 lr.delvalue('policies', policy)
                 policy.delete()
@@ -1554,17 +1572,27 @@ class LrPolicyDelCommand(cmd.BaseCommand):
         if self.match and not (found or self.if_exists):
             raise RuntimeError(
                 "Policy with match %s and priority %s does not exist in "
-                "router %s" % (self.match, self.priority, self.router))
+                "router %s chain %s" % (self.match, self.priority,
+                                        self.router, self.chain))
 
 
 class LrPolicyListCommand(cmd.ReadOnlyCommand):
-    def __init__(self, api, router):
+    def __init__(self, api, router, chain=None):
         super().__init__(api)
         self.router = router
+        self.chain = chain
 
     def run_idl(self, txn):
         lr = self.api.lookup('Logical_Router', self.router)
-        self.result = [rowview.RowView(r) for r in lr.policies]
+        if self.chain is not None:
+            self.result = [rowview.RowView(r)
+                           for r in lr.policies
+                           if hasattr(r, 'chain') and (
+                           (r.chain and r.chain[0] == self.chain) or
+                           (not r.chain and
+                            self.chain == const.DEFAULT_CHAIN))]
+        else:
+            self.result = [rowview.RowView(r) for r in lr.policies]
 
 
 class LbAddCommand(cmd.BaseCommand):
