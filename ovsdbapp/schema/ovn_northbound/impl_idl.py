@@ -231,6 +231,15 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.LrpDelGatewayChassisCommand(self, port,
                                                gateway_chassis, if_exists)
 
+    def lrp_set_ha_chassis_group(self, port, ha_chassis_group):
+        return cmd.LrpSetHaChassisGroupCommand(self, port, ha_chassis_group)
+
+    def lrp_get_ha_chassis_group(self, port):
+        return cmd.LrpGetHaChassisGroupCommand(self, port)
+
+    def lrp_del_ha_chassis_group(self, port, if_exists=False):
+        return cmd.LrpDelHaChassisGroupCommand(self, port, if_exists)
+
     def lrp_add_networks(self, port, networks, may_exist=False):
         return cmd.LrpAddNetworksCommand(self, port, networks, may_exist)
 
