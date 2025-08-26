@@ -36,7 +36,6 @@ class RowEvent(object, metaclass=abc.ABCMeta):
     ROW_UPDATE = "update"
     ROW_DELETE = "delete"
     ONETIME = False
-    event_name = 'RowEvent'
     priority = 20
 
     def __init__(self, events, table, conditions, old_conditions=None):
@@ -85,9 +84,18 @@ class RowEvent(object, metaclass=abc.ABCMeta):
     def run(self, event, row, old):
         """Method to run when the event matches"""
 
+    @property
+    def event_name(self):
+        if not hasattr(self, '_event_name'):
+            return self.__class__.__name__
+        return self._event_name
+
+    @event_name.setter
+    def event_name(self, value):
+        self._event_name = value
+
 
 class WaitEvent(RowEvent):
-    event_name = 'WaitEvent'
     ONETIME = True
     priority = 10
 

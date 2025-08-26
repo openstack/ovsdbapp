@@ -14,8 +14,6 @@ from ovsdbapp.backend.ovs_idl import event
 
 
 class WaitForPortBindingEvent(event.WaitEvent):
-    event_name = 'WaitForPortBindingEvent'
-
     def __init__(self, port, timeout=5):
         super(WaitForPortBindingEvent, self).__init__(
             (self.ROW_CREATE,), 'Port_Binding', (('logical_port', '=', port),),
