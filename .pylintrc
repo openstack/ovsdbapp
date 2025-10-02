@@ -134,8 +134,6 @@ valid-metaclass-classmethod-first-arg=cls
 [IMPORTS]
 # Deprecated modules which should not be used, separated by a comma
 deprecated-modules=
-# should use oslo_serialization.jsonutils
- json,
  six
 
 [TYPECHECK]
