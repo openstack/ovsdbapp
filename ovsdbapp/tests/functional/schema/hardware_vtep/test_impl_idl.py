@@ -13,8 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import time
-
+from ovsdbapp.backend.ovs_idl import event
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.schema.hardware_vtep.commands import get_global_record
 from ovsdbapp.tests.functional import base
@@ -331,21 +330,30 @@ class TestLogicalSwitchOps(HardwareVtepTest):
         self.assertEqual(port.vlan_bindings, vlan_bindings)
 
 
+class WaitBindingsEvent(event.WaitEvent):
+    def __init__(self, table, lsname, mac):
+        super().__init__((self.ROW_CREATE,), table, None, None, timeout=3)
+        self.lsname = lsname
+        self.mac = mac
+
+    def match_fn(self, event, row, old=None):
+        # mac should really be normalized, but we pass it correctly
+        return self.lsname == row.logical_switch.name and self.mac == row.MAC
+
+
 class TestMacBindingsOps(HardwareVtepTest):
     def setUp(self):
         super().setUp()
+        self.handler = event.RowEventHandler()
+        self.api.idl.notify = self.handler.notify
         self.ls = self.useFixture(fixtures.LogicalSwitchFixture(
             self.api, utils.get_rand_device_name())).obj
         self.mac = '0a:00:d0:af:20:c0'
         self.ip = '192.168.0.1'
-        self.ovsvenv.call(['vtep-ctl', 'add-ucast-local',
-                           self.ls.name, self.mac, self.ip])
-        self.ovsvenv.call(['vtep-ctl', 'add-mcast-local',
-                           self.ls.name, self.mac, self.ip])
-        self.ovsvenv.call(['vtep-ctl', 'add-ucast-remote',
-                           self.ls.name, self.mac, self.ip])
-        self.ovsvenv.call(['vtep-ctl', 'add-mcast-remote',
-                           self.ls.name, self.mac, self.ip])
+        self.vtep_ctl_wait("add-ucast-local", "Ucast_Macs_Local")
+        self.vtep_ctl_wait("add-mcast-local", "Mcast_Macs_Local")
+        self.vtep_ctl_wait("add-ucast-remote", "Ucast_Macs_Remote")
+        self.vtep_ctl_wait("add-mcast-remote", "Mcast_Macs_Remote")
         for args in [
             ['vtep-ctl', 'del-ucast-local', self.ls.name, self.mac],
             ['vtep-ctl', 'del-mcast-local', self.ls.name, self.mac, self.ip],
@@ -354,15 +362,11 @@ class TestMacBindingsOps(HardwareVtepTest):
         ]:
             self.addCleanup(self.ovsvenv.call, args)
 
-    def _wait_db_rows(self, table):
-        """Wait for rows in specified table. Raises RuntimeError otherwise."""
-
-        for _ in range(4):
-            if table.rows:
-                return
-            time.sleep(0.5)
-
-        raise RuntimeError("Table '%s' is empty" % table.name)
+    def vtep_ctl_wait(self, cmd, table):
+        wait_event = WaitBindingsEvent(table, self.ls.name, self.mac)
+        self.handler.watch_event(wait_event)
+        self.ovsvenv.call(["vtep-ctl", cmd, self.ls.name, self.mac, self.ip])
+        self.assertTrue(wait_event.wait())
 
     def test_list_local_macs(self):
         local_macs = self.api.list_local_macs(
@@ -382,7 +386,6 @@ class TestMacBindingsOps(HardwareVtepTest):
         ucast_table = self.api.tables['Ucast_Macs_Local']
         mcast_table = self.api.tables['Mcast_Macs_Local']
         for table in [ucast_table, mcast_table]:
-            self._wait_db_rows(table)
             self.assertEqual(len(table.rows), 1)
 
         self.api.clear_local_macs(self.ls.name).execute(check_error=True)
@@ -393,7 +396,6 @@ class TestMacBindingsOps(HardwareVtepTest):
         ucast_table = self.api.tables['Ucast_Macs_Remote']
         mcast_table = self.api.tables['Mcast_Macs_Remote']
         for table in [ucast_table, mcast_table]:
-            self._wait_db_rows(table)
             self.assertEqual(len(table.rows), 1)
 
         self.api.clear_remote_macs(self.ls.name).execute(check_error=True)
