@@ -281,8 +281,7 @@ def circular(*items):
     if not items:
         return
     while True:
-        for x in items:
-            yield x
+        yield from items
 
 
 def merge_intersection(*sorted_gens):
