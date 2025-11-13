@@ -11,8 +11,12 @@
 #    under the License.
 
 import netaddr
+from ovs.db import idl
+from unittest import mock
 import uuid
 
+from ovsdbapp.backend.ovs_idl import command
+from ovsdbapp.backend.ovs_idl import rowview
 from ovsdbapp.tests import base
 from ovsdbapp import utils
 
@@ -69,3 +73,15 @@ class TestUtils(base.TestCase):
             'uuid:batrdbaa-aaaa-aaaa-aabb-bbbbbbbbbbbb'))
         self.assertFalse(utils.is_uuid_like(
             '123456781234123412341234567812345678'))
+
+    def test_get_uuid(self):
+        uuid_obj = uuid.uuid4()
+        row_obj = idl.Row(mock.Mock(), 'table', uuid_obj, 'data')
+        rowview_obj = rowview.RowView(row_obj)
+        command_obj = command.BaseCommand(mock.Mock())
+        command_obj.result = row_obj
+        for tested_obj in (uuid_obj,
+                           row_obj,
+                           rowview_obj,
+                           command_obj):
+            self.assertEqual(uuid_obj, utils.get_uuid(tested_obj))
