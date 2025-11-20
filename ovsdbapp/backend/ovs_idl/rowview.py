@@ -10,8 +10,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from ovsdbapp.backend.ovs_idl import idlutils
-
 
 class RowView(object):
     def __init__(self, row):
@@ -29,6 +27,3 @@ class RowView(object):
 
     def __hash__(self):
         return self._row.__hash__()
-
-    def __str__(self):
-        return idlutils.row2str(self._row)
