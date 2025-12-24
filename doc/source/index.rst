@@ -1,6 +1,12 @@
-.. the main title comes from README.rst
+========
+ovsdbapp
+========
 
-.. include:: ../../README.rst
+A library for creating OVSDB applications
+
+The ovdsbapp library is useful for creating applications that communicate
+via Open_vSwitch's OVSDB protocol (https://tools.ietf.org/html/rfc7047). It
+wraps the Python 'ovs' and adds an event loop and friendly transactions.
 
 ----
 

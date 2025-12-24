@@ -2,6 +2,10 @@
 ovsdbapp
 ========
 
+.. image:: https://governance.openstack.org/tc/badges/ovsdbapp.svg
+
+.. Change things from this point on
+
 A library for creating OVSDB applications
 
 The ovdsbapp library is useful for creating applications that communicate
