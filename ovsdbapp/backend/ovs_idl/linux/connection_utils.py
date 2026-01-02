@@ -35,3 +35,7 @@ class WaitQueue(base_connection_utils.WaitQueue):
     @property
     def alert_fileno(self):
         return self.alertin.fileno()
+
+    def close(self):
+        self.alertin.close()
+        self.alertout.close()
