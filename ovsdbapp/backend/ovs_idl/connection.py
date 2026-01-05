@@ -59,6 +59,9 @@ class TransactionQueue(queue.Queue, object):
     def alert_notify(self):
         self._wait_queue.alert_notify()
 
+    def close(self):
+        self._wait_queue.close()
+
 
 class Connection(object):
 
@@ -74,6 +77,9 @@ class Connection(object):
         self.idl = idl
         self.thread = None
         self.is_running = None
+
+    def __del__(self):
+        self.txns.close()
 
     def start(self):
         """Start the connection."""
