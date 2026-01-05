@@ -43,6 +43,9 @@ class WaitQueue(base_connection_utils.WaitQueue):
     def alert_fileno(self):
         return self.alert_event
 
+    def close(self):
+        pass
+
 
 def monkey_patch_poller_support():
     # Ensure that WaitForMultipleObjects will not block other greenthreads.
