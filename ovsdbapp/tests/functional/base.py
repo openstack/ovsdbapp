@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import atexit
 import os
 
 from ovsdbapp.backend.ovs_idl import connection
@@ -31,7 +32,7 @@ class VenvPerClassFunctionalTestCase(base.TestCase):
             cls.ovsvenvlog = open(
                 os.path.join(os.getenv('VIRTUAL_ENV'),
                              'ovsvenv.%s' % os.getpid()), 'a+')
-            cls.ovsvenvlog.write("%s\n" % cls.ovsvenv.venv)
+            cls.ovsvenvlog.write("%s\n" % cls.virtualenv.venvdir)
 
     @classmethod
     def tearDownClass(cls):
@@ -52,7 +53,7 @@ class VenvPerClassFunctionalTestCase(base.TestCase):
 
 class FunctionalTestCase(VenvPerClassFunctionalTestCase):
     _connections = {}
-    _teardown = False
+    _teardown_called = False
     fixture_class = venv.OvsOvnVenvFixture
 
     @classmethod
@@ -67,13 +68,14 @@ class FunctionalTestCase(VenvPerClassFunctionalTestCase):
                           'OVN_Northbound': cls.ovsvenv.ovnnb_connection,
                           'OVN_Southbound': cls.ovsvenv.ovnsb_connection,
                           }
+        atexit.register(cls.tearDownClass)
         cls.set_connection()  # subclass overrides its _connections
 
     @classmethod
     def tearDownClass(cls):
-        if cls._teardown:
+        if cls._teardown_called:
             return
-        cls._teardown = True
+        cls._teardown_called = True
         for conn in cls._connections.values():
             conn.stop()
         cls.ovsvenv.cleanUp()

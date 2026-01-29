@@ -27,19 +27,6 @@ DUMMY_OVERRIDE_SYSTEM = 'system'
 DUMMY_OVERRIDE_NONE = ''
 
 
-def get_pid(filename):
-    with open(filename) as f:
-        return int(f.read().strip())
-
-
-def kill_pid(pidfile):
-    """Kill process using PID from pidfile, handling common exceptions."""
-    try:
-        os.kill(get_pid(pidfile), signal.SIGTERM)
-    except (FileNotFoundError, ProcessLookupError):
-        pass  # Process already stopped or pidfile doesn't exist
-
-
 class VenvFixture(fixtures.Fixture):
 
     def __init__(self, venvdir=None, remove=False):
@@ -93,11 +80,47 @@ class VenvFixture(fixtures.Fixture):
         return venv
 
 
-class OvsdbServerFixture(fixtures.Fixture):
-    def __init__(self, venv, name, schema_filename, ovsdir=None, *args):
+class ProcessFixture(fixtures.Fixture):
+    def __init__(self, venv, name):
         super().__init__()
         self.venv = venv
         self.name = name
+
+    def _setUp(self):
+        super()._setUp()
+        self.addCleanup(self.deactivate)
+        self.prestart()
+        self.start()
+
+    @property
+    def pidfile(self):
+        return os.path.join(self.venv.venvdir, f"{self.name}.pid")
+
+    @property
+    def pid_from_pidfile(self):
+        with open(self.pidfile) as f:
+            return int(f.read().strip())
+
+    @property
+    def logfile(self):
+        return os.path.join(self.venv.venvdir, f"{self.name}.log")
+
+    def deactivate(self):
+        try:
+            os.kill(self.pid_from_pidfile, signal.SIGTERM)
+        except (FileNotFoundError, ProcessLookupError):
+            pass  # Process already stopped if pidfile doesn't exist
+
+    def prestart(self):
+        pass
+
+    def start(self):
+        pass
+
+
+class OvsdbServerFixture(ProcessFixture):
+    def __init__(self, venv, name, schema_filename, ovsdir=None, *args):
+        super().__init__(venv, name)
         self.schema_filename = schema_filename
         self.ovsdir = ovsdir
         self.args = args
@@ -121,23 +144,12 @@ class OvsdbServerFixture(fixtures.Fixture):
         return os.path.join(self.venv.venvdir, f"{self.name}.sock")
 
     @property
-    def pidfile(self):
-        return os.path.join(self.venv.venvdir, f"{self.name}.pid")
-
-    @property
-    def logfile(self):
-        return os.path.join(self.venv.venvdir, f"{self.name}.log")
-
-    @property
     def dbfile(self):
         return os.path.join(self.venv.venvdir, f"{self.name}.db")
 
     @property
     def connection(self):
         return "unix:" + self.unix_socket
-
-    def deactivate(self):
-        kill_pid(self.pidfile)
 
     def create_db(self, dbfile=None, schema_filename=None):
         dbfile = dbfile or self.dbfile
@@ -164,34 +176,20 @@ class OvsdbServerFixture(fixtures.Fixture):
         dbs = (self.dbfile,) + tuple(self.additional_dbs)
         self.venv.call(base_args + self.args + dbs)
 
-    def _setUp(self):
-        super()._setUp()
-        self.addCleanup(self.deactivate)
+    def prestart(self):
         self.create_db()
-        self.start()
 
 
-class VswitchdFixture(fixtures.Fixture):
-    def __init__(self, venv, ovsdb_server, dummy=DUMMY_OVERRIDE_ALL):
-        super().__init__()
-        self.venv = venv
+class VswitchdFixture(ProcessFixture):
+    def __init__(self, venv, ovsdb_server, dummy=DUMMY_OVERRIDE_ALL,
+                 name="ovs-vswitchd"):
+        super().__init__(venv, name)
         self.ovsdb_server = ovsdb_server
         self.dummy = dummy
 
     @property
-    def pidfile(self):
-        return os.path.join(self.venv.venvdir, "ovs-vswitchd.pid")
-
-    @property
-    def logfile(self):
-        return os.path.join(self.venv.venvdir, "ovs-vswitchd.log")
-
-    @property
     def dummy_arg(self):
         return "--enable-dummy=%s" % self.dummy
-
-    def deactivate(self):
-        kill_pid(self.pidfile)
 
     def start(self):
         self.venv.call(
@@ -206,29 +204,13 @@ class VswitchdFixture(fixtures.Fixture):
              self.dummy_arg,
              self.ovsdb_server.connection])
 
-    def _setUp(self):
-        super()._setUp()
-        self.addCleanup(self.deactivate)
-        self.start()
 
-
-class NorthdFixture(fixtures.Fixture):
-    def __init__(self, venv, ovnnb_connection, ovnsb_connection):
-        super().__init__()
-        self.venv = venv
+class NorthdFixture(ProcessFixture):
+    def __init__(self, venv, ovnnb_connection, ovnsb_connection,
+                 name="ovn-northd"):
+        super().__init__(venv, name)
         self.ovnnb_connection = ovnnb_connection
         self.ovnsb_connection = ovnsb_connection
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.venv.venvdir, "ovn-northd.pid")
-
-    @property
-    def logfile(self):
-        return os.path.join(self.venv.venvdir, "ovn-northd.log")
-
-    def deactivate(self):
-        kill_pid(self.pidfile)
 
     def start(self):
         self.venv.call([
@@ -241,27 +223,10 @@ class NorthdFixture(fixtures.Fixture):
             f"--ovnsb-db={self.ovnsb_connection}",
             f"--ovnnb-db={self.ovnnb_connection}"])
 
-    def _setUp(self):
-        super()._setUp()
-        self.addCleanup(self.deactivate)
-        self.start()
 
-
-class OvnControllerFixture(fixtures.Fixture):
-    def __init__(self, venv):
-        super().__init__()
-        self.venv = venv
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.venv.venvdir, "ovn-controller.pid")
-
-    @property
-    def logfile(self):
-        return os.path.join(self.venv.venvdir, "ovn-controller.log")
-
-    def deactivate(self):
-        kill_pid(self.pidfile)
+class OvnControllerFixture(ProcessFixture):
+    def __init__(self, venv, name="ovn-controller"):
+        super().__init__(venv, name)
 
     def start(self):
         self.venv.call([
@@ -271,11 +236,6 @@ class OvnControllerFixture(fixtures.Fixture):
             f"--pidfile={self.pidfile}",
             "-vconsole:off",
             f"--log-file={self.logfile}"])
-
-    def _setUp(self):
-        super()._setUp()
-        self.addCleanup(self.deactivate)
-        self.start()
 
 
 class OvsVenvFixture(fixtures.Fixture):
@@ -316,6 +276,15 @@ class OvsVenvFixture(fixtures.Fixture):
         self.ovsdb_server = OvsdbServerFixture(
             self.venv, "db", self.ovs_schema, self.ovsdir)
 
+    def _setUp(self):
+        super()._setUp()
+        if self._setup_venv:
+            self.useFixture(self.venv)
+        self.useFixture(self.ovsdb_server)
+        self.useFixture(VswitchdFixture(
+            self.venv, self.ovsdb_server, self.dummy))
+        self.init_processes()
+
     @staticmethod
     def schema_path(search_paths, filename):
         paths = (os.path.join(p, filename) for p in search_paths if p)
@@ -340,20 +309,11 @@ class OvsVenvFixture(fixtures.Fixture):
         # For backwards compatibility
         return self.venv.call(*args, **kwargs)
 
-    def _setUp(self):
-        super()._setUp()
-        if self._setup_venv:
-            self.useFixture(self.venv)
-        self.useFixture(self.ovsdb_server)
-        self.vswitchd = self.useFixture(VswitchdFixture(
-            self.venv, self.ovsdb_server, self.dummy))
-        self.init_processes()
-
     def init_processes(self):
         self.venv.call([
             "ovs-vsctl",
             "--no-wait",
-            f"--db={self.ovsdb_server.connection}",
+            f"--db={self.ovs_connection}",
             "--",
             "init"])
 
@@ -412,11 +372,11 @@ class OvsOvnVenvFixture(OvsVenvFixture):
             "--ssl-protocols=db:OVN_Southbound,SSL,ssl_protocols",
             "--ssl-ciphers=db:OVN_Southbound,SSL,ssl_ciphers"))
 
-        self.northd = self.useFixture(NorthdFixture(
+        self.useFixture(NorthdFixture(
             self.venv, self.ovnnb_connection, self.ovnsb_connection))
 
-        self.controller = self.useFixture(OvnControllerFixture(self.venv))
         super()._setUp()
+        self.useFixture(OvnControllerFixture(self.venv))
 
     def init_processes(self):
         super().init_processes()
@@ -424,7 +384,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         self.venv.call(["ovn-sbctl", "init"])
         if self.add_chassis:
             self.venv.call([
-                "ovs-vsctl", f"--db={self.ovsdb_server.connection}",
+                "ovs-vsctl", f"--db={self.ovs_connection}",
                 "set", "open", ".",
                 "external_ids:system-id=56b18105-5706-46ef-80c4-ff20979ab068",
                 "external_ids:hostname=sandbox",
@@ -432,7 +392,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                 "external_ids:ovn-encap-ip=127.0.0.1"])
         # TODO(twilson) SSL stuff
         self.venv.call([
-            "ovs-vsctl", f"--db={self.ovsdb_server.connection}",
+            "ovs-vsctl", f"--db={self.ovs_connection}",
             "set", "open", ".",
             "external_ids:ovn-remote=" + self.ovnsb_connection])
 
@@ -499,5 +459,5 @@ class OvsVtepVenvFixture(OvsOvnVenvFixture):
         # there are no 'init' method in vtep-ctl,
         # but record in 'Global' table is needed
         self.venv.call(["vtep-ctl",
-                        f"--db={self.ovsdb_server.connection}",
+                        f"--db={self.ovs_connection}",
                         "show"])
