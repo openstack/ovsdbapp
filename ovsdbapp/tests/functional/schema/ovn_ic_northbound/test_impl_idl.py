@@ -20,10 +20,9 @@ class OvnIcNorthboundTest(base.FunctionalTestCase):
     fixture_class = base.venv.OvsOvnIcVenvFixture
 
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.schema_map = cls.schema_map.copy()
+    def set_connection(cls):
         cls.schema_map['OVN_IC_Northbound'] = cls.ovsvenv.ovn_icnb_connection
+        super().set_connection()
 
     def setUp(self):
         if not self.ovsvenv.has_icnb():

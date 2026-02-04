@@ -26,10 +26,9 @@ class HardwareVtepTest(base.FunctionalTestCase):
     fixture_class = base.venv.OvsVtepVenvFixture
 
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.schema_map = cls.schema_map.copy()
+    def set_connection(cls):
         cls.schema_map['hardware_vtep'] = cls.ovsvenv.ovs_connection
+        super().set_connection()
 
     def setUp(self):
         if not self.ovsvenv.has_vtep:

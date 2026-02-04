@@ -45,6 +45,7 @@ class ApiImplFixture(fixtures.Fixture):
         # them share an ovsdb_connection, a class attribute that
         # different tests running in the same process can trample on
         self.cls = type('Test' + self.api_cls.__name__, (self.api_cls,), {})
+        self.cls._ovsdb_connection = None
 
     def _setUp(self):
         self.obj = self.cls(*self.args, **self.kwargs)
