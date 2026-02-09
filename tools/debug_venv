@@ -50,14 +50,12 @@ fi
 
 if [ -n "$regex" -a -z "$ovsvenv" ]; then
     # Just do the first match for now
-    lookup=$(grep $regex $VIRTUAL_ENV/ovsvenv.*|head -1)
+    lookup=$(grep -l $regex $VIRTUAL_ENV/ovsvenv.*|head -1)
     if [ -z "$lookup" ]; then
         echo "Could not match $regex" 1>&2
         exit 1
     fi
-    test_file=$(echo $lookup|cut -d: -f1)
-    test_match=", matched $(echo $lookup|rev|cut -d: -f1|rev)"
-    ovsvenv=$(head -1 $test_file)
+    ovsvenv=$(head -1 $lookup)
 fi
-echo "Debugging OVS virtual environment: $ovsvenv$test_match"
-tools/debug_venv.py $ovsvenv $VIRTUAL_ENV/src/ovs $VIRTUAL_ENV/src/ovn
+echo "Debugging OVS virtual environment: $ovsvenv, matched $lookup"
+tools/debug_venv.py $ovsvenv $VIRTUAL_ENV/src/ovn/ovs $VIRTUAL_ENV/src/ovn
