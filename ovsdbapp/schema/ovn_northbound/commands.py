@@ -250,11 +250,13 @@ class PgAclListCommand(_AclListHelper):
 class AddressSetAddCommand(cmd.AddCommand):
     table_name = 'Address_Set'
 
-    def __init__(self, api, name, addresses=None, may_exist=False):
+    def __init__(self, api, name, addresses=None, may_exist=False,
+                 **columns):
         super().__init__(api)
         self.name = name
         self.addresses = normalize_prefixes(addresses)
         self.may_exist = may_exist
+        self.columns = columns
 
     def run_idl(self, txn):
         address_set = self.api.lookup(self.table_name, self.name, None)
@@ -268,6 +270,7 @@ class AddressSetAddCommand(cmd.AddCommand):
         address_set.name = self.name
         if self.addresses:
             address_set.addresses = self.addresses
+        self.set_columns(address_set, **self.columns)
         self.result = address_set.uuid
 
 

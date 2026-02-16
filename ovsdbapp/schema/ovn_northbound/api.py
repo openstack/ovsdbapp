@@ -225,15 +225,19 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def address_set_add(self, name, addresses=None, may_exist=False):
+    def address_set_add(self, name, addresses=None, may_exist=False,
+                        **columns):
         """Create a set of addresses named 'name'
 
         :param name:      The name of the address set
         :type name:       string
         :param addresses: One or more IP addresses to add to the address set
         :type addresses:  list of strings
-        :param may_exist: If True, don't fail if the address set already exists
+        :param may_exist: If True, don't fail if the address set already
+                          exists
         :type may_exist:  boolean
+        :param columns:   Additional columns to directly set on the address set
+        :type columns:    keyword arguments
         :returns:         :class:`Command` with RowView result
         """
 

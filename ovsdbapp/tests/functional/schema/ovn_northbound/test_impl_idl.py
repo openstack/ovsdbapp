@@ -357,6 +357,19 @@ class TestAddressSetOps(OvnNorthboundTest):
         addr_set = self._addr_set_add(addresses=addresses)
         self.assertEqual(addresses, addr_set.addresses)
 
+    def test_addr_set_add_with_addresses_and_external_ids(self):
+        addresses = ['192.168.0.1', '192.168.0.2']
+        external_ids = {'subnet_id': 'some-subnet-uuid',
+                        'ip_version': '4'}
+        addr_set = self._addr_set_add(addresses=addresses,
+                                      external_ids=external_ids)
+        self.assertEqual(addresses, addr_set.addresses)
+        self.assertEqual(external_ids, addr_set.external_ids)
+
+    def test_addr_set_add_no_external_ids(self):
+        addr_set = self._addr_set_add()
+        self.assertEqual({}, addr_set.external_ids)
+
     def test_addr_set_del(self):
         addr_set = self._addr_set_add()
         self.api.address_set_del(addr_set.uuid).execute(check_error=True)
