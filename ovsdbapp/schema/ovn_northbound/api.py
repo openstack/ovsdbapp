@@ -717,6 +717,38 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def lrp_set_ha_chassis_group(self, port, ha_chassis_group):
+        """Set HA chassis group for 'port'
+
+        :param port:             The name or uuid of the port
+        :type port:              string or uuid.UUID
+        :param ha_chassis_group: The name or uuid of the HA chassis group
+        :type ha_chassis_group:  string or uuid.UUID
+        :returns:                :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
+    def lrp_get_ha_chassis_group(self, port):
+        """Get the HA chassis group on 'port'
+
+        :param port: The name or uuid of the port
+        :type port:  string or uuid.UUID
+        :returns:    :class:`Command` with RowView result or None
+        """
+
+    @abc.abstractmethod
+    def lrp_del_ha_chassis_group(self, port, if_exists=False):
+        """Delete HA chassis group from 'port'
+
+        :param port:      The name or uuid of the port
+        :type port:       string or uuid.UUID
+        :param if_exists: If True, don't fail if the HA chassis group
+                          doesn't exist
+        :type if_exists:  boolean
+        :returns:         :class:`Command` with no result
+        """
+
+    @abc.abstractmethod
     def lrp_add_networks(self, port, networks, may_exist=False):
         """Add a network to 'port'
 

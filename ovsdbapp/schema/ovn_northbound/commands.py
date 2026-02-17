@@ -1028,6 +1028,56 @@ class LrpDelGatewayChassisCommand(cmd.BaseCommand):
             raise RuntimeError(msg)
 
 
+class LrpSetHaChassisGroupCommand(cmd.BaseCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port, ha_chassis_group):
+        super().__init__(api)
+        self.port = port
+        self.ha_chassis_group = ha_chassis_group
+
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        try:
+            hcg = self.api.lookup('HA_Chassis_Group', self.ha_chassis_group)
+        except idlutils.RowNotFound:
+            raise RuntimeError(
+                f"HA Chassis Group {self.ha_chassis_group} does not exist")
+        lrp.ha_chassis_group = hcg.uuid
+
+
+class LrpGetHaChassisGroupCommand(cmd.ReadOnlyCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port):
+        super().__init__(api)
+        self.port = port
+
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        if lrp.ha_chassis_group:
+            self.result = rowview.RowView(lrp.ha_chassis_group[0])
+        else:
+            self.result = None
+
+
+class LrpDelHaChassisGroupCommand(cmd.BaseCommand):
+    table = 'Logical_Router_Port'
+
+    def __init__(self, api, port, if_exists=False):
+        super().__init__(api)
+        self.port = port
+        self.if_exists = if_exists
+
+    def run_idl(self, txn):
+        lrp = self.api.lookup(self.table, self.port)
+        if lrp.ha_chassis_group:
+            lrp.ha_chassis_group = []
+        elif not self.if_exists:
+            msg = "HA chassis group on port %s does not exist" % self.port
+            raise RuntimeError(msg)
+
+
 class _LrpNetworksCommand(cmd.BaseCommand):
     table = 'Logical_Router_Port'
 
