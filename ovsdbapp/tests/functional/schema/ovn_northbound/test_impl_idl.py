@@ -1764,6 +1764,91 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertEqual(c1.chassis_name, c1_name)
         self.assertEqual(c1.priority, 1)
 
+    def test_lrp_add_ha_chassis_group_by_name(self):
+        """Test adding LRP with HA chassis group specified by name."""
+        # Create an HA chassis group first
+        hcg_name = 'ha-group-%s' % ovsdb_utils.generate_uuid()
+        hcg = self.api.ha_chassis_group_add(hcg_name).execute(check_error=True)
+
+        # Create LRP with ha_chassis_group specified by name
+        port_name = utils.get_rand_device_name()
+        mac = 'de:ad:be:ef:4d:ad'
+        networks = ['192.0.2.0/24']
+
+        lrp = self.api.lrp_add(
+            self.lr.uuid, port_name, mac, networks,
+            ha_chassis_group=hcg_name
+        ).execute(check_error=True)
+
+        # Verify the HA chassis group is properly linked by UUID
+        self.assertTrue(lrp.ha_chassis_group)
+        self.assertEqual(lrp.ha_chassis_group[0].uuid, hcg.uuid)
+
+    def test_lrp_add_ha_chassis_group_by_uuid(self):
+        """Test adding LRP with HA chassis group specified by UUID."""
+        # Create an HA chassis group first
+        hcg_name = 'ha-group-%s' % ovsdb_utils.generate_uuid()
+        hcg = self.api.ha_chassis_group_add(hcg_name).execute(check_error=True)
+
+        # Create LRP with ha_chassis_group specified by UUID
+        port_name = utils.get_rand_device_name()
+        mac = 'de:ad:be:ef:4d:ad'
+        networks = ['192.0.2.0/24']
+
+        lrp = self.api.lrp_add(
+            self.lr.uuid, port_name, mac, networks,
+            ha_chassis_group=str(hcg.uuid)
+        ).execute(check_error=True)
+
+        # Verify the HA chassis group is properly linked by UUID
+        self.assertTrue(lrp.ha_chassis_group)
+        self.assertEqual(lrp.ha_chassis_group[0].uuid, hcg.uuid)
+
+    def test_lrp_add_ha_chassis_group_nonexistent_name(self):
+        """Test adding LRP with non-existent HA chassis group name fails."""
+        nonexistent_name = 'nonexistent-hcg'
+        port_name = utils.get_rand_device_name()
+        mac = 'de:ad:be:ef:4d:ad'
+        networks = ['192.0.2.0/24']
+
+        cmd = self.api.lrp_add(
+            self.lr.uuid, port_name, mac, networks,
+            ha_chassis_group=nonexistent_name
+        )
+
+        # Should raise an exception due to lookup failure
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_lrp_add_ha_chassis_group_nonexistent_uuid(self):
+        """Test adding LRP with non-existent HA chassis group UUID fails."""
+        nonexistent_uuid = ovsdb_utils.generate_uuid()
+        port_name = utils.get_rand_device_name()
+        mac = 'de:ad:be:ef:4d:ad'
+        networks = ['192.0.2.0/24']
+
+        cmd = self.api.lrp_add(
+            self.lr.uuid, port_name, mac, networks,
+            ha_chassis_group=nonexistent_uuid
+        )
+
+        # Should raise an exception due to lookup failure
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_lrp_add_ha_chassis_group_invalid_uuid(self):
+        """Test adding LRP with invalid UUID format fails."""
+        invalid_uuid = 'not-a-valid-uuid-format'
+        port_name = utils.get_rand_device_name()
+        mac = 'de:ad:be:ef:4d:ad'
+        networks = ['192.0.2.0/24']
+
+        cmd = self.api.lrp_add(
+            self.lr.uuid, port_name, mac, networks,
+            ha_chassis_group=invalid_uuid
+        )
+
+        # Should raise an exception due to lookup failure of invalid name
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
     def test_lrp_del_uuid(self):
         lrp = self._lrp_add(None)
         self.api.lrp_del(lrp.uuid).execute(check_error=True)

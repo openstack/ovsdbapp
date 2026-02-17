@@ -905,6 +905,15 @@ class LrpAddCommand(cmd.BaseCommand):
                                            len(gwcs) - n, may_exist=True)
             cmd.run_idl(txn)
             lrp.addvalue('gateway_chassis', cmd.result)
+        ha_chassis_group = self.columns.pop('ha_chassis_group', None)
+        if ha_chassis_group:
+            try:
+                ha_chassis_group = self.api.lookup(
+                    'HA_Chassis_Group', ha_chassis_group)
+            except idlutils.RowNotFound:
+                raise RuntimeError(
+                    f"HA Chassis Group {ha_chassis_group} does not exist")
+            lrp.ha_chassis_group = ha_chassis_group.uuid
         self.set_columns(lrp, **self.columns)
         self.result = lrp.uuid
 
