@@ -104,6 +104,7 @@ class LspBindCommand(cmd.BaseCommand):
             raise RuntimeError("Port %s already bound to %s" % (self.port,
                                                                 self.chassis))
         binding.chassis = chassis
+        binding.up = [True]
 
 
 class LspUnbindCommand(cmd.BaseCommand):
@@ -121,3 +122,4 @@ class LspUnbindCommand(cmd.BaseCommand):
                 return
             raise
         binding.chassis = []
+        binding.up = [False]
