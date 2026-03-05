@@ -106,6 +106,7 @@ class OvnSouthboundTest(base.FunctionalTestCase):
         binding = idlutils.row_by_value(self.api.idl, 'Port_Binding',
                                         'logical_port', port.name)
         self.assertIn(chassis, binding.chassis)
+        self.assertCountEqual([True], binding.up)
         return chassis, switch, port
 
     def test_lsp_bind_exists(self):
@@ -123,6 +124,7 @@ class OvnSouthboundTest(base.FunctionalTestCase):
                                         'logical_port', port.name)
         self.assertNotIn(other, binding.chassis)
         self.assertIn(chassis, binding.chassis)
+        self.assertCountEqual([True], binding.up)
 
     def test_lsp_unbind(self):
         _chassis, _switch, port = self.test_lsp_bind()
@@ -130,6 +132,7 @@ class OvnSouthboundTest(base.FunctionalTestCase):
         binding = idlutils.row_by_value(self.api.idl, 'Port_Binding',
                                         'logical_port', port.name)
         self.assertEqual([], binding.chassis)
+        self.assertCountEqual([False], binding.up)
 
     def test_lsp_unbind_no_exist(self):
         cmd = self.api.lsp_unbind(utils.get_rand_device_name())
