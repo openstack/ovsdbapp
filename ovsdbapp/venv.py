@@ -352,6 +352,7 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         return self.ovnsb_server.connection
 
     def _setUp(self):
+        super()._setUp()
         if self.ovndir and os.path.isdir(self.ovndir):
             # Use OVN source dir - add paths to venv
             self.venv.prepend_paths(
@@ -375,11 +376,11 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         self.useFixture(NorthdFixture(
             self.venv, self.ovnnb_connection, self.ovnsb_connection))
 
-        super()._setUp()
         self.useFixture(OvnControllerFixture(self.venv))
 
-    def init_processes(self):
-        super().init_processes()
+        self.init_ovn_processes()
+
+    def init_ovn_processes(self):
         self.venv.call(["ovn-nbctl", "init"])
         self.venv.call(["ovn-sbctl", "init"])
         if self.add_chassis:
@@ -402,12 +403,13 @@ class OvsOvnIcVenvFixture(OvsOvnVenvFixture):
     def _setUp(self):
         if not self.has_icnb():
             return
+        super()._setUp()
         self.ovn_icnb_server = self.useFixture(OvsdbServerFixture(
             self.venv, "ovn_ic_nb_db", self.ovn_icnb_schema, self.ovsdir,
             "--remote=db:OVN_IC_Northbound,IC_NB_Global,connections",
             "--ssl-protocols=db:OVN_IC_Northbound,SSL,ssl_protocols",
             "--ssl-ciphers=db:OVN_IC_Northbound,SSL,ssl_ciphers"))
-        super()._setUp()
+        self.init_ovn_ic_processes()
 
     @property
     def ovn_icnb_connection(self):
@@ -421,8 +423,7 @@ class OvsOvnIcVenvFixture(OvsOvnVenvFixture):
     def has_icnb(self):
         return os.path.isfile(self.ovn_icnb_schema)
 
-    def init_processes(self):
-        super().init_processes()
+    def init_ovn_ic_processes(self):
         self.venv.call(["ovn-ic-nbctl", "init"])
 
 
