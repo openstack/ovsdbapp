@@ -13,4 +13,6 @@ if [ "$OVN_SRCDIR" -a ! -d "$OVN_SRCDIR" ]; then
     popd
     ./boot.sh && PYTHON=/usr/bin/python ./configure && make -j$(($(nproc) + 1))
     popd
+else
+    echo "Using OVN branch $OVN_BRANCH in $OVN_SRCDIR"
 fi
