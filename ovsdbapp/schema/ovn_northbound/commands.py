@@ -343,13 +343,13 @@ class QoSAddCommand(cmd.AddCommand):
                              const.ACL_PRIORITY_MAX)
         if rate is not None and not 1 <= rate <= const.QOS_BANDWIDTH_MAX:
             raise ValueError("rate(%s) must be between 1 and %s, inclusive" %
-                             rate, const.QOS_BANDWIDTH_MAX)
+                             (rate, const.QOS_BANDWIDTH_MAX))
         if burst is not None and not 1 <= burst <= const.QOS_BANDWIDTH_MAX:
             raise ValueError("burst(%s) must be between 1 and %s, "
-                             "inclusive" % burst, const.QOS_BANDWIDTH_MAX)
+                             "inclusive" % (burst, const.QOS_BANDWIDTH_MAX))
         if dscp is not None and not 0 <= dscp <= const.QOS_DSCP_MAX:
             raise ValueError("dscp(%s) must be between 0 and %s, inclusive" %
-                             dscp, const.QOS_DSCP_MAX)
+                             (dscp, const.QOS_DSCP_MAX))
         if rate is None and dscp is None:
             raise ValueError("One of the rate or dscp must be configured")
         if (external_ids_match is not None and
