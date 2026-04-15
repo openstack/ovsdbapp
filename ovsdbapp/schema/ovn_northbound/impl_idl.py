@@ -474,5 +474,5 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lsp_attach_mirror(self, port, mirror, may_exist=False):
         return cmd.LspAttachMirror(self, port, mirror, may_exist)
 
-    def lsp_detach_mirror(self, port, mirror, if_exist=False):
-        return cmd.LspDetachMirror(self, port, mirror, if_exist)
+    def lsp_detach_mirror(self, port, mirror, if_exists=False):
+        return cmd.LspDetachMirror(self, port, mirror, if_exists)

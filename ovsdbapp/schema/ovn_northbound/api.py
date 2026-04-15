@@ -1600,15 +1600,15 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def lsp_detach_mirror(self, port, mirror, if_exist=False):
+    def lsp_detach_mirror(self, port, mirror, if_exists=False):
         """Detaches an lsp from the given mirror
 
         :param port: the id of the lsp
         :type port: str
         :param mirror: the name or ID of the mirror
         :type mirror: str
-        :param if_exist:    If True, don't fail if the mirror_rules entry
+        :param if_exists:   If True, don't fail if the mirror_rules entry
                             doesn't exist.
-        :type if_exist:     Optional[bool]
+        :type if_exists:    Optional[bool]
         :returns: :class:`Command` with RowView result
         """

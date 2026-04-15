@@ -1293,17 +1293,17 @@ class LspAttachMirror(cmd.BaseCommand):
 
 
 class LspDetachMirror(cmd.BaseCommand):
-    def __init__(self, api, port, mirror, if_exist=False):
+    def __init__(self, api, port, mirror, if_exists=False):
         super().__init__(api)
         self.port = port
         self.mirror = mirror
-        self.if_exist = if_exist
+        self.if_exists = if_exists
 
     def run_idl(self, txn):
         try:
             lsp = self.api.lookup('Logical_Switch_Port', self.port)
             mirror = self.api.lookup('Mirror', self.mirror)
-            if mirror not in lsp.mirror_rules and not self.if_exist:
+            if mirror not in lsp.mirror_rules and not self.if_exists:
                 msg = "Mirror Rule %s doesn't exist on LSP %s" % (self.mirror,
                                                                   self.port)
                 raise RuntimeError(msg)
