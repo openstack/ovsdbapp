@@ -141,7 +141,7 @@ def row_by_record(idl_, table, record):
     rl = _LOOKUP_TABLE.get(table, RowLookup(table, get_index_column(t), None))
     # no table means uuid only, no column means lookup table only has one row
     if rl.table is None:
-        raise ValueError("Table %s can only be queried by UUID") % table
+        raise ValueError("Table %s can only be queried by UUID" % table)
     if rl.column is None:
         return next(iter(t.rows.values()))
     row = row_by_value(idl_, rl.table, rl.column, record)
