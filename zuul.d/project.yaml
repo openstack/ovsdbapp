@@ -7,6 +7,25 @@
       jobs:
         - openstack-tox-functional
         - ovsdbapp-neutron-ovn-tempest-ovs-release
+        - neutron-functional:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^\.coveragerc$
+              - ^\.git.*$
+              - ^\.pre-commit-config\.yaml$
+              - ^\.pylintrc$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^LICENSE$
+              - ^releasenotes/.*$
+              - ^tox.ini$
+            required-projects:
+              - openstack/ovsdbapp
+            vars:
+              zuul_work_dir: src/opendev.org/openstack/neutron
+              tox_envlist: dsvm-functional
+              tox_extra_args: "-- (neutron.tests.functional.plugins.ml2.drivers.ovn|neutron.tests.functional.services.ovn_l3)"
+
     gate:
       jobs:
         - openstack-tox-functional
