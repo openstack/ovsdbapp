@@ -3219,9 +3219,9 @@ class TestMirrorOps(OvnNorthboundTest):
             check_error=True
         )
 
-        # detach with if_exist=True, and check the result, to be as previously
+        # detach with if_exists=True, and check the result, to be as previously
         self.api.lsp_detach_mirror(
             self.port_uuid, mirror2.uuid,
-            if_exist=True).execute(check_error=True)
+            if_exists=True).execute(check_error=True)
         self.assertEqual(1, len(port.mirror_rules))
         self.assertEqual(mirror1.uuid, port.mirror_rules[0].uuid)
