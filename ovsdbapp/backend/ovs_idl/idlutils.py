@@ -466,9 +466,20 @@ def process_value_for_str(row, col):
 
         @classmethod
         def from_col(cls, col_src, value):
-            if col_src.is_ref():
+            if not col_src.is_ref():
+                return cls(int=value.int)
+            try:
                 return cls(int=value.uuid.int)
-            return cls(int=value.int)
+            except AttributeError:
+                pass
+            # Dangling ref: walk the .value chain to find a uuid.UUID
+            v = value
+            while not isinstance(v, uuid.UUID):
+                if not hasattr(v, 'value'):
+                    raise AttributeError(
+                        "Cannot extract UUID from %r" % (value,))
+                v = v.value
+            return cls(int=v.int)
 
     # If we are passed UUID as a column, just return the modified row.uuid
     if col == 'uuid':

@@ -17,6 +17,8 @@ import uuid
 from ovsdbapp import api
 from ovsdbapp.backend import ovs_idl
 from ovsdbapp.backend.ovs_idl import connection
+from ovsdbapp.backend.ovs_idl import event as ovsdb_event
+from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants
 from ovsdbapp.tests.functional import base
 from ovsdbapp import venv
@@ -46,11 +48,12 @@ class IdlUtilsRow2StrTestCase(base.VenvPerClassFunctionalTestCase):
 
     def setUp(self):
         super().setUp()
-        self.idl = connection.OvsdbIdl.from_server(
+        idl = connection.OvsdbIdl.from_server(
             self.ovsdb_server.connection, "idltest")
-        self.connection = connection.Connection(self.idl,
-                                                constants.DEFAULT_TIMEOUT)
-        self.api = IdlTestApi(self.connection)
+        self.api = IdlTestApi(
+            connection.Connection(idl, constants.DEFAULT_TIMEOUT))
+        self.handler = ovsdb_event.RowEventHandler()
+        self.api.ovsdb_connection.idl.notify = self.handler.notify
 
     def test_simple_row(self):
         data = {
@@ -160,3 +163,35 @@ class IdlUtilsRow2StrTestCase(base.VenvPerClassFunctionalTestCase):
             f"ref_map_value={{'foo': {ref_target}}}, "
             f"ref_set=[{ref_target}], "
             f"single_ref={ref_target})", str(row))
+
+    def test_row2str_with_dangling_ref(self):
+        with self.api.transaction(check_error=True) as txn:
+            tgt = txn.add(self.api.db_create_row("RefTarget", value=42))
+            ref = txn.add(self.api.db_create_row("RefTypes", single_ref=tgt))
+        ref_target, ref_row = tgt.result, ref.result
+
+        class DeleteWaitEvent(ovsdb_event.WaitEvent):
+            ONETIME = False
+            def __init__(self, uuid):
+                self.ONETIME = False
+                super().__init__(events=[ovsdb_event.RowEvent.ROW_DELETE],
+                                 table='RefTypes', conditions=None, timeout=5)
+                self._uuid = uuid
+                self.row2str_result = None
+
+            def match_fn(self, event, row, old):
+                return row.uuid == self._uuid
+
+            def run(self, event, row, old):
+                self.row2str_result = idlutils.row2str(row)
+                super().run(event, row, old)
+
+        wait_event = DeleteWaitEvent(ref_row.uuid)
+        self.handler.watch_event(wait_event)
+
+        with self.api.transaction(check_error=True) as txn:
+            txn.add(self.api.db_destroy("RefTypes", ref_row.uuid))
+            txn.add(self.api.db_destroy("RefTarget", ref_target.uuid))
+
+        self.assertTrue(wait_event.wait(), "ROW_DELETE event did not fire")
+        self.assertIn(str(ref_row.uuid), wait_event.row2str_result)
