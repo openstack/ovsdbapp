@@ -278,6 +278,19 @@ def get_column_value(row, col):
     return val
 
 
+def rows_to_uuids(val):
+    """Replace any idl.Row objects in val with their UUIDs."""
+    if isinstance(val, idl.Row):
+        return val.uuid
+    if isinstance(val, list):
+        return [v.uuid if isinstance(v, idl.Row) else v for v in val]
+    if isinstance(val, dict):
+        return {(k.uuid if isinstance(k, idl.Row) else k):
+                (v.uuid if isinstance(v, idl.Row) else v)
+                for k, v in val.items()}
+    return val
+
+
 def circular(*items):
     """Circularly iterate over the list of arguments"""
     if not items:
