@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 from ovsdbapp.backend.ovs_idl import idlutils
 
 
@@ -32,3 +34,11 @@ class RowView(object):
 
     def __str__(self):
         return idlutils.row2str(self._row)
+
+    def asdict(self):
+        return {
+            c: copy.deepcopy(
+                idlutils.rows_to_uuids(
+                    idlutils.get_column_value(self._row, c)))
+            for c in list(self._row._table.columns.keys()) + ['_uuid']
+        }
