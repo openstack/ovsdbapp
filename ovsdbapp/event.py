@@ -191,6 +191,9 @@ class RowEventHandler(object):
                 # notify_loop to exit.
                 LOG.exception('Unexpected exception in notify_loop')
 
+    def _on_matching(self, event, row, updates=None):
+        return row
+
     def notify(self, event, row, updates=None):
         """Method for calling backend to call for each DB update
 
@@ -205,5 +208,7 @@ class RowEventHandler(object):
         """
         matching = self.matching_events(
             event, row, updates)
+        if matching:
+            row = self._on_matching(event, row, updates)
         for match in matching:
             self.notifications.put((match, event, row, updates))
