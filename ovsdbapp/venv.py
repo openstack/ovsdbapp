@@ -13,6 +13,7 @@
 import errno
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -25,6 +26,42 @@ import fixtures
 DUMMY_OVERRIDE_ALL = 'override'
 DUMMY_OVERRIDE_SYSTEM = 'system'
 DUMMY_OVERRIDE_NONE = ''
+
+
+class SslConfig:
+    def __init__(self, private_key, certificate, ca_cert):
+        self.private_key = private_key
+        self.certificate = certificate
+        self.ca_cert = ca_cert
+
+
+class PkiFixture(fixtures.Fixture):
+    def __init__(self, venv):
+        super().__init__()
+        self.venv = venv
+
+    def _pki_call(self, *args):
+        d = self.venv.venvdir
+        self.venv.call(
+            ("ovs-pki",) + args + ("-d", d, "-l", d + "/pki.log", "--force"),
+            extra_path=os.getenv("PATH", ""))
+
+    def _setUp(self):
+        super()._setUp()
+        self._pki_call("init")
+
+    @property
+    def ca_cert(self):
+        return os.path.join(self.venv.venvdir, "controllerca", "cacert.pem")
+
+    def create_certificate(self, name):
+        self._pki_call("req+sign", name, "controller")
+        return SslConfig(
+            private_key=os.path.join(self.venv.venvdir,
+                                     f"{name}-privkey.pem"),
+            certificate=os.path.join(self.venv.venvdir,
+                                     f"{name}-cert.pem"),
+            ca_cert=self.ca_cert)
 
 
 class VenvFixture(fixtures.Fixture):
@@ -50,9 +87,14 @@ class VenvFixture(fixtures.Fixture):
 
     def call(self, cmd, *args, **kwargs):
         cwd = kwargs.pop("cwd", self.venvdir)
+        extra_path = kwargs.pop("extra_path", None)
+        env = self.env
+        if extra_path:
+            env = dict(env)
+            env["PATH"] = env["PATH"] + os.pathsep + extra_path
         try:
             return subprocess.check_output(
-                cmd, *args, env=self.env, stderr=subprocess.STDOUT,
+                cmd, *args, env=env, stderr=subprocess.STDOUT,
                 cwd=cwd, **kwargs)
         except subprocess.CalledProcessError as e:
             raise Exception(
@@ -119,12 +161,18 @@ class ProcessFixture(fixtures.Fixture):
 
 
 class OvsdbServerFixture(ProcessFixture):
-    def __init__(self, venv, name, schema_filename, ovsdir=None, *args):
+    PORT_RE = re.compile(rb'listening on port (\d+)')
+
+    def __init__(self, venv, name, schema_filename, ovsdir=None, *args,
+                 ssl_config=None, remote_proto=None):
         super().__init__(venv, name)
         self.schema_filename = schema_filename
         self.ovsdir = ovsdir
         self.args = args
         self.additional_dbs = []
+        self.ssl_config = ssl_config
+        self.remote_proto = remote_proto
+        self._remote_port = None
         self.schema = self.get_schema_name()
         if not self.ovsdir:
             self.venv.set_path(os.getenv("PATH"))
@@ -149,7 +197,17 @@ class OvsdbServerFixture(ProcessFixture):
 
     @property
     def connection(self):
+        if self._remote_port is not None:
+            return f"{self.remote_proto}:127.0.0.1:{self._remote_port}"
         return "unix:" + self.unix_socket
+
+    @classmethod
+    def _parse_port(cls, output):
+        match = cls.PORT_RE.search(output)
+        if match:
+            return int(match.group(1))
+        raise RuntimeError(
+            "Could not determine listening port from ovsdb-server output")
 
     def create_db(self, dbfile=None, schema_filename=None):
         dbfile = dbfile or self.dbfile
@@ -166,15 +224,27 @@ class OvsdbServerFixture(ProcessFixture):
             "-vconsole:off",
             f"--pidfile={self.pidfile}",
             f"--log-file={self.logfile}",
-            f"--remote=p{self.connection}")
-        # TODO(twilson) Make SSL configurable since not all schemas
-        # will support it the same way, e.g. OVN supports this but OVS doesn't
-        #   f"--private-key=db:{self.schema},SSL,private_key",
-        #   f"--certificate=db:{self.schema},SSL,certificate",
-        #   f"--ca-cert=db:{self.schema},SSL,ca_cert")
+            f"--remote=punix:{self.unix_socket}")
+
+        remote_args = ()
+        if self.remote_proto:
+            remote_args = (
+                f"--remote=p{self.remote_proto}:0:127.0.0.1",
+                "-vsocket_util:console:info")
+
+        ssl_args = ()
+        if self.ssl_config:
+            ssl_args = (
+                f"--private-key={self.ssl_config.private_key}",
+                f"--certificate={self.ssl_config.certificate}",
+                f"--ca-cert={self.ssl_config.ca_cert}")
 
         dbs = (self.dbfile,) + tuple(self.additional_dbs)
-        self.venv.call(base_args + self.args + dbs)
+        output = self.venv.call(
+            base_args + remote_args + ssl_args + self.args + dbs)
+
+        if self.remote_proto:
+            self._remote_port = self._parse_port(output)
 
     def prestart(self):
         self.create_db()
@@ -207,13 +277,14 @@ class VswitchdFixture(ProcessFixture):
 
 class NorthdFixture(ProcessFixture):
     def __init__(self, venv, ovnnb_connection, ovnsb_connection,
-                 name="ovn-northd"):
+                 name="ovn-northd", ssl_config=None):
         super().__init__(venv, name)
         self.ovnnb_connection = ovnnb_connection
         self.ovnsb_connection = ovnsb_connection
+        self.ssl_config = ssl_config
 
     def start(self):
-        self.venv.call([
+        cmd = [
             "ovn-northd",
             "--detach",
             "--no-chdir",
@@ -221,21 +292,34 @@ class NorthdFixture(ProcessFixture):
             "-vconsole:off",
             f"--log-file={self.logfile}",
             f"--ovnsb-db={self.ovnsb_connection}",
-            f"--ovnnb-db={self.ovnnb_connection}"])
+            f"--ovnnb-db={self.ovnnb_connection}"]
+        if self.ssl_config:
+            cmd.extend([
+                f"--private-key={self.ssl_config.private_key}",
+                f"--certificate={self.ssl_config.certificate}",
+                f"--ca-cert={self.ssl_config.ca_cert}"])
+        self.venv.call(cmd)
 
 
 class OvnControllerFixture(ProcessFixture):
-    def __init__(self, venv, name="ovn-controller"):
+    def __init__(self, venv, name="ovn-controller", ssl_config=None):
         super().__init__(venv, name)
+        self.ssl_config = ssl_config
 
     def start(self):
-        self.venv.call([
+        cmd = [
             "ovn-controller",
             "--detach",
             "--no-chdir",
             f"--pidfile={self.pidfile}",
             "-vconsole:off",
-            f"--log-file={self.logfile}"])
+            f"--log-file={self.logfile}"]
+        if self.ssl_config:
+            cmd.extend([
+                f"--private-key={self.ssl_config.private_key}",
+                f"--certificate={self.ssl_config.certificate}",
+                f"--ca-cert={self.ssl_config.ca_cert}"])
+        self.venv.call(cmd)
 
 
 class OvsVenvFixture(fixtures.Fixture):
@@ -328,10 +412,12 @@ class OvsOvnVenvFixture(OvsVenvFixture):
     SBSCHEMA = 'ovn-sb.ovsschema'
     IC_NBSCHEMA = 'ovn-ic-nb.ovsschema'
 
-    def __init__(self, venv, ovndir=None, add_chassis=False, **kwargs):
+    def __init__(self, venv, ovndir=None, add_chassis=False, protocol=None,
+                 **kwargs):
         super().__init__(venv, **kwargs)
         self.add_chassis = add_chassis
         self.ovndir = ovndir or ()
+        self.protocol = protocol
 
     @property
     def ovnsb_schema(self):
@@ -361,22 +447,32 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                 os.path.join(self.ovndir, "utilities"))
         self.venv.env.update({"OVN_RUNDIR": self.venv.venvdir})
 
+        ssl_config = None
+        if self.protocol == 'ssl':
+            self.pki = self.useFixture(PkiFixture(self.venv))
+            ssl_config = self.pki.create_certificate("ovn")
+        self.ssl_config = ssl_config
+
         self.ovnnb_server = self.useFixture(OvsdbServerFixture(
             self.venv, "ovnnb_db", self.ovnnb_schema, self.ovsdir,
             "--remote=db:OVN_Northbound,NB_Global,connections",
             "--ssl-protocols=db:OVN_Northbound,SSL,ssl_protocols",
-            "--ssl-ciphers=db:OVN_Northbound,SSL,ssl_ciphers"))
+            "--ssl-ciphers=db:OVN_Northbound,SSL,ssl_ciphers",
+            ssl_config=ssl_config, remote_proto=self.protocol))
 
         self.ovnsb_server = self.useFixture(OvsdbServerFixture(
             self.venv, "ovnsb_db", self.ovnsb_schema, self.ovsdir,
             "--remote=db:OVN_Southbound,SB_Global,connections",
             "--ssl-protocols=db:OVN_Southbound,SSL,ssl_protocols",
-            "--ssl-ciphers=db:OVN_Southbound,SSL,ssl_ciphers"))
+            "--ssl-ciphers=db:OVN_Southbound,SSL,ssl_ciphers",
+            ssl_config=ssl_config, remote_proto=self.protocol))
 
         self.useFixture(NorthdFixture(
-            self.venv, self.ovnnb_connection, self.ovnsb_connection))
+            self.venv, self.ovnnb_connection, self.ovnsb_connection,
+            ssl_config=ssl_config))
 
-        self.useFixture(OvnControllerFixture(self.venv))
+        self.useFixture(OvnControllerFixture(
+            self.venv, ssl_config=ssl_config))
 
         self.init_ovn_processes()
 
@@ -391,7 +487,6 @@ class OvsOvnVenvFixture(OvsVenvFixture):
                 "external_ids:hostname=sandbox",
                 "external_ids:ovn-encap-type=geneve",
                 "external_ids:ovn-encap-ip=127.0.0.1"])
-        # TODO(twilson) SSL stuff
         self.venv.call([
             "ovs-vsctl", f"--db={self.ovs_connection}",
             "set", "open", ".",
@@ -408,7 +503,8 @@ class OvsOvnIcVenvFixture(OvsOvnVenvFixture):
             self.venv, "ovn_ic_nb_db", self.ovn_icnb_schema, self.ovsdir,
             "--remote=db:OVN_IC_Northbound,IC_NB_Global,connections",
             "--ssl-protocols=db:OVN_IC_Northbound,SSL,ssl_protocols",
-            "--ssl-ciphers=db:OVN_IC_Northbound,SSL,ssl_ciphers"))
+            "--ssl-ciphers=db:OVN_IC_Northbound,SSL,ssl_ciphers",
+            ssl_config=self.ssl_config, remote_proto=self.protocol))
         self.init_ovn_ic_processes()
 
     @property
