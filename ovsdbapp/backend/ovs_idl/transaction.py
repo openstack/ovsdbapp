@@ -15,6 +15,7 @@
 import logging
 import queue
 import time
+import uuid
 
 from ovs.db import idl
 
@@ -84,10 +85,14 @@ class Transaction(api.Transaction):
             # TODO(twilson) Make sure we don't loop longer than vsctl_timeout
             seqno = self.api.idl.change_seqno
             txn = idl.Transaction(self.api.idl)
+            txn_id = str(uuid.uuid4())[:8]
             self.pre_commit(txn)
             for i, command in enumerate(self.commands):
-                LOG.debug("Running txn n=%(n)d command(idx=%(idx)s): %(cmd)s",
-                          {'idx': i, 'cmd': command, 'n': attempts})
+                LOG.debug(
+                    "Running txn %(txn)s n=%(n)d "
+                    "command(idx=%(idx)s): %(cmd)s",
+                    {'txn': txn_id, 'n': attempts,
+                     'idx': i, 'cmd': command})
                 try:
                     command.run_idl(txn)
                 except Exception as e:
@@ -95,15 +100,16 @@ class Transaction(api.Transaction):
                     if self.check_error:
                         raise
                     if self.log_errors:
-                        LOG.error("txn n=%(n)d command(idx=%(idx)s): %(cmd)s "
-                                  "aborted due to error: %(err)s",
-                                  {'idx': i,
-                                   'cmd': command,
-                                   'n': attempts,
-                                   'err': e})
+                        LOG.error(
+                            "txn %(txn)s n=%(n)d "
+                            "command(idx=%(idx)s): "
+                            "%(cmd)s aborted: %(err)s",
+                            {'txn': txn_id, 'n': attempts,
+                             'idx': i, 'cmd': command,
+                             'err': e})
             status = txn.commit_block()
             if status == txn.TRY_AGAIN:
-                LOG.debug("OVSDB transaction returned TRY_AGAIN, retrying")
+                LOG.debug("txn %s returned TRY_AGAIN, retrying", txn_id)
                 idlutils.wait_for_change(self.api.idl, self.time_remaining(),
                                          seqno)
                 continue
@@ -117,20 +123,21 @@ class Transaction(api.Transaction):
                     msg += txn.get_error()
 
                 if self.log_errors:
-                    LOG.error(msg)
+                    LOG.error("txn %s %s", txn_id, msg)
                 if self.check_error:
                     # For now, raise similar error to vsctl/utils.execute()
                     raise RuntimeError(msg)
                 return
             if status == txn.ABORTED:
-                LOG.debug("Transaction aborted")
+                LOG.debug("txn %s aborted", txn_id)
                 return
             if status == txn.UNCHANGED:
-                LOG.debug("Transaction caused no change")
+                LOG.debug("txn %s caused no change", txn_id)
             elif status == txn.SUCCESS:
+                LOG.debug("txn %s succeeded", txn_id)
                 self.post_commit(txn)
             else:
-                LOG.debug("Transaction returned an unknown status: %s", status)
+                LOG.debug("txn %s returned unknown status: %s", txn_id, status)
 
             return [cmd.result for cmd in self.commands]
 
