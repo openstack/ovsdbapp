@@ -13,6 +13,8 @@
 import atexit
 import os
 
+from ovs.stream import Stream
+
 from ovsdbapp.backend.ovs_idl import connection
 from ovsdbapp import constants
 from ovsdbapp.tests import base
@@ -55,15 +57,27 @@ class FunctionalTestCase(VenvPerClassFunctionalTestCase):
     _connections = {}
     _teardown_called = False
     fixture_class = venv.OvsOvnVenvFixture
+    protocol = None
 
     @classmethod
     def setUpClass(cls):
+        if cls.protocol not in (None, 'tcp', 'ssl'):
+            raise ValueError(f"Invalid protocol: {cls.protocol}")
+
         super().setUpClass()
         cls.ovsvenv = cls.fixture_class(
             cls.virtualenv,
             ovsdir=os.getenv('OVS_SRCDIR'),
-            ovndir=os.getenv('OVN_SRCDIR'))
+            ovndir=os.getenv('OVN_SRCDIR'),
+            protocol=cls.protocol)
         cls.ovsvenv.setUp()
+        if cls.protocol == 'ssl':
+            Stream.ssl_set_private_key_file(
+                cls.ovsvenv.ssl_config.private_key)
+            Stream.ssl_set_certificate_file(
+                cls.ovsvenv.ssl_config.certificate)
+            Stream.ssl_set_ca_cert_file(
+                cls.ovsvenv.ssl_config.ca_cert)
         cls.schema_map = {'Open_vSwitch': cls.ovsvenv.ovs_connection,
                           'OVN_Northbound': cls.ovsvenv.ovnnb_connection,
                           'OVN_Southbound': cls.ovsvenv.ovnsb_connection,
