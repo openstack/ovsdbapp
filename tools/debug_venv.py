@@ -53,7 +53,8 @@ except fixture.MultipleExceptions as e:
     reraise(*e.args[0])
 try:
     print("*** Exit the shell when finished debugging ***")
-    subprocess.call([os.getenv('SHELL'), '-i'], env=v.env)
+    v.venv.env['PATH'] += os.getenv("PATH")
+    subprocess.call([os.getenv('SHELL'), '-i'], env=v.venv.env)
 except Exception:
     print("*** Could not start shell, don't type 'exit'***", file=sys.stderr)
     raise
