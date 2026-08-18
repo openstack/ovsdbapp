@@ -234,19 +234,33 @@ def parse_connection(connection_string):
 
 
 def wait_for_change(_idl, timeout=None, seqno=None):
-    """Wait for the Idl seqno to change
+    """Wait for change_seqno to advance past seqno and the DB dump to complete
+
+    IDL_S_MONITORING is an additional gate, not a replacement for the
+    change_seqno check: on connect a lock grant bumps change_seqno before the
+    monitor reply, so gating on change_seqno alone returns against an empty
+    cache. It's a no-op for a caller already monitoring (e.g. a txn retry).
 
     :param _idl: The Idl instance
     :type _idl: ovs.db.idl.Idl
     :param timeout: raise a TimeoutException after if timeout > 0/not None
     :type timeout: int (seconds) or None
+    :param seqno: change_seqno to wait past; defaults to the current one
+    :type seqno: int or None
     """
     if timeout and timeout <= 0:
         timeout = None
     if seqno is None:
         seqno = _idl.change_seqno
     stop = time.time() + timeout if timeout else None
-    while _idl.change_seqno == seqno and not _idl.run():
+    # run() must be called every iteration so the FSM can advance to
+    # IDL_S_MONITORING; folding it into a short-circuiting while condition
+    # would skip it once change_seqno has already moved.
+    while True:
+        changed = _idl.run()
+        if ((changed or _idl.change_seqno != seqno) and
+                _idl.state == idl.Idl.IDL_S_MONITORING):
+            break
         ovs_poller = poller.Poller()
         _idl.wait(ovs_poller)
         if timeout:

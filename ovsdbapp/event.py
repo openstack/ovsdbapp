@@ -12,6 +12,7 @@
 
 import abc
 import atexit
+import collections
 import itertools
 import logging
 import queue
@@ -29,6 +30,13 @@ except ImportError:
 
 LOG = logging.getLogger(__name__)
 STOP_EVENT = ("STOP", None, None, None)
+
+# Queued representation of a lock acquire/lose, dispatched by notify_loop.
+# It is a namedtuple (and therefore a tuple), but its type distinguishes it
+# from the 4-tuple row notifications and from STOP_EVENT, so lock transitions
+# ride the same notify_loop thread as row events without being mixed.
+LockNotification = collections.namedtuple(
+    "LockNotification", ["lock_name", "acquired"])
 
 
 class RowEvent(object, metaclass=abc.ABCMeta):
@@ -178,10 +186,18 @@ class RowEventHandler(object):
     def notify_loop(self):
         while True:
             try:
-                match, event, row, updates = self.notifications.get()
-                if (match, event, row, updates) == STOP_EVENT:
+                item = self.notifications.get()
+                if item == STOP_EVENT:
                     self.notifications.task_done()
                     break
+                if isinstance(item, LockNotification):
+                    if item.acquired:
+                        self.lock_acquired(item.lock_name)
+                    else:
+                        self.lock_lost(item.lock_name)
+                    self.notifications.task_done()
+                    continue
+                match, event, row, updates = item
                 match.run(event, row, updates)
                 if match.ONETIME:
                     self.unwatch_event(match)
@@ -190,6 +206,39 @@ class RowEventHandler(object):
                 # If any unexpected exception happens we don't want the
                 # notify_loop to exit.
                 LOG.exception('Unexpected exception in notify_loop')
+
+    def lock_acquired(self, lock_name):
+        """Hook run on the notify_loop thread when the OVSDB lock is acquired
+
+        Override to react to acquiring the lock. Defaults to a no-op.
+
+        :param lock_name: The name of the lock that was acquired
+        """
+
+    def lock_lost(self, lock_name):
+        """Hook run on the notify_loop thread when the OVSDB lock is lost
+
+        Override to react to losing the lock (stolen, or dropped on
+        disconnect/reconnect). Defaults to a no-op.
+
+        :param lock_name: The name of the lock that was lost
+        """
+
+    def notify_lock(self, lock_name, acquired):
+        """Enqueue a lock transition for dispatch on the notify_loop thread
+
+        The base ovs.db.idl.Idl has no lock-change callback, so ovsdbapp looks
+        up an optional ``notify_lock`` attribute on the Idl. Point it here so
+        the lock_acquired/lock_lost hooks run on the notify_loop thread rather
+        than the connection thread::
+
+            idl.notify_lock = handler.notify_lock
+
+        A subclass could instead define ``notify_lock`` directly. Using an
+        attribute of this name also leaves room for the callback to be adopted
+        officially in upstream OVS without changing how ovsdbapp calls it.
+        """
+        self.notifications.put(LockNotification(lock_name, acquired))
 
     def _on_matching(self, event, row, updates=None):
         return row

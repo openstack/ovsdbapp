@@ -17,6 +17,8 @@ from unittest import mock
 
 import testscenarios
 
+from ovs.db import idl as ovs_idl
+
 from ovsdbapp import api
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import exceptions
@@ -221,6 +223,9 @@ class TestWaitForChange(base.TestCase):
         idl.change_seqno = 42
         idl.run.return_value = self.run_
         idl.wait.side_effect = [None, None, StopIteration]
+        # These scenarios exercise the change_seqno/run() gate; keep the state
+        # gate satisfied so it acts as the no-op it is for a monitoring Idl.
+        idl.state = ovs_idl.Idl.IDL_S_MONITORING
         return idl
 
     def test_wait_for_change(self):

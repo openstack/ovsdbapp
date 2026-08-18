@@ -77,6 +77,7 @@ class Connection(object):
         self.idl = idl
         self.thread = None
         self.is_running = None
+        self._last_has_lock = False
 
     def __del__(self):
         self.txns.close()
@@ -95,6 +96,10 @@ class Connection(object):
                 except AttributeError:
                     # An ovs.db.Idl class has no post_connect
                     pass
+                # wait_for_change() drains the initial messages, including any
+                # lock reply, before the run loop starts, so queue any has_lock
+                # transition now that the DB dump is complete.
+                self._check_lock_change()
             self.poller = poller.Poller()
             self.is_running = True
             self.thread = threading.Thread(target=self.run)
@@ -114,6 +119,7 @@ class Connection(object):
                 self.poller.block()
                 with self.lock:
                     self.idl.run()
+                    self._check_lock_change()
             except Exception as e:
                 # This shouldn't happen, but is possible if there is a bug
                 # in python-ovs, or an unhandled exception in overridden
@@ -131,6 +137,22 @@ class Connection(object):
                     txn.results.put(er)
                 self.txns.task_done()
         self.idl.close()
+
+    def _check_lock_change(self):
+        """Detect OVSDB lock transitions and drive the notify_lock hook.
+
+        Diffs has_lock across run() iterations and calls notify_lock when it
+        changes. No-op unless a lock is configured and notify_lock has been
+        wired (idl.notify_lock = handler.notify_lock).
+        """
+        if not self.idl.lock_name:
+            return
+        if self.idl.has_lock == self._last_has_lock:
+            return
+        self._last_has_lock = self.idl.has_lock
+        notify_lock = getattr(self.idl, 'notify_lock', None)
+        if notify_lock is not None:
+            notify_lock(self.idl.lock_name, self.idl.has_lock)
 
     def stop(self, timeout=None):
         if not self.is_running:

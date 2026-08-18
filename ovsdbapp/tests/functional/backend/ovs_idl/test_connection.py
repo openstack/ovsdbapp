@@ -10,12 +10,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import queue
+import time
 from unittest import mock
+import uuid
 
 from ovsdbapp.backend.ovs_idl import connection
 from ovsdbapp.backend.ovs_idl import event
 from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp import constants
+from ovsdbapp.schema.ovn_northbound import impl_idl
 from ovsdbapp.tests.functional import base
 from ovsdbapp.tests.functional.schema.ovn_northbound import test_impl_idl
 
@@ -126,3 +130,109 @@ class TestConnectionReconnect(test_impl_idl.OvnNorthboundTest):
         event = self._create_and_watch_wait_event("test2")
         self._ls_add("test2")
         self.assertTrue(event.wait())
+
+
+class LockRecordingHandler(event.RowEventHandler):
+    """A RowEventHandler that records lock transitions for inspection.
+
+    lock_acquired/lock_lost run on the notify_loop thread; they push the
+    lock name onto a queue so a test can block on the transition instead of
+    polling.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.acquired = queue.Queue()
+        self.lost = queue.Queue()
+
+    def lock_acquired(self, lock_name):
+        self.acquired.put(lock_name)
+
+    def lock_lost(self, lock_name):
+        self.lost.put(lock_name)
+
+
+class PerInstanceNbApi(impl_idl.OvnNbApiIdlImpl):
+    """OvnNbApiIdlImpl that does not share ovsdb_connection across instances.
+
+    The default Backend stores ovsdb_connection in a class attribute, so
+    every instance (and every test) would reuse a single connection and a
+    single lock. Store it per instance instead, so each worker gets its own
+    connection and lock.
+    """
+
+    @property
+    def ovsdb_connection(self):
+        return self.__dict__.get('_conn')
+
+    @ovsdb_connection.setter
+    def ovsdb_connection(self, conn):
+        self.__dict__['_conn'] = conn
+
+
+class TestLockNotify(test_impl_idl.OvnNorthboundTest):
+    """Test the lock_acquired/lock_lost callbacks.
+
+    A one-shot ``if idl.has_lock`` check races with lock acquisition: a worker
+    granted the OVSDB lock after the check runs never reacts to it. The
+    lock_acquired/lock_lost hooks let a worker respond to lock transitions
+    whenever they happen. These tests wire the hooks up and assert they fire
+    on real transitions.
+    """
+
+    LOCK_TIMEOUT = 10
+
+    def _add_worker(self, lock_name, handler):
+        connstr = self.schema_map['OVN_Northbound']
+        idl = connection.OvsdbIdl.from_server(connstr, 'OVN_Northbound')
+        idl.set_lock(lock_name)
+        idl.notify_lock = handler.notify_lock
+        conn = connection.Connection(idl, constants.DEFAULT_TIMEOUT)
+        worker = PerInstanceNbApi(conn, auto_index=False)
+        self.addCleanup(worker.ovsdb_connection.stop)
+        return worker
+
+    def _make_handler(self):
+        handler = LockRecordingHandler()
+        self.addCleanup(handler.shutdown)
+        return handler
+
+    def _wait_until(self, predicate):
+        stop = time.time() + self.LOCK_TIMEOUT
+        while time.time() < stop:
+            if predicate():
+                return True
+            time.sleep(0.05)
+        return False
+
+    def test_lock_acquired(self):
+        # A worker with lock callbacks wired acquires an uncontended lock;
+        # the lock_acquired hook fires with the lock name and has_lock is set.
+        lock_name = 'lock_%s' % uuid.uuid4().hex
+        handler = self._make_handler()
+        worker = self._add_worker(lock_name, handler)
+
+        self.assertEqual(lock_name,
+                         handler.acquired.get(timeout=self.LOCK_TIMEOUT))
+        self.assertTrue(self._wait_until(lambda: worker.idl.has_lock))
+        self.assertTrue(handler.lost.empty())
+
+    def test_lock_lost_and_reacquired_on_reconnect(self):
+        # Acquire the lock, then force a reconnect. The connection drops the
+        # lock (lock_lost) and, being the only requester, reacquires it
+        # (lock_acquired) -- both hooks fire without any second worker.
+        lock_name = 'lock_%s' % uuid.uuid4().hex
+        handler = self._make_handler()
+        worker = self._add_worker(lock_name, handler)
+
+        self.assertEqual(lock_name,
+                         handler.acquired.get(timeout=self.LOCK_TIMEOUT))
+        self.assertTrue(self._wait_until(lambda: worker.idl.has_lock))
+
+        worker.ovsdb_connection.force_reconnect()
+
+        self.assertEqual(lock_name,
+                         handler.lost.get(timeout=self.LOCK_TIMEOUT))
+        self.assertEqual(lock_name,
+                         handler.acquired.get(timeout=self.LOCK_TIMEOUT))
+        self.assertTrue(self._wait_until(lambda: worker.idl.has_lock))
