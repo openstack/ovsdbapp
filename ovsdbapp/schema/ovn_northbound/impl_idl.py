@@ -57,30 +57,31 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
         return cmd.LSGetLocalnetPortsCommand(self, switch, if_exists)
 
     def acl_add(self, switch, direction, priority, match, action, log=False,
-                may_exist=False, **external_ids):
+                may_exist=False, tier=None, **external_ids):
         return cmd.AclAddCommand(self, switch, direction, priority,
-                                 match, action, log, may_exist, **external_ids)
+                                 match, action, log, may_exist, tier=tier,
+                                 **external_ids)
 
     def acl_del(self, switch, direction=None, priority=None, match=None,
-                if_exists=False):
+                if_exists=False, tier=None):
         return cmd.AclDelCommand(self, switch, direction, priority, match,
-                                 if_exists)
+                                 if_exists, tier)
 
     def acl_list(self, switch):
         return cmd.AclListCommand(self, switch)
 
     def pg_acl_add(self, port_group, direction, priority, match, action,
                    log=False, may_exist=False, severity=None, name=None,
-                   meter=None, **external_ids):
+                   meter=None, tier=None, **external_ids):
         return cmd.PgAclAddCommand(self, port_group, direction, priority,
                                    match, action, log, may_exist,
-                                   severity, name, meter,
+                                   severity, name, meter, tier,
                                    **external_ids)
 
     def pg_acl_del(self, port_group, direction=None, priority=None,
-                   match=None, if_exists=False):
+                   match=None, if_exists=False, tier=None):
         return cmd.PgAclDelCommand(self, port_group, direction, priority,
-                                   match, if_exists)
+                                   match, if_exists, tier)
 
     def pg_acl_list(self, port_group):
         return cmd.PgAclListCommand(self, port_group)

@@ -108,7 +108,8 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def acl_add(self, switch, direction, priority, match, action, log=False):
+    def acl_add(self, switch, direction, priority, match, action, log=False,
+                tier=None):
         """Add an ACL to 'switch'
 
         :param switch:    The name or uuid of the switch
@@ -124,12 +125,16 @@ class API(api.API, metaclass=abc.ABCMeta):
                           or 'reject'
         :param log:       If True, enable packet logging for the ACL
         :type log:        boolean
+        :param tier:      The tier field of the ACL (0 to 3). None leaves the
+                          database default (0) and supports older schemas.
+                          Explicit tiers require ACL tier support.
+        :type tier:       int or None
         :returns:         :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
     def acl_del(self, switch, direction=None, priority=None, match=None,
-                if_exists=False):
+                if_exists=False, tier=None):
         """Remove ACLs from 'switch'
 
         If only switch is supplied, all the ACLs from the logical switch are
@@ -148,6 +153,9 @@ class API(api.API, metaclass=abc.ABCMeta):
         :param if_exists: If True, don't fail if the parent logical switch
                           containing the ACL doesn't exist
         :type if_exists:  boolean
+        :param tier:      If specified, delete only ACLs in this tier. By
+                          default, delete matching ACLs in all tiers.
+        :type tier:       int or None
         :returns:         :class:`Command` with no result
         """
 
@@ -163,7 +171,7 @@ class API(api.API, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def pg_acl_add(self, port_group, direction, priority, match, action,
                    log=False, may_exist=False, severity=None, name=None,
-                   meter=None, **external_ids):
+                   meter=None, tier=None, **external_ids):
         """Add an ACL to 'port_group'
 
         :param port_group:   The name or uuid of the port group
@@ -187,16 +195,20 @@ class API(api.API, metaclass=abc.ABCMeta):
         :type name:          string
         :param meter:        The meter name to rate limit logging
         :type meter:         string
+        :param tier:         The tier field of the ACL (0 to 3). None uses the
+                             database default (0) and supports older schemas.
+                             Explicit tiers require ACL tier support.
+        :type tier:          int or None
         :param external_ids: Values to be added as external_id pairs
         :returns:            :class:`Command` with RowView result
         """
 
     @abc.abstractmethod
     def pg_acl_del(self, port_group, direction=None, priority=None,
-                   match=None, if_exists=False):
+                   match=None, if_exists=False, tier=None):
         """Remove ACLs from 'port_group'
 
-        If only port_group is supplied, all the ACLs from the logical switch
+        If only port_group is supplied, all the ACLs from the port group
         are deleted. If direction is also specified, then all the flows in
         that direction will be deleted from the Port Group. If all the fields
         are given, then only flows that match all fields will be deleted.
@@ -212,6 +224,9 @@ class API(api.API, metaclass=abc.ABCMeta):
         :param if_exists:  If True, don't fail if the parent port group
                            containing the ACL doesn't exist
         :type if_exists:   boolean
+        :param tier:       If specified, delete only ACLs in this tier. By
+                           default, delete matching ACLs in all tiers.
+        :type tier:        int or None
         :returns:          :class:`Command` with no result
         """
 
