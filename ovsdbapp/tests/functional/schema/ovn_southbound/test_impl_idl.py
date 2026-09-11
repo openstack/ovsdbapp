@@ -84,6 +84,15 @@ class OvnSouthboundTest(base.FunctionalTestCase):
         name = utils.get_rand_device_name()
         self.api.chassis_del(name, if_exists=True).execute(check_error=True)
 
+    def test_chassis_default_hostname(self):
+        ch = self._chassis_add(['vxlan'], '192.0.2.1')
+        self.assertEqual('', ch.hostname)
+
+    def test_chassis_set_hostname(self):
+        hostname = 'hostname_001'
+        ch = self._chassis_add(['vxlan'], '192.0.2.1', hostname=hostname)
+        self.assertEqual(hostname, ch.hostname)
+
     def _add_chassis_switch_port(self):
         cname, sname, pname = (utils.get_rand_device_name(prefix=p)
                                for p in ("chassis", "switch", "port"))

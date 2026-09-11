@@ -39,6 +39,7 @@ class ChassisAddCommand(cmd.AddCommand):
                 return
         chassis = txn.insert(self.api.tables[self.table_name])
         chassis.name = self.chassis
+        chassis.hostname = ''  # The default hostname is an empty string.
         encaps = []
         for encap_type in self.encap_types:
             encap = txn.insert(self.api.tables['Encap'])
