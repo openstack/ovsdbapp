@@ -20,7 +20,6 @@ import functools
 import json
 import logging
 import os
-import sys
 import time
 import uuid
 
@@ -127,16 +126,7 @@ def row_by_record(idl_, table, record):
         # Not a UUID string, continue lookup by other means
         pass
     except KeyError as e:
-        if sys.platform != 'win32':
-            # On Windows the name of the ports is described by the OVS schema:
-            # https://tinyurl.com/zk8skhx
-            # Is a UUID. (This is due to the fact on Windows port names don't
-            # have the 16 chars length limitation as for Linux). Because of
-            # this uuid.UUID(record) will not raise a ValueError exception
-            # as it happens on Linux and will try to fetch the directly
-            # the column instead of using the lookup table. This will raise
-            # a KeyError exception on Windows.
-            raise RowNotFound(table=table, col='uuid', match=record) from e
+        raise RowNotFound(table=table, col='uuid', match=record) from e
 
     rl = _LOOKUP_TABLE.get(table, RowLookup(table, get_index_column(t), None))
     # no table means uuid only, no column means lookup table only has one row

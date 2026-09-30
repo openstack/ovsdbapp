@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    Support for running ovsdbapp on Microsoft Windows has been removed.
+    Open vSwitch removed Windows support in version 4.0.0, including the
+    ``python-ovs`` APIs ovsdbapp relied on for Windows-specific IDL
+    connection handling. ovsdbapp now targets Unix-like systems only.

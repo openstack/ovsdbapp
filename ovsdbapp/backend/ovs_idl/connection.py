@@ -13,7 +13,6 @@
 #    under the License.
 
 import logging
-import os
 import queue
 import threading
 import time
@@ -24,12 +23,8 @@ from ovs.db import idl
 from ovs import poller
 
 from ovsdbapp.backend.ovs_idl import idlutils
+from ovsdbapp.backend.ovs_idl.linux import connection_utils
 from ovsdbapp import exceptions
-
-if os.name == 'nt':
-    from ovsdbapp.backend.ovs_idl.windows import connection_utils
-else:
-    from ovsdbapp.backend.ovs_idl.linux import connection_utils
 
 LOG = logging.getLogger(__name__)
 

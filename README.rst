@@ -8,9 +8,11 @@ ovsdbapp
 
 A library for creating OVSDB applications
 
-The ovdsbapp library is useful for creating applications that communicate
+The ovsdbapp library is useful for creating applications that communicate
 via Open_vSwitch's OVSDB protocol (https://tools.ietf.org/html/rfc7047). It
-wraps the Python 'ovs' and adds an event loop and friendly transactions.
+wraps the Python ``ovs`` package and adds an event loop and friendly
+transactions. ovsdbapp targets Unix-like systems where Open vSwitch and
+``python-ovs`` are supported.
 
 * Free software: Apache license
 * Source: https://opendev.org/openstack/ovsdbapp/
