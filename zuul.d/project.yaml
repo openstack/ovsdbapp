@@ -10,7 +10,6 @@
         - neutron-functional:
             irrelevant-files:
               - ^.*\.rst$
-              - ^\.coveragerc$
               - ^\.git.*$
               - ^\.pre-commit-config\.yaml$
               - ^\.pylintrc$
