@@ -86,7 +86,11 @@ class Transaction(api.Transaction):
             seqno = self.api.idl.change_seqno
             txn = idl.Transaction(self.api.idl)
             txn_id = str(uuid.uuid4())[:8]
-            self.pre_commit(txn)
+            try:
+                self.pre_commit(txn)
+            except Exception:
+                txn.abort()
+                raise
             for i, command in enumerate(self.commands):
                 LOG.debug(
                     "Running txn %(txn)s n=%(n)d "
