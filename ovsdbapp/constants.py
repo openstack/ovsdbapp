@@ -46,3 +46,11 @@ MAIN_ROUTE_TABLE = ""
 
 LOCALNET = 'localnet'
 DEFAULT_CHAIN = ''
+
+MIRROR_TYPE_GRE = 'gre'
+MIRROR_TYPE_ERSPAN = 'erspan'
+MIRROR_TYPE_LOCAL = 'local'
+MIRROR_TYPE_LPORT = 'lport'
+
+MIRROR_RULE_SKIP = 'skip'
+MIRROR_RULE_MIRROR = 'mirror'

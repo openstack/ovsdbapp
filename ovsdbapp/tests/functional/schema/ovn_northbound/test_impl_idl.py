@@ -3107,7 +3107,8 @@ class TestMirrorOps(OvnNorthboundTest):
         self.port_uuid = lsp_add_cmd.result.uuid
 
     def _mirror_add(self, name=None, direction_filter='to-lport',
-                    dest='10.11.1.1', mirror_type='gre', index=42, **kwargs):
+                    dest='10.11.1.1', mirror_type=const.MIRROR_TYPE_GRE,
+                    index=42, **kwargs):
         if not name:
             name = utils.get_rand_name()
         cmd = self.api.mirror_add(name, mirror_type, index, direction_filter,
@@ -3125,8 +3126,8 @@ class TestMirrorOps(OvnNorthboundTest):
 
     def test_mirror_add_duplicate(self):
         name = utils.get_rand_name()
-        cmd = self.api.mirror_add(name, 'gre', 100, 'from-lport',
-                                  '192.169.1.1')
+        cmd = self.api.mirror_add(name, const.MIRROR_TYPE_GRE, 100,
+                                  'from-lport', '192.169.1.1')
         cmd.execute(check_error=True)
         self.assertRaises(RuntimeError, cmd.execute, check_error=True)
 
@@ -3142,7 +3143,7 @@ class TestMirrorOps(OvnNorthboundTest):
         mirror1 = self._mirror_add(name=name, dest='10.12.1.0')
         mirror2 = self._mirror_add(
             name=name, direction_filter='from-lport', dest='10.12.1.0',
-            mirror_type='gre', index=100, may_exist=True,
+            mirror_type=const.MIRROR_TYPE_GRE, index=100, may_exist=True,
         )
         self.assertNotEqual(mirror1, mirror2)
         self.assertEqual(mirror1.uuid, mirror2.uuid)
@@ -3156,7 +3157,8 @@ class TestMirrorOps(OvnNorthboundTest):
 
     def test_mirror_get(self):
         name = utils.get_rand_name()
-        mirror1 = self.api.mirror_add(name, 'gre', 100, 'from-lport',
+        mirror1 = self.api.mirror_add(name, const.MIRROR_TYPE_GRE, 100,
+                                      'from-lport',
                                       '10.15.1.1').execute(check_error=True)
         mirror2 = self.api.mirror_get(mirror1.uuid).execute(check_error=True)
         self.assertEqual(mirror1, mirror2)
@@ -3225,3 +3227,151 @@ class TestMirrorOps(OvnNorthboundTest):
             if_exists=True).execute(check_error=True)
         self.assertEqual(1, len(port.mirror_rules))
         self.assertEqual(mirror1.uuid, port.mirror_rules[0].uuid)
+
+    def test_lsp_attach_mirror_no_mirror(self):
+        cmd = self.api.lsp_attach_mirror(self.port_uuid,
+                                         utils.get_rand_name())
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_lsp_detach_mirror_no_mirror(self):
+        cmd = self.api.lsp_detach_mirror(self.port_uuid,
+                                         utils.get_rand_name())
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+        self.api.lsp_detach_mirror(self.port_uuid, utils.get_rand_name(),
+                                   if_exists=True).execute(check_error=True)
+
+    def _skip_if_no_mirror_rules(self):
+        if not idlutils.table_has_column(self.api.idl, 'Mirror',
+                                         'mirror_rules'):
+            self.skipTest('lport mirrors and mirror rules are not supported '
+                          'by this OVN Northbound schema (requires >= 25.09)')
+
+    def _lport_mirror_add(self):
+        self._skip_if_no_mirror_rules()
+        return self.api.mirror_add(utils.get_rand_name(),
+                                   const.MIRROR_TYPE_LPORT, 0, 'both',
+                                   self.port_uuid).execute(check_error=True)
+
+    def _mirror_rule_add(self, mirror, priority=1, match='1',
+                         action=const.MIRROR_RULE_MIRROR, **kwargs):
+        rule = self.api.mirror_rule_add(
+            mirror.uuid, priority, match, action, **kwargs).execute(
+            check_error=True)
+        self.assertIn(rule, mirror.mirror_rules)
+        self.assertEqual(priority, rule.priority)
+        self.assertEqual(match, rule.match)
+        self.assertEqual(action, rule.action)
+        return rule
+
+    def test_mirror_rule_add(self):
+        mirror = self._lport_mirror_add()
+        rule = self._mirror_rule_add(mirror)
+        self.assertEqual(mirror.mirror_rules, [rule])
+
+    def test_mirror_rule_add_no_lport_type(self):
+        mirror = self.api.mirror_add(utils.get_rand_name(),
+                                     const.MIRROR_TYPE_LOCAL, 0, 'both',
+                                     self.port_uuid).execute(check_error=True)
+        cmd = self.api.mirror_rule_add(mirror.uuid, 1, '1',
+                                       const.MIRROR_RULE_MIRROR)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_mirror_rule_add_no_mirror(self):
+        self._skip_if_no_mirror_rules()
+        cmd = self.api.mirror_rule_add(utils.get_rand_name(), 1, '1',
+                                       const.MIRROR_RULE_MIRROR)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_mirror_rule_add_invalid_action(self):
+        self.assertRaises(TypeError, self.api.mirror_rule_add, 'testmirror',
+                          1, '1', 'invalid-action')
+
+    def test_mirror_rule_add_duplicate(self):
+        mirror = self._lport_mirror_add()
+        cmd = self.api.mirror_rule_add(mirror.uuid, 1, '1',
+                                       const.MIRROR_RULE_MIRROR)
+        rule = cmd.execute(check_error=True)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+        self.assertEqual(mirror.mirror_rules, [rule])
+
+    def test_mirror_rule_add_may_exist_no_change(self):
+        mirror = self._lport_mirror_add()
+        rule1 = self._mirror_rule_add(mirror)
+        rule2 = self._mirror_rule_add(mirror, may_exist=True)
+        self.assertEqual(rule1, rule2)
+        self.assertEqual(mirror.mirror_rules, [rule1])
+
+    def test_mirror_rule_del_match_no_prio(self):
+        self.assertRaises(ValueError, self.api.mirror_rule_del,
+                          'testmirror', priority=None, match='1')
+
+    def test_mirror_rule_del_no_exist(self):
+        mirror = self._lport_mirror_add()
+        cmd = self.api.mirror_rule_del(mirror.uuid, priority=200)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_mirror_rule_del_no_mirror(self):
+        self._skip_if_no_mirror_rules()
+        cmd = self.api.mirror_rule_del(utils.get_rand_name(), priority=1)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+
+    def test_mirror_rule_del_no_mirror_if_exists(self):
+        self._skip_if_no_mirror_rules()
+        self.api.mirror_rule_del(utils.get_rand_name(), priority=1,
+                                 if_exists=True).execute(check_error=True)
+
+    def test_mirror_rule_del_if_exist(self):
+        mirror = self._lport_mirror_add()
+        self.api.mirror_rule_del(mirror.uuid, priority=200,
+                                 if_exists=True).execute(check_error=True)
+
+    def test_mirror_rule_del_all(self):
+        mirror = self._lport_mirror_add()
+        rules = []
+        for prio in range(1, 4):
+            rules.append(self._mirror_rule_add(mirror, priority=prio))
+        for rule in rules:
+            self.assertIn(rule, mirror.mirror_rules)
+        self.api.mirror_rule_del(mirror.uuid).execute(check_error=True)
+        self.assertEqual(mirror.mirror_rules, [])
+
+    def test_mirror_rule_del_by_prio(self):
+        mirror = self._lport_mirror_add()
+        rule1 = self._mirror_rule_add(mirror)
+        rule2 = self._mirror_rule_add(mirror, match='ip4')
+        rule3 = self._mirror_rule_add(mirror, priority=2)
+        for rule in [rule1, rule2, rule3]:
+            self.assertIn(rule, mirror.mirror_rules)
+        self.api.mirror_rule_del(mirror.uuid, rule1.priority).execute(
+            check_error=True)
+        self.assertEqual(mirror.mirror_rules, [rule3])
+
+    def test_mirror_rule_del_by_prio_match(self):
+        mirror = self._lport_mirror_add()
+        rule1 = self._mirror_rule_add(mirror)
+        rule2 = self._mirror_rule_add(mirror, match='ip4')
+        for rule in [rule1, rule2]:
+            self.assertIn(rule, mirror.mirror_rules)
+        self.api.mirror_rule_del(mirror.uuid, rule1.priority,
+                                 rule1.match).execute(check_error=True)
+        self.assertEqual(mirror.mirror_rules, [rule2])
+
+    def test_mirror_add_lport_may_exist_keeps_rules(self):
+        mirror = self._lport_mirror_add()
+        rule = self._mirror_rule_add(mirror)
+        self.api.mirror_add(mirror.name, const.MIRROR_TYPE_LPORT, 0,
+                            'to-lport', self.port_uuid,
+                            may_exist=True).execute(check_error=True)
+        self.assertEqual('to-lport', mirror.filter)
+        self.assertEqual([rule], mirror.mirror_rules)
+
+    def test_mirror_rule_priority_zero(self):
+        mirror = self._lport_mirror_add()
+        rule0 = self._mirror_rule_add(mirror, priority=0,
+                                      action=const.MIRROR_RULE_SKIP)
+        rule1 = self._mirror_rule_add(mirror, priority=1, match='icmp4')
+        self.assertEqual({rule0.uuid, rule1.uuid},
+                         {r.uuid for r in mirror.mirror_rules})
+        self.api.mirror_rule_del(mirror.uuid, priority=0).execute(
+            check_error=True)
+        self.assertEqual([rule1], mirror.mirror_rules)

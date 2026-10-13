@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Add support for the OVN ``lport`` mirror type and for mirror rules
+    (``Mirror_Rule`` table) in the OVN Northbound API: ``mirror_add`` accepts
+    ``mirror_type='lport'`` with a logical switch port name as sink, and the
+    new ``mirror_rule_add``/``mirror_rule_del`` commands manage the filtering
+    rules of an ``lport`` mirror. Both features were introduced in OVN 25.09
+    (https://github.com/ovn-org/ovn/commit/3dd8f36b85b3e648bc506839aa62e81b21c41e30);
+    against an older Northbound schema the commands raise ``RuntimeError``
+    instead of failing inside the transaction. ``mirror_add`` with
+    ``may_exist=True`` no longer resets the existing mirror rules.
