@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from unittest import mock
 
 from ovsdbapp import event
 from ovsdbapp.tests import base
@@ -85,3 +86,62 @@ class TestRowEventHandler(base.TestCase):
         self.handler.watch_event(TestEvent())
         self.handler.watch_event(TestEvent())
         self.assertCountEqual(self.handler._watched_events, [TestEvent()])
+
+
+class TestRowEventHandlerNotifyLoop(base.TestCase):
+    @mock.patch.object(event.RowEventHandler, 'start')
+    def setUp(self, mock_start):
+        super().setUp()
+        # Run the loop synchronously with a real queue and a stop marker.
+        self.handler = event.RowEventHandler()
+        self.addCleanup(event.atexit.unregister, self.handler.shutdown)
+
+    def _test_notify_loop_exception(self, notification, callback, *args):
+        callback.side_effect = [RuntimeError('callback failed'), None]
+        self.handler.notifications.put(notification)
+        self.handler.notifications.put(notification)
+        self.handler.shutdown()
+
+        with mock.patch.object(event.LOG, 'exception') as log_exception:
+            self.handler.notify_loop()
+
+        # A failed callback must not prevent the next notification running.
+        self.assertEqual([mock.call(*args), mock.call(*args)],
+                         callback.call_args_list)
+        log_exception.assert_called_once_with(
+            'Unexpected exception in notify_loop')
+        # Checking the count avoids hanging Queue.join() on a regression.
+        self.assertEqual(0, self.handler.notifications.unfinished_tasks)
+
+    def test_row_exception(self):
+        row_event = mock.Mock(ONETIME=False)
+        args = (event.RowEvent.ROW_UPDATE, mock.sentinel.row,
+                mock.sentinel.updates)
+        self._test_notify_loop_exception((row_event, *args), row_event.run,
+                                         *args)
+
+    def test_lock_acquired_exception(self):
+        self.handler.lock_acquired = mock.Mock()
+        self._test_notify_loop_exception(
+            event.LockNotification('test_lock', True),
+            self.handler.lock_acquired, 'test_lock')
+
+    def test_lock_lost_exception(self):
+        self.handler.lock_lost = mock.Mock()
+        self._test_notify_loop_exception(
+            event.LockNotification('test_lock', False),
+            self.handler.lock_lost, 'test_lock')
+
+    @mock.patch.object(event.LOG, 'exception')
+    def test_get_exception(self, log_exception):
+        with mock.patch.object(
+                self.handler.notifications, 'get',
+                side_effect=[RuntimeError('get failed'), event.STOP_EVENT]), \
+                mock.patch.object(self.handler.notifications,
+                                  'task_done') as task_done:
+            self.handler.notify_loop()
+
+        # Only the successfully retrieved stop marker is acknowledged.
+        task_done.assert_called_once_with()
+        log_exception.assert_called_once_with(
+            'Unexpected exception in notify_loop')

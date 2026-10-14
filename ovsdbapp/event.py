@@ -187,21 +187,21 @@ class RowEventHandler(object):
         while True:
             try:
                 item = self.notifications.get()
-                if item == STOP_EVENT:
+                try:
+                    if item == STOP_EVENT:
+                        break
+                    if isinstance(item, LockNotification):
+                        if item.acquired:
+                            self.lock_acquired(item.lock_name)
+                        else:
+                            self.lock_lost(item.lock_name)
+                        continue
+                    match, event, row, updates = item
+                    match.run(event, row, updates)
+                    if match.ONETIME:
+                        self.unwatch_event(match)
+                finally:
                     self.notifications.task_done()
-                    break
-                if isinstance(item, LockNotification):
-                    if item.acquired:
-                        self.lock_acquired(item.lock_name)
-                    else:
-                        self.lock_lost(item.lock_name)
-                    self.notifications.task_done()
-                    continue
-                match, event, row, updates = item
-                match.run(event, row, updates)
-                if match.ONETIME:
-                    self.unwatch_event(match)
-                self.notifications.task_done()
             except Exception:
                 # If any unexpected exception happens we don't want the
                 # notify_loop to exit.
