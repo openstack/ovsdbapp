@@ -33,7 +33,7 @@ class ChassisAddCommand(cmd.AddCommand):
         # duplicate, so I'm not doing the check unless may_exist is set
         if self.may_exist:
             chassis = idlutils.row_by_value(self.api.idl, self.table_name,
-                                            'name', self.chassis)
+                                            'name', self.chassis, default=None)
             if chassis:
                 self.result = rowview.RowView(chassis)
                 return

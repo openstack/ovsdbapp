@@ -60,6 +60,11 @@ class OvnSouthboundTest(base.FunctionalTestCase):
         self._chassis_add(['vxlan'], '192.0.2.1', chassis=chassis,
                           may_exist=True)
 
+    def test_chassis_add_may_exist_new_chassis(self):
+        # A chassis that does not exist yet must be created, not raise
+        # RowNotFound, when may_exist=True
+        self._chassis_add(['vxlan'], '192.0.2.1', may_exist=True)
+
     def test_chassis_add_columns(self):
         chassis = utils.get_rand_device_name()
         hostname = "testhostname"
