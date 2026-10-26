@@ -93,6 +93,19 @@ class TestBackendDb(base.FunctionalTestCase):
                                [self.bridges[0]['name'], 'unpossible'])
         self.assertRaises(idlutils.RowNotFound, cmd.execute, check_error=True)
 
+    def test_db_list_record_no_index(self):
+        # The following command ensures that ``Queue`` table has no indexes.
+        self.api.tables['Queue']._table.indexes = []
+        _uuid = self.api.db_create(
+            'Queue', external_ids={'x': 'x'}).execute(check_error=True)
+        # '_uuid' is only appended to the output columns when no columns are
+        # requested, so it must be explicitly asked for here
+        res = self.api.db_list('Queue', [_uuid],
+                               columns=['external_ids', '_uuid']).execute(
+                                   check_error=True)
+        self.assertEqual([{'external_ids': {'x': 'x'},
+                           '_uuid': _uuid}], res)
+
     def test_db_list_record_if_exsists(self):
         self.api.db_list('Bridge', ['unpossible'])
 

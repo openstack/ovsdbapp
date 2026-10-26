@@ -264,7 +264,7 @@ class DbListCommand(ReadOnlyCommand):
             rows = []
             for record in self.records:
                 try:
-                    rows.append(self.api.idl.lookup(self.table, record))
+                    rows.append(self.api.lookup(self.table, record))
                 except idlutils.RowNotFound:
                     if self.if_exists:
                         continue
