@@ -1901,6 +1901,14 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertRaises(RuntimeError, self._lrp_add, *args,
                           peer='fake', may_exist=True)
 
+    def test_lrp_add_may_exist_peer(self):
+        # 'peer' is an optional string column, which the IDL returns as a
+        # list; may_exist must not report a different peer when it is equal
+        name = utils.get_rand_device_name()
+        args = (name, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'])
+        self._lrp_add(*args, peer='fake_peer')
+        self._lrp_add(*args, peer='fake_peer', may_exist=True)
+
     def test_lrp_add_columns(self):
         options = {'myside': 'yourside'}
         external_ids = {'myside': 'yourside'}
