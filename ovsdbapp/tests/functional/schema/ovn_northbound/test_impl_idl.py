@@ -1144,6 +1144,41 @@ class TestLogicalRouterOps(OvnNorthboundTest):
         lr = self._lr_add(external_ids=external_ids)
         self.assertEqual(external_ids, lr.external_ids)
 
+    def test_lr_add_exists(self):
+        name = utils.get_rand_device_name()
+        self._lr_add(name)
+        cmd = self.api.lr_add(name)
+        self.assertRaises(RuntimeError, cmd.execute, check_error=True)
+        # A duplicate router with the same name must not have been created
+        self.assertEqual(
+            1, len([lr for lr in self.api.lr_list().execute(check_error=True)
+                    if lr.name == name]))
+
+    def test_lr_add_may_exist(self):
+        name = utils.get_rand_device_name()
+        self._lr_add(name)
+        self._lr_add(name, may_exist=True)
+
+    def test_lr_add_add_duplicate(self):
+        name = utils.get_rand_device_name()
+        lr1 = self._lr_add(name)
+        lr2 = self._lr_add(name, add_duplicate=True)
+        self.assertNotEqual(lr1.uuid, lr2.uuid)
+        self.assertEqual(
+            2, len([lr for lr in self.api.lr_list().execute(check_error=True)
+                    if lr.name == name]))
+
+    def test_lr_add_may_exist_add_duplicate(self):
+        self.assertRaises(RuntimeError, self.api.lr_add,
+                          utils.get_rand_device_name(),
+                          may_exist=True, add_duplicate=True)
+
+    def test_lr_add_may_exist_no_name(self):
+        self.assertRaises(RuntimeError, self.api.lr_add, may_exist=True)
+
+    def test_lr_add_add_duplicate_no_name(self):
+        self.assertRaises(RuntimeError, self.api.lr_add, add_duplicate=True)
+
     def test_lr_del(self):
         lr = self._lr_add()
         self.api.lr_del(lr.uuid).execute(check_error=True)

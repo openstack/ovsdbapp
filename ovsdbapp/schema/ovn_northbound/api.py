@@ -570,13 +570,19 @@ class API(api.API, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def lr_add(self, router=None, may_exist=False, **columns):
+    def lr_add(self, router=None, may_exist=False, add_duplicate=False,
+               **columns):
         """Create a logical router named `router`
 
-        :param router:    The optional name or uuid of the router
-        :type router:     string or uuid.UUID
-        :param may_exist: If True, don't fail if the router already exists
-        :type may_exist:  boolean
+        :param router:       The optional name or uuid of the router
+        :type router:        string or uuid.UUID
+        :param may_exist:    If True, don't fail if the router already exists
+        :type may_exist:     boolean
+        :param add_duplicate: If True, don't fail if a router with the same
+                              name already exists, but create a new one. As
+                              ``ovn-nbctl lr-add --add-duplicate``, it cannot
+                              be used with ``may_exist`` and requires a name
+        :type add_duplicate: boolean
         :param **columns: Additional columns to directly set on the router
         :returns:         :class:`Command` with RowView result
         """

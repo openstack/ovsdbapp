@@ -814,10 +814,19 @@ class DhcpOptionsGetOptionsCommand(cmd.BaseGetOptionsCommand):
 
 
 class LrAddCommand(cmd.BaseCommand):
-    def __init__(self, api, router=None, may_exist=False, **columns):
+    def __init__(self, api, router=None, may_exist=False, add_duplicate=False,
+                 **columns):
         super().__init__(api)
+        if may_exist and add_duplicate:
+            raise RuntimeError('may_exist and add_duplicate may not be used '
+                               'together')
+        if not router and may_exist:
+            raise RuntimeError('may_exist requires name')
+        if not router and add_duplicate:
+            raise RuntimeError('add_duplicate requires name')
         self.router = router
         self.may_exist = may_exist
+        self.add_duplicate = add_duplicate
         self.columns = columns
 
     def run_idl(self, txn):
@@ -827,6 +836,8 @@ class LrAddCommand(cmd.BaseCommand):
                 if self.may_exist:
                     self.result = rowview.RowView(lr)
                     return
+                if not self.add_duplicate:
+                    raise RuntimeError('Router %s exists' % self.router)
             except idlutils.RowNotFound:
                 pass
         lr = txn.insert(self.api.tables['Logical_Router'])

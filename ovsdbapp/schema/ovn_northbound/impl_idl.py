@@ -185,8 +185,10 @@ class OvnNbApiIdlImpl(ovs_idl.Backend, api.API):
     def lsp_get_dhcpv4_options(self, port):
         return cmd.LspGetDhcpV4OptionsCommand(self, port)
 
-    def lr_add(self, router=None, may_exist=False, **columns):
-        return cmd.LrAddCommand(self, router, may_exist, **columns)
+    def lr_add(self, router=None, may_exist=False, add_duplicate=False,
+               **columns):
+        return cmd.LrAddCommand(self, router, may_exist, add_duplicate,
+                                **columns)
 
     def lr_del(self, router, if_exists=False):
         return cmd.LrDelCommand(self, router, if_exists)
