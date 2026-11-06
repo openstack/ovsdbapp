@@ -27,7 +27,7 @@ class OvnIcNorthboundTest(base.FunctionalTestCase):
     def setUp(self):
         if not self.ovsvenv.has_icnb():
             self.skipTest("Installed version of OVN does not support ICNB")
-        super(OvnIcNorthboundTest, self).setUp()
+        super().setUp()
         self.api = self.useFixture(
             fixtures.IcNbApiFixture(self.connection)).obj
         self.table = self.api.tables['Transit_Switch']

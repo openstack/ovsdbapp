@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2017 Red Hat, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -34,7 +33,7 @@ class TestOvsdbIdl(base.FunctionalTestCase):
     schemas = ["Open_vSwitch"]
 
     def setUp(self):
-        super(TestOvsdbIdl, self).setUp()
+        super().setUp()
         self.api = self.useFixture(fixtures.OvsApiFixture(self.connection)).obj
         self.brname = utils.get_rand_device_name()
         # Destroying the bridge cleans up most things created by tests
@@ -172,7 +171,7 @@ class ImplIdlTestCase(base.FunctionalTestCase):
     schemas = ['Open_vSwitch']
 
     def setUp(self):
-        super(ImplIdlTestCase, self).setUp()
+        super().setUp()
         self.api = self.useFixture(fixtures.OvsApiFixture(self.connection)).obj
         self.brname = utils.get_rand_device_name()
         # Make sure exceptions pass through by calling do_post_commit directly

@@ -22,7 +22,7 @@ class TestOvnNbIndex(base.FunctionalTestCase):
     schemas = ['OVN_Northbound']
 
     def setUp(self):
-        super(TestOvnNbIndex, self).setUp()
+        super().setUp()
         self.api = self.useFixture(
             fixtures.NbApiFixture(self.connection)).obj
 
@@ -48,7 +48,7 @@ class TestOvnNbWithoutIndex(base.FunctionalTestCase):
     schemas = ['OVN_Northbound']
 
     def setUp(self):
-        super(TestOvnNbWithoutIndex, self).setUp()
+        super().setUp()
         self.api = self.useFixture(
             fixtures.NbApiFixture(self.connection, start=False,
                                   auto_index=False)).obj

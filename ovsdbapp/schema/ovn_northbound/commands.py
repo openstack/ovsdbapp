@@ -536,7 +536,7 @@ class LspAddCommand(cmd.AddCommand):
                         msg = "%s exists with different parent" % self.port
                     if self.tag not in lsp.tag_request:
                         msg = "%s exists with different tag request" % (
-                            self.port,)
+                            self.port)
                 elif lsp.parent_name:
                     msg = "%s exists, but with a parent" % self.port
 
@@ -1566,7 +1566,7 @@ class LrNatAddCommand(cmd.BaseCommand):
             raise TypeError(msg)
         if logical_port and nat_type != const.NAT_BOTH:
             msg = "logical_port/external_mac only valid for %s" % (
-                const.NAT_BOTH,)
+                const.NAT_BOTH)
             raise TypeError(msg)
         if external_mac:
             external_mac = str(

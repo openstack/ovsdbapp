@@ -17,7 +17,7 @@ import contextlib
 import threading
 
 
-class Command(object, metaclass=abc.ABCMeta):
+class Command(metaclass=abc.ABCMeta):
     """An OVSDB command that can be executed in a transaction
 
     :attr result: The result of executing the command in a transaction
@@ -44,7 +44,7 @@ class Command(object, metaclass=abc.ABCMeta):
         """Setter of the result property"""
 
 
-class Transaction(object, metaclass=abc.ABCMeta):
+class Transaction(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def commit(self):
         """Commit the transaction to OVSDB"""
@@ -71,7 +71,7 @@ class Transaction(object, metaclass=abc.ABCMeta):
             self.result = self.commit()
 
 
-class API(object, metaclass=abc.ABCMeta):
+class API(metaclass=abc.ABCMeta):
     def __init__(self, nested_transactions=True):
         # Mapping between a (green)thread and its transaction.
         self._nested_txns = nested_transactions

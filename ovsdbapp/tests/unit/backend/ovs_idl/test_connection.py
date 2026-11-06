@@ -26,7 +26,7 @@ class TestOVSNativeConnection(base.TestCase):
 
     @mock.patch.object(connection, 'TransactionQueue')
     def setUp(self, mock_trans_queue):
-        super(TestOVSNativeConnection, self).setUp()
+        super().setUp()
         self.idl = mock.Mock()
         self.mock_trans_queue = mock_trans_queue
         self.conn = connection.Connection(self.idl, timeout=1)

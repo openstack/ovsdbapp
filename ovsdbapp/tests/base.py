@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 2010-2011 OpenStack Foundation
 # Copyright (c) 2013 Hewlett-Packard Development Company, L.P.
 #
@@ -25,5 +23,5 @@ class TestCase(base.BaseTestCase):
     """Test case base class for all unit and functional tests."""
 
     def setUp(self):
-        super(TestCase, self).setUp()
+        super().setUp()
         self.addCleanup(mock.patch.stopall)

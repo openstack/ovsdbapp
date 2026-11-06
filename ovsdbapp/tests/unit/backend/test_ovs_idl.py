@@ -18,12 +18,12 @@ from ovsdbapp.backend.ovs_idl import idlutils
 from ovsdbapp.tests import base
 
 
-class FakeRow(object):
+class FakeRow:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
 
-class FakeTable(object):
+class FakeTable:
     rows = collections.UserDict({'fake-id-1':
                                  FakeRow(uuid='fake-id-1', name='Fake1')})
     rows.indexes = {}
@@ -44,7 +44,7 @@ class FakeBackend(ovs_idl.Backend):
 
 class TestBackendOvsIdl(base.TestCase):
     def setUp(self):
-        super(TestBackendOvsIdl, self).setUp()
+        super().setUp()
         self.backend = FakeBackend(mock.MagicMock())
 
     def test_lookup_found(self):

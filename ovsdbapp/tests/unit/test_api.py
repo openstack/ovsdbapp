@@ -52,7 +52,7 @@ class GreenThreadingFixture(fixtures.Fixture):
         api.threading.get_ident = self._orig
 
 
-class FakeTransaction(object):
+class FakeTransaction:
     def __enter__(self):
         return self
 
@@ -75,7 +75,7 @@ TestingAPI.__abstractmethods__ = set()
 
 class TransactionTestCase(base.TestCase):
     def setUp(self):
-        super(TransactionTestCase, self).setUp()
+        super().setUp()
         self.api = TestingAPI()
         self.useFixture(GreenThreadingFixture())
 

@@ -39,7 +39,7 @@ LockNotification = collections.namedtuple(
     "LockNotification", ["lock_name", "acquired"])
 
 
-class RowEvent(object, metaclass=abc.ABCMeta):
+class RowEvent(metaclass=abc.ABCMeta):
     ROW_CREATE = "create"
     ROW_UPDATE = "update"
     ROW_DELETE = "delete"
@@ -123,7 +123,7 @@ class WaitEvent(RowEvent):
         return self.event.wait(self.timeout)
 
 
-class RowEventHandler(object):
+class RowEventHandler:
     def __init__(self):
         self._queues = sortedcontainers.SortedDict(lambda p: -p)
         self._lock = threading.Lock()

@@ -29,7 +29,7 @@ from ovsdbapp import exceptions
 LOG = logging.getLogger(__name__)
 
 
-class TransactionQueue(queue.Queue, object):
+class TransactionQueue(queue.Queue):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._wait_queue = connection_utils.WaitQueue(
@@ -58,7 +58,7 @@ class TransactionQueue(queue.Queue, object):
         self._wait_queue.close()
 
 
-class Connection(object):
+class Connection:
 
     def __init__(self, idl, timeout):
         """Create a connection to an OVSDB server using the OVS IDL

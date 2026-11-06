@@ -4,24 +4,47 @@ default_language_version:
   python: python3
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: mixed-line-ending
         args: ['--fix', 'lf']
         exclude: '.*\.(svg)$'
+      # file format and permissions
       - id: check-byte-order-marker
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: debug-statements
       - id: check-yaml
+      # git
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      # python
+      - id: debug-statements
+      - id: check-docstring-first
   - repo: https://github.com/lucas-c/pre-commit-hooks
-    rev: v1.5.4
+    rev: v1.5.6
     hooks:
       - id: remove-tabs
         exclude: '.*\.(svg)$'
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
+    hooks:
+      - id: ruff-check
+        args: ['--fix', '--unsafe-fixes']
+  - repo: https://github.com/hhatto/autopep8
+    rev: v2.3.2
+    hooks:
+      - id: autopep8
+        files: '^.*\.py$'
+  # Run hacking after autopep8 so that if it can fix
+  # it, it will. Note it will still fail in CI because
+  # fixing an issue changes the code and that should
+  # not happen in CI.
   - repo: https://opendev.org/openstack/hacking
-    rev: 6.1.0
+    rev: 8.1.0
     hooks:
       - id: hacking
         additional_dependencies: []
@@ -31,7 +54,8 @@ repos:
       - id: flake8
         name: flake8
         additional_dependencies:
-          - hacking>=6.1.0,<6.2.0
+          - hacking>=8.1.0,<=8.2.0
+          - flake8-import-order~=0.19.2
         language: python
         entry: flake8
         files: '^.*\.py$'

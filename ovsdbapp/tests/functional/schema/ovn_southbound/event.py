@@ -15,14 +15,14 @@ from ovsdbapp.backend.ovs_idl import event
 
 class WaitForPortBindingEvent(event.WaitEvent):
     def __init__(self, port, timeout=5):
-        super(WaitForPortBindingEvent, self).__init__(
+        super().__init__(
             (self.ROW_CREATE,), 'Port_Binding', (('logical_port', '=', port),),
             timeout=timeout)
 
 
 class ExceptionalMatchFnEvent(WaitForPortBindingEvent):
     def __init__(self, port, timeout=1):
-        super(ExceptionalMatchFnEvent, self).__init__(port, timeout)
+        super().__init__(port, timeout)
 
     def match_fn(self, event, row, old):
         raise Exception()

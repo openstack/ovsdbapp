@@ -35,7 +35,7 @@ class TestBackendDb(base.FunctionalTestCase):
              'datapath_type': 'fake2'}
         ]
 
-        super(TestBackendDb, self).setUp()
+        super().setUp()
         self.api = impl_idl.OvsdbIdl(self.connection)
         for bridge in self.bridges:
             self.useFixture(fixtures.BridgeFixture(self.api, bridge['name']))
@@ -112,8 +112,8 @@ class TestBackendDb(base.FunctionalTestCase):
     def test_db_list_rows(self):
         res = self.api.db_list_rows('Bridge').execute(check_error=True)
         self.assertTrue(
-            set(b['name'] for b in self.bridges).issubset(
-                set(b.name for b in res)))
+            {b['name'] for b in self.bridges}.issubset(
+                {b.name for b in res}))
 
     def test_db_create(self):
         _uuid = self.api.db_create(
