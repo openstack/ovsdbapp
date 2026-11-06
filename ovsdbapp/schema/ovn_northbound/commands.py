@@ -1203,10 +1203,9 @@ class BFDAddCommand(cmd.AddCommand):
                 # even when no changes have been applied.
                 self.result = rowview.RowView(bfd)
                 return
-            else:
-                raise RuntimeError(
-                    "BFD entry for port %s and dst_ip %s exists" % (
-                        self.logical_port, self.dst_ip))
+            raise RuntimeError(
+                "BFD entry for port %s and dst_ip %s exists" % (
+                    self.logical_port, self.dst_ip))
         bfd = txn.insert(self.api.tables[self.table_name])
         bfd.logical_port = self.logical_port
         bfd.dst_ip = self.dst_ip

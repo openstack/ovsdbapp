@@ -196,8 +196,7 @@ class Backend:
             if isinstance(record.result, (rowview.RowView, idl.Row)):
                 # In case the command (creation) returns an existing record.
                 return record.result
-            else:
-                record = record.result
+            record = record.result
 
         t = self.tables[table]
         if isinstance(record, uuid.UUID):

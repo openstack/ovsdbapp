@@ -42,9 +42,6 @@ class AddManagerCommand(command.AddCommand):
 
 
 class GetManagerCommand(command.ReadOnlyCommand):
-    def __init__(self, api):
-        super().__init__(api)
-
     def run_idl(self, txn):
         self.result = [m.target for m in
                        self.api._tables['Manager'].rows.values()]
@@ -124,10 +121,9 @@ class DelBridgeCommand(BaseCommand):
         except idlutils.RowNotFound as e:
             if self.if_exists:
                 return
-            else:
-                msg = "Bridge %s does not exist" % self.name
-                LOG.error(msg)
-                raise RuntimeError(msg) from e
+            msg = "Bridge %s does not exist" % self.name
+            LOG.error(msg)
+            raise RuntimeError(msg) from e
         # Clean up cached ports/interfaces
         for port in br.ports:
             for interface in port.interfaces:
@@ -154,9 +150,6 @@ class BridgeExistsCommand(command.ReadOnlyCommand):
 
 
 class ListBridgesCommand(command.ReadOnlyCommand):
-    def __init__(self, api):
-        super().__init__(api)
-
     def run_idl(self, txn):
         # NOTE (twilson) [x.name for x in rows.values()] if no index
         self.result = [x.name for x in

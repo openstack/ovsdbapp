@@ -193,7 +193,7 @@ def fetch_schema_json(connection, schema_name):
                                   'err': resp.error})
             continue
         return resp.result
-    raise Exception("Could not retrieve schema from %s" % connection)
+    raise RuntimeError("Could not retrieve schema from %s" % connection)
 
 
 def get_schema_helper(connection, schema_name):
