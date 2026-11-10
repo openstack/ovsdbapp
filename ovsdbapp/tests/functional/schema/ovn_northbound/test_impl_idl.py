@@ -1960,6 +1960,32 @@ class TestLogicalRouterPortOps(OvnNorthboundTest):
         self.assertIn(c1, lrp.gateway_chassis)
         self.assertIn(c2, lrp.gateway_chassis)
 
+    def test_lrp_add_columns_kept_for_retry(self):
+        """``lrp_add()`` must not consume its special columns
+
+        ``Transaction.do_commit()`` re-runs every command when
+        ``commit_block()`` returns TRY_AGAIN. ``LrpAddCommand.run_idl()``
+        used to consume ``gateway_chassis`` and ``ha_chassis_group`` from
+        ``self.columns``, so a retry silently created the port without them
+        and the transaction still reported success.
+        """
+        name, c1, c2 = [utils.get_rand_device_name() for _ in range(3)]
+        hcg_name = 'ha-group-%s' % ovsdb_utils.generate_uuid()
+        hcg = self.api.ha_chassis_group_add(hcg_name).execute(check_error=True)
+
+        cmd = self.api.lrp_add(
+            self.lr.uuid, name, 'de:ad:be:ef:4d:ad', ['192.0.2.0/24'],
+            gateway_chassis=(c1, c2), ha_chassis_group=hcg_name)
+        lrp = cmd.execute(check_error=True)
+
+        # The command is reusable: a retry would still see both columns.
+        self.assertEqual({c1, c2}, set(cmd.columns['gateway_chassis']))
+        self.assertEqual(hcg_name, cmd.columns['ha_chassis_group'])
+        # ... and the first attempt applied them.
+        self.assertEqual({c1, c2},
+                         {gwc.chassis_name for gwc in lrp.gateway_chassis})
+        self.assertEqual(hcg.uuid, lrp.ha_chassis_group[0].uuid)
+
     def test_gwc_add(self):
         # NOTE: no API method to create gateway chassis directly
         name, c1_name = [utils.get_rand_device_name() for _ in range(2)]

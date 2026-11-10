@@ -922,14 +922,20 @@ class LrpAddCommand(cmd.BaseCommand):
         if self.peer:
             lrp.peer = self.peer
         lr.addvalue('ports', lrp)
-        gwcs = self.columns.pop('gateway_chassis', [])
+        # ``run_idl()`` can be called more than once for the same command: the
+        # transaction is re-executed when ``commit_block()`` returns
+        # TRY_AGAIN. Consume the two special columns from a local copy so a
+        # retry still has them; mutating ``self.columns`` made the retried
+        # port lose its gateway chassis and HA chassis group.
+        columns = dict(self.columns)
+        gwcs = columns.pop('gateway_chassis', [])
         for n, chassis in enumerate(gwcs):
             gwc_name = '%s_%s' % (lrp.name, chassis)
             cmd = GatewayChassisAddCommand(self.api, gwc_name, chassis,
                                            len(gwcs) - n, may_exist=True)
             cmd.run_idl(txn)
             lrp.addvalue('gateway_chassis', cmd.result)
-        ha_chassis_group = self.columns.pop('ha_chassis_group', None)
+        ha_chassis_group = columns.pop('ha_chassis_group', None)
         if ha_chassis_group:
             try:
                 ha_chassis_group = self.api.lookup(
@@ -938,7 +944,7 @@ class LrpAddCommand(cmd.BaseCommand):
                 raise RuntimeError(
                     f"HA Chassis Group {ha_chassis_group} does not exist")
             lrp.ha_chassis_group = ha_chassis_group.uuid
-        self.set_columns(lrp, **self.columns)
+        self.set_columns(lrp, **columns)
         self.result = lrp.uuid
 
     def post_commit(self, txn):
