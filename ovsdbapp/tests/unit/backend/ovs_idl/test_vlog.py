@@ -17,7 +17,7 @@ from ovsdbapp.tests import base
 
 class TestOvsdbVlog(base.TestCase):
     def setUp(self):
-        super(TestOvsdbVlog, self).setUp()
+        super().setUp()
         self.useFixture(fixtures.OvsdbVlogFixture())
 
     def test_vlog_patched(self):
@@ -32,7 +32,7 @@ class TestOvsdbVlog(base.TestCase):
     def test_vlog_patch_all_but_debug(self):
         vlog.reset_logger()
         removed_level = vlog.DEBUG
-        levels = set(vlog.ALL_LEVELS) - set([removed_level])
+        levels = set(vlog.ALL_LEVELS) - {removed_level}
         vlog.use_python_logger(levels)
         for lvl in levels:
             self.assertTrue(vlog.is_patched(lvl))

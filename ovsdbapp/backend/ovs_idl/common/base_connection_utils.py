@@ -13,7 +13,7 @@
 #    under the License.
 
 
-class WaitQueue(object):
+class WaitQueue:
     def __init__(self, max_queue_size):
         self.max_queue_size = max_queue_size
         self.init_alert_notification()

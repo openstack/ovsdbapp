@@ -26,7 +26,7 @@ class OvnSouthboundTest(base.FunctionalTestCase):
     schemas = ['OVN_Southbound', 'OVN_Northbound']
 
     def setUp(self):
-        super(OvnSouthboundTest, self).setUp()
+        super().setUp()
         self.api = self.useFixture(
             sbfix.SbApiFixture(self.connection['OVN_Southbound'])).obj
         self.nbapi = self.useFixture(

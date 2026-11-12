@@ -28,7 +28,7 @@ from ovsdbapp.tests import base
 load_tests = testscenarios.load_tests_apply_scenarios
 
 
-class MockColumn(object):
+class MockColumn:
     def __init__(self, name, type, is_optional=False, test_value=None):
         self.name = name
         self.type = mock.MagicMock(
@@ -40,21 +40,21 @@ class MockColumn(object):
         self.test_value = test_value
 
 
-class MockTable(object):
+class MockTable:
     def __init__(self, name, *columns):
         # columns is a list of tuples (col_name, col_type)
         self.name = name
         self.columns = {c.name: c for c in columns}
 
 
-class MockRow(object):
+class MockRow:
     def __init__(self, table):
         self._table = table
 
     def __getattr__(self, attr):
         if attr in self._table.columns:
             return self._table.columns[attr].test_value
-        return super(MockRow, self).__getattr__(attr)
+        return super().__getattr__(attr)
 
 
 class MockCommand(api.Command):

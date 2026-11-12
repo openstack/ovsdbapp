@@ -22,7 +22,7 @@ class TableGlobalIsEmpty(idlutils.RowNotFound):
 def get_global_record(api):
     # there should be only one record in 'Global' table
     try:
-        return next((r for r in api.tables['Global'].rows.values()))
+        return next(r for r in api.tables['Global'].rows.values())
     except StopIteration as e:
         raise TableGlobalIsEmpty from e
 

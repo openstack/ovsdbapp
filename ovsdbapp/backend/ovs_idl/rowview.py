@@ -15,7 +15,7 @@ import copy
 from ovsdbapp.backend.ovs_idl import idlutils
 
 
-class RowView(object):
+class RowView:
     def __init__(self, row):
         self._row = row
 

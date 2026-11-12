@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 _NO_DEFAULT = object()
 
 
-class Backend(object):
+class Backend:
     lookup_table = {}
     _ovsdb_connection = None
 

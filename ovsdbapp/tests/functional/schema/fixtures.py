@@ -19,7 +19,7 @@ class ImplIdlFixture(fixtures.Fixture):
     delete_id = 'uuid'
 
     def __init__(self, api, *args, **kwargs):
-        super(ImplIdlFixture, self).__init__()
+        super().__init__()
         self.api = api
         self.args = args
         self.kwargs = kwargs

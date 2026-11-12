@@ -38,7 +38,7 @@ class TransactionTestCase(base.TestCase):
 
 class TestOvsdbIdl(base.TestCase):
     def setUp(self):
-        super(TestOvsdbIdl, self).setUp()
+        super().setUp()
         impl_idl.OvsdbIdl.ovsdb_connection = None
 
     def test_nested_txns(self):

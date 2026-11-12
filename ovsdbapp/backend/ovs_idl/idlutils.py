@@ -143,7 +143,7 @@ def row_by_record(idl_, table, record):
     return row
 
 
-class ExceptionResult(object):
+class ExceptionResult:
     def __init__(self, ex, tb):
         self.ex = ex
         self.tb = tb

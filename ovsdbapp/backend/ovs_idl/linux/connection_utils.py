@@ -29,7 +29,7 @@ class WaitQueue(base_connection_utils.WaitQueue):
         self.alertin.read(1)
 
     def alert_notify(self):
-        self.alertout.write('X'.encode("latin-1"))
+        self.alertout.write(b'X')
         self.alertout.flush()
 
     @property
