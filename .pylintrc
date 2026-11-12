@@ -14,10 +14,7 @@ load-plugins=pylint.extensions.no_self_use
 # with a local disable)
 disable=
 # "F" Fatal errors that prevent further processing
- import-error,
 # "I" Informational noise
- c-extension-no-member,
- locally-disabled,
 # "E" Error for important programming issues (likely bugs)
  access-member-before-definition,
  no-member,
@@ -28,54 +25,32 @@ disable=
  abstract-method,
  arguments-differ,
  attribute-defined-outside-init,
- bad-indentation,
  broad-except,
- dangerous-default-value,
- expression-not-assigned,
  fixme,
  global-statement,
- keyword-arg-before-vararg,
- literal-comparison,
- non-parent-init-called,
  not-callable,
  protected-access,
  redefined-builtin,
  redefined-outer-name,
  signature-differs,
  super-init-not-called,
- unpacking-non-sequence,
  unused-argument,
  unused-import,
  unused-variable,
- useless-super-delegation,
- unnecessary-pass,
  raise-missing-from,
  arguments-renamed,
- broad-exception-raised,
  unspecified-encoding,
- redundant-u-string-prefix,
  unused-private-member,
 # "C" Coding convention violations
- consider-iterating-dictionary,
- consider-using-enumerate,
  invalid-name,
- len-as-condition,
  missing-docstring,
- singleton-comparison,
- superfluous-parens,
- ungrouped-imports,
  wrong-import-order,
  consider-using-f-string,
- consider-using-dict-items,
 # "R" Refactor recommendations
- consider-merging-isinstance,
- consider-using-ternary,
  duplicate-code,
  inconsistent-return-statements,
- no-else-return,
  no-self-use,
  redefined-argument-from-local,
- simplifiable-if-statement,
  too-few-public-methods,
  too-many-ancestors,
  too-many-arguments,
@@ -83,16 +58,10 @@ disable=
  too-many-instance-attributes,
  too-many-lines,
  too-many-locals,
- too-many-nested-blocks,
  too-many-public-methods,
  too-many-positional-arguments,
  too-many-return-statements,
- too-many-statements,
- consider-using-set-comprehension,
- useless-object-inheritance,
- super-with-arguments,
- use-dict-literal,
- consider-using-with
+ too-many-statements
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores
@@ -136,6 +105,10 @@ deprecated-modules=
 [TYPECHECK]
 # List of module names for which member attributes should not be checked
 ignored-modules=_MovedItems
+# List of decorators that change the signature of a decorated function
+signature-mutators=
+ unittest.mock.patch,
+ unittest.mock._patch_object
 
 [REPORTS]
 # Tells whether to display a full report or only the messages

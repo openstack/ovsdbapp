@@ -43,12 +43,12 @@ def enable_connection_uri(conn_uri, execute=None, **kwargs):
         cmd += ['--', 'set', 'Manager', man_uri, 'inactivity_probe=%s' % probe]
     if execute:
         return execute(cmd, **kwargs).rstrip()
-    else:
-        obj = subprocess.Popen(['sudo'] + cmd, shell=False,
-                               stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-        out, err = obj.communicate()
-        if err:
-            LOG.debug(err)  # will fail if target already exists
-        return out.rstrip()
+    # pylint: disable=consider-using-with
+    obj = subprocess.Popen(['sudo'] + cmd, shell=False,
+                           stdin=subprocess.PIPE,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+    out, err = obj.communicate()
+    if err:
+        LOG.debug(err)  # will fail if target already exists
+    return out.rstrip()

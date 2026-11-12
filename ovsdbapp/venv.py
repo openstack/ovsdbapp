@@ -97,8 +97,9 @@ class VenvFixture(fixtures.Fixture):
                 cmd, *args, env=env, stderr=subprocess.STDOUT,
                 cwd=cwd, **kwargs)
         except subprocess.CalledProcessError as e:
-            raise Exception(
-                f"Command {cmd} failed with error: {e.returncode} {e.output}")
+            msg = "Command %s failed with error: %s %s" % (
+                cmd, e.returncode, e.output)
+            raise RuntimeError(msg) from e
 
     def set_path(self, path):
         self.env["PATH"] = path
@@ -163,7 +164,7 @@ class ProcessFixture(fixtures.Fixture):
 class OvsdbServerFixture(ProcessFixture):
     PORT_RE = re.compile(rb'listening on port (\d+)')
 
-    def __init__(self, venv, name, schema_filename, ovsdir=None, *args,
+    def __init__(self, venv, name, schema_filename, *args, ovsdir=None,
                  ssl_config=None, remote_proto=None):
         super().__init__(venv, name)
         self.schema_filename = schema_filename
@@ -358,7 +359,7 @@ class OvsVenvFixture(fixtures.Fixture):
         # separate the setUp/start and the initialization of the fixture so
         # that we can add additional DBs to the ovsdb-server fixture.
         self.ovsdb_server = OvsdbServerFixture(
-            self.venv, "db", self.ovs_schema, self.ovsdir)
+            self.venv, "db", self.ovs_schema, ovsdir=self.ovsdir)
 
     def _setUp(self):
         super()._setUp()
@@ -454,17 +455,19 @@ class OvsOvnVenvFixture(OvsVenvFixture):
         self.ssl_config = ssl_config
 
         self.ovnnb_server = self.useFixture(OvsdbServerFixture(
-            self.venv, "ovnnb_db", self.ovnnb_schema, self.ovsdir,
+            self.venv, "ovnnb_db", self.ovnnb_schema,
             "--remote=db:OVN_Northbound,NB_Global,connections",
             "--ssl-protocols=db:OVN_Northbound,SSL,ssl_protocols",
             "--ssl-ciphers=db:OVN_Northbound,SSL,ssl_ciphers",
+            ovsdir=self.ovsdir,
             ssl_config=ssl_config, remote_proto=self.protocol))
 
         self.ovnsb_server = self.useFixture(OvsdbServerFixture(
-            self.venv, "ovnsb_db", self.ovnsb_schema, self.ovsdir,
+            self.venv, "ovnsb_db", self.ovnsb_schema,
             "--remote=db:OVN_Southbound,SB_Global,connections",
             "--ssl-protocols=db:OVN_Southbound,SSL,ssl_protocols",
             "--ssl-ciphers=db:OVN_Southbound,SSL,ssl_ciphers",
+            ovsdir=self.ovsdir,
             ssl_config=ssl_config, remote_proto=self.protocol))
 
         self.useFixture(NorthdFixture(
@@ -500,10 +503,11 @@ class OvsOvnIcVenvFixture(OvsOvnVenvFixture):
             return
         super()._setUp()
         self.ovn_icnb_server = self.useFixture(OvsdbServerFixture(
-            self.venv, "ovn_ic_nb_db", self.ovn_icnb_schema, self.ovsdir,
+            self.venv, "ovn_ic_nb_db", self.ovn_icnb_schema,
             "--remote=db:OVN_IC_Northbound,IC_NB_Global,connections",
             "--ssl-protocols=db:OVN_IC_Northbound,SSL,ssl_protocols",
             "--ssl-ciphers=db:OVN_IC_Northbound,SSL,ssl_ciphers",
+            ovsdir=self.ovsdir,
             ssl_config=self.ssl_config, remote_proto=self.protocol))
         self.init_ovn_ic_processes()
 
